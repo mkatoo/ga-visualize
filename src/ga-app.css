@@ -233,16 +233,48 @@
   .main-content {
     grid-template-columns: 1fr;
   }
-  
+
   .header h1 {
     font-size: 2rem;
   }
-  
+
   .button-group {
     justify-content: center;
   }
-  
+
   .stats {
     grid-template-columns: 1fr;
   }
+}
+
+.best-individual-details {
+  margin-top: 8px;
+  text-align: left;
+}
+
+.coordinate-display, .fitness-display {
+  display: flex;
+  justify-content: space-between;
+  margin: 4px 0;
+  font-size: 0.9rem;
+}
+
+.coord-label, .fitness-label {
+  color: #666;
+  font-weight: 500;
+}
+
+.coord-value {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+}
+
+.fitness-value {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+}
+
+.no-data {
+  color: #999;
+  font-style: italic;
 }
