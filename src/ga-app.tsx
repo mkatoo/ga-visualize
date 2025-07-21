@@ -1,9 +1,10 @@
 import { createSignal, onCleanup } from "solid-js";
+import { DEFAULT_CONFIG, GeneticAlgorithm } from "./genetic-algorithm";
 import {
-	DEFAULT_CONFIG,
 	type FunctionType,
-	GeneticAlgorithm,
-} from "./genetic-algorithm";
+	getObjectiveFunction,
+	OBJECTIVE_FUNCTIONS,
+} from "./objective-functions";
 import { Visualizer } from "./visualizer";
 import "./ga-app.css";
 
@@ -17,16 +18,8 @@ export function GAApp() {
 	const [generations, setGenerations] = createSignal(50);
 	const [functionType, setFunctionType] = createSignal<FunctionType>("sphere");
 
-	// 関数タイプに応じて適切なboundsを設定
 	const getBoundsForFunction = (type: FunctionType) => {
-		switch (type) {
-			case "sphere":
-				return { min: -10, max: 10 };
-			case "rosenbrock":
-				return { min: -2, max: 2 };
-			default:
-				return { min: -10, max: 10 };
-		}
+		return getObjectiveFunction(type).bounds;
 	};
 
 	const [ga, setGA] = createSignal(
@@ -242,8 +235,9 @@ export function GAApp() {
 									onChange={handleFunctionTypeChange}
 									disabled={isRunning()}
 								>
-									<option value="sphere">Sphere関数</option>
-									<option value="rosenbrock">Rosenbrock関数</option>
+									{Object.entries(OBJECTIVE_FUNCTIONS).map(([key, func]) => (
+										<option value={key}>{func.name}</option>
+									))}
 								</select>
 							</div>
 

@@ -1,10 +1,10 @@
+import { type FunctionType, getObjectiveFunction } from "./objective-functions";
+
 export interface Individual {
 	x: number;
 	y: number;
 	fitness: number;
 }
-
-export type FunctionType = "sphere" | "rosenbrock";
 
 export interface GAConfig {
 	populationSize: number;
@@ -37,25 +37,9 @@ export class GeneticAlgorithm {
 		this.config = config;
 	}
 
-	private sphereFunction(x: number, y: number): number {
-		return x * x + y * y;
-	}
-
-	private rosenbrockFunction(x: number, y: number): number {
-		const a = 1;
-		const b = 100;
-		return (a - x) ** 2 + b * (y - x ** 2) ** 2;
-	}
-
 	private evaluateFunction(x: number, y: number): number {
-		switch (this.config.functionType) {
-			case "sphere":
-				return this.sphereFunction(x, y);
-			case "rosenbrock":
-				return this.rosenbrockFunction(x, y);
-			default:
-				return this.sphereFunction(x, y);
-		}
+		const objFunc = getObjectiveFunction(this.config.functionType);
+		return objFunc.fn(x, y);
 	}
 
 	private createRandomIndividual(): Individual {

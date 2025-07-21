@@ -1,5 +1,7 @@
 import { createEffect, createSignal, onMount } from "solid-js";
-import type { FunctionType, Individual } from "./genetic-algorithm";
+import type { Individual } from "./genetic-algorithm";
+import type { FunctionType } from "./objective-functions";
+import { getObjectiveFunction } from "./objective-functions";
 
 interface VisualizerProps {
 	population: Individual[];
@@ -14,16 +16,6 @@ export function Visualizer(props: VisualizerProps) {
 	let canvasRef: HTMLCanvasElement | undefined;
 	const [canvasSize] = createSignal(500);
 
-	const sphereFunction = (x: number, y: number): number => {
-		return x * x + y * y;
-	};
-
-	const rosenbrockFunction = (x: number, y: number): number => {
-		const a = 1;
-		const b = 100;
-		return (a - x) ** 2 + b * (y - x ** 2) ** 2;
-	};
-
 	const drawContourLines = (ctx: CanvasRenderingContext2D) => {
 		const { min, max } = props.bounds;
 		const size = canvasSize();
@@ -31,19 +23,9 @@ export function Visualizer(props: VisualizerProps) {
 		ctx.strokeStyle = "#e0e0e0";
 		ctx.lineWidth = 1;
 
-		let levels: number[];
-		let functionToUse: (x: number, y: number) => number;
-
-		if (props.functionType === "sphere") {
-			levels = [0.1, 0.25, 0.5, 1, 2, 4, 6, 9, 12, 16, 20, 25, 30, 36];
-			functionToUse = sphereFunction;
-		} else if (props.functionType === "rosenbrock") {
-			levels = [0.5, 1, 2, 4, 6, 10, 15, 25, 35, 50, 70, 100, 150, 200];
-			functionToUse = rosenbrockFunction;
-		} else {
-			levels = [1, 4, 16, 64, 256];
-			functionToUse = rosenbrockFunction;
-		}
+		const objFunc = getObjectiveFunction(props.functionType);
+		const levels = objFunc.contourLevels;
+		const functionToUse = objFunc.fn;
 
 		const resolution = 80;
 		const step = (max - min) / resolution;

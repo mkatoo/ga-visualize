@@ -5,10 +5,10 @@ import {
 	GeneticAlgorithm,
 	type Individual,
 } from "./genetic-algorithm";
+import { getObjectiveFunction } from "./objective-functions";
 
 // Type helper for testing private methods
 interface GeneticAlgorithmTestable {
-	sphereFunction(x: number, y: number): number;
 	createRandomIndividual(): Individual;
 	gaussianRandom(): number;
 	tournamentSelection(): Individual;
@@ -29,11 +29,9 @@ describe("GeneticAlgorithm", () => {
 		ga = new GeneticAlgorithm();
 	});
 
-	describe("Sphere Function", () => {
-		test("should calculate sphere function correctly", () => {
-			// Access private method through type assertion for testing
-			const testableGA = ga as unknown as GeneticAlgorithmTestable;
-			const sphereFunction = testableGA.sphereFunction.bind(testableGA);
+	describe("Objective Function Integration", () => {
+		test("should use objective functions correctly", () => {
+			const sphereFunction = getObjectiveFunction("sphere").fn;
 
 			expect(sphereFunction(0, 0)).toBe(0);
 			expect(sphereFunction(1, 1)).toBe(2);
