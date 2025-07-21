@@ -1,5 +1,5 @@
 import { createSignal, onCleanup } from "solid-js";
-import { GeneticAlgorithm, DEFAULT_CONFIG } from "./genetic-algorithm";
+import { DEFAULT_CONFIG, GeneticAlgorithm } from "./genetic-algorithm";
 import { Visualizer } from "./visualizer";
 import "./ga-app.css";
 
@@ -157,6 +157,7 @@ export function GAApp() {
 						<h3>適応度の推移</h3>
 						<div class="chart-container">
 							<svg width="300" height="200" viewBox="0 0 300 200">
+								<title>遺伝的アルゴリズムの適応度推移グラフ</title>
 								<defs>
 									<linearGradient
 										id="bestGradient"

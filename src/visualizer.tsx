@@ -1,5 +1,5 @@
-import { createSignal, createEffect, onMount } from "solid-js";
-import { Individual } from "./genetic-algorithm";
+import { createEffect, createSignal, onMount } from "solid-js";
+import type { Individual } from "./genetic-algorithm";
 
 interface VisualizerProps {
 	population: Individual[];
@@ -10,7 +10,7 @@ interface VisualizerProps {
 }
 
 export function Visualizer(props: VisualizerProps) {
-	let canvasRef: HTMLCanvasElement;
+	let canvasRef: HTMLCanvasElement | undefined;
 	const [canvasSize] = createSignal(500);
 
 	const drawContourLines = (ctx: CanvasRenderingContext2D) => {
@@ -125,7 +125,7 @@ export function Visualizer(props: VisualizerProps) {
 		<div class="visualizer">
 			<div class="canvas-container">
 				<canvas
-					ref={canvasRef!}
+					ref={canvasRef}
 					width={canvasSize()}
 					height={canvasSize()}
 					style={{
