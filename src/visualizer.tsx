@@ -14,6 +14,10 @@ export function Visualizer(props: VisualizerProps) {
 	let canvasRef: HTMLCanvasElement | undefined;
 	const [canvasSize] = createSignal(500);
 
+	const sphereFunction = (x: number, y: number): number => {
+		return x * x + y * y;
+	};
+
 	const rosenbrockFunction = (x: number, y: number): number => {
 		const a = 1;
 		const b = 100;
@@ -28,90 +32,118 @@ export function Visualizer(props: VisualizerProps) {
 		ctx.lineWidth = 1;
 
 		let levels: number[];
+		let functionToUse: (x: number, y: number) => number;
 
 		if (props.functionType === "sphere") {
-			levels = [0.25, 1, 4, 9, 16];
+			levels = [0.1, 0.25, 0.5, 1, 2, 4, 6, 9, 12, 16, 20, 25, 30, 36];
+			functionToUse = sphereFunction;
 		} else if (props.functionType === "rosenbrock") {
-			levels = [1, 4, 10, 25, 50, 100];
+			levels = [0.5, 1, 2, 4, 6, 10, 15, 25, 35, 50, 70, 100, 150, 200];
+			functionToUse = rosenbrockFunction;
 		} else {
 			levels = [1, 4, 16, 64, 256];
+			functionToUse = rosenbrockFunction;
 		}
 
-		if (props.functionType === "sphere") {
-			for (const level of levels) {
-				const radius = Math.sqrt(level);
-				const pixelRadius = (radius / (max - min)) * size;
+		const resolution = 80;
+		const step = (max - min) / resolution;
 
-				if (pixelRadius > 0 && pixelRadius < size / 2) {
-					ctx.beginPath();
-					ctx.arc(size / 2, size / 2, pixelRadius, 0, 2 * Math.PI);
-					ctx.stroke();
+		// 座標と関数値のグリッドを作成
+		const grid: number[][] = [];
+		for (let i = 0; i <= resolution; i++) {
+			grid[i] = [];
+			for (let j = 0; j <= resolution; j++) {
+				const x = min + i * step;
+				const y = min + j * step;
+				grid[i][j] = functionToUse(x, y);
+			}
+		}
+
+		// 線形補間で等高線の交点を計算
+		const interpolate = (
+			x1: number,
+			y1: number,
+			v1: number,
+			x2: number,
+			y2: number,
+			v2: number,
+			level: number,
+		) => {
+			if (v1 === v2) return null;
+			const t = (level - v1) / (v2 - v1);
+			if (t < 0 || t > 1) return null;
+			return {
+				x: x1 + t * (x2 - x1),
+				y: y1 + t * (y2 - y1),
+			};
+		};
+
+		// 各等高線レベルについて処理
+		for (const level of levels) {
+			const segments: Array<{
+				start: { x: number; y: number };
+				end: { x: number; y: number };
+			}> = [];
+
+			// グリッドの各セルを処理
+			for (let i = 0; i < resolution; i++) {
+				for (let j = 0; j < resolution; j++) {
+					const x1 = min + i * step;
+					const y1 = min + j * step;
+					const x2 = min + (i + 1) * step;
+					const y2 = min + (j + 1) * step;
+
+					const v1 = grid[i][j]; // 左下
+					const v2 = grid[i + 1][j]; // 右下
+					const v3 = grid[i + 1][j + 1]; // 右上
+					const v4 = grid[i][j + 1]; // 左上
+
+					const intersections: Array<{ x: number; y: number }> = [];
+
+					// 各辺で等高線との交点をチェック
+					const bottom = interpolate(x1, y1, v1, x2, y1, v2, level);
+					const right = interpolate(x2, y1, v2, x2, y2, v3, level);
+					const top = interpolate(x2, y2, v3, x1, y2, v4, level);
+					const left = interpolate(x1, y2, v4, x1, y1, v1, level);
+
+					if (bottom) intersections.push(bottom);
+					if (right) intersections.push(right);
+					if (top) intersections.push(top);
+					if (left) intersections.push(left);
+
+					// 2つの交点がある場合、線分として追加
+					if (intersections.length === 2) {
+						segments.push({
+							start: intersections[0],
+							end: intersections[1],
+						});
+					}
+					// 4つの交点がある場合は特殊ケース（サドルポイント）
+					else if (intersections.length === 4) {
+						// 対角線で結ぶ
+						segments.push({
+							start: intersections[0],
+							end: intersections[1],
+						});
+						segments.push({
+							start: intersections[2],
+							end: intersections[3],
+						});
+					}
 				}
 			}
-		} else if (props.functionType === "rosenbrock") {
-			// Rosenbrock関数の等高線を簡易的に描画
-			const resolution = 50;
-			const step = (max - min) / resolution;
 
-			for (const level of levels) {
+			// 線分を描画
+			for (const segment of segments) {
+				const startX = ((segment.start.x - min) / (max - min)) * size;
+				const startY = ((segment.start.y - min) / (max - min)) * size;
+				const endX = ((segment.end.x - min) / (max - min)) * size;
+				const endY = ((segment.end.y - min) / (max - min)) * size;
+
 				ctx.beginPath();
-				let pathStarted = false;
-
-				// Y軸方向にスキャンして等高線を描画
-				for (let j = 0; j < resolution; j++) {
-					const y = min + j * step;
-					let lastInside = false;
-
-					for (let i = 0; i < resolution; i++) {
-						const x = min + i * step;
-						const value = rosenbrockFunction(x, y);
-						const isInside = value <= level;
-
-						// 等高線の境界を検出
-						if (i > 0 && isInside !== lastInside) {
-							const pixelX = ((x - min) / (max - min)) * size;
-							const pixelY = ((y - min) / (max - min)) * size;
-
-							if (!pathStarted) {
-								ctx.moveTo(pixelX, pixelY);
-								pathStarted = true;
-							} else {
-								ctx.lineTo(pixelX, pixelY);
-							}
-						}
-						lastInside = isInside;
-					}
-				}
-
-				// X軸方向にもスキャンして等高線を補完
-				for (let i = 0; i < resolution; i++) {
-					const x = min + i * step;
-					let lastInside = false;
-
-					for (let j = 0; j < resolution; j++) {
-						const y = min + j * step;
-						const value = rosenbrockFunction(x, y);
-						const isInside = value <= level;
-
-						// 等高線の境界を検出
-						if (j > 0 && isInside !== lastInside) {
-							const pixelX = ((x - min) / (max - min)) * size;
-							const pixelY = ((y - min) / (max - min)) * size;
-
-							if (!pathStarted) {
-								ctx.moveTo(pixelX, pixelY);
-								pathStarted = true;
-							} else {
-								ctx.lineTo(pixelX, pixelY);
-							}
-						}
-						lastInside = isInside;
-					}
-				}
-
-				if (pathStarted) {
-					ctx.stroke();
-				}
+				ctx.moveTo(startX, startY);
+				ctx.lineTo(endX, endY);
+				ctx.stroke();
 			}
 		}
 	};
