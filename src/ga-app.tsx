@@ -1,5 +1,9 @@
 import { createSignal, onCleanup } from "solid-js";
-import { DEFAULT_CONFIG, GeneticAlgorithm } from "./genetic-algorithm";
+import {
+	DEFAULT_CONFIG,
+	type FunctionType,
+	GeneticAlgorithm,
+} from "./genetic-algorithm";
 import { Visualizer } from "./visualizer";
 import "./ga-app.css";
 
@@ -11,11 +15,29 @@ const MAX_GENERATIONS = 1000;
 export function GAApp() {
 	const [populationSize, setPopulationSize] = createSignal(100);
 	const [generations, setGenerations] = createSignal(50);
-	const [ga, setGA] = createSignal(new GeneticAlgorithm({
-		...DEFAULT_CONFIG,
-		populationSize: populationSize(),
-		generations: generations()
-	}));
+	const [functionType, setFunctionType] = createSignal<FunctionType>("sphere");
+
+	// 関数タイプに応じて適切なboundsを設定
+	const getBoundsForFunction = (type: FunctionType) => {
+		switch (type) {
+			case "sphere":
+				return { min: -10, max: 10 };
+			case "rosenbrock":
+				return { min: -2, max: 2 };
+			default:
+				return { min: -10, max: 10 };
+		}
+	};
+
+	const [ga, setGA] = createSignal(
+		new GeneticAlgorithm({
+			...DEFAULT_CONFIG,
+			populationSize: populationSize(),
+			generations: generations(),
+			functionType: functionType(),
+			bounds: getBoundsForFunction(functionType()),
+		}),
+	);
 	const [population, setPopulation] = createSignal(ga().getPopulation());
 	const [statistics, setStatistics] = createSignal(ga().getStatistics());
 	const [isRunning, setIsRunning] = createSignal(false);
@@ -76,7 +98,9 @@ export function GAApp() {
 		const newGA = new GeneticAlgorithm({
 			...DEFAULT_CONFIG,
 			populationSize: populationSize(),
-			generations: generations()
+			generations: generations(),
+			functionType: functionType(),
+			bounds: getBoundsForFunction(functionType()),
 		});
 		setGA(newGA);
 		newGA.initializePopulation();
@@ -86,25 +110,31 @@ export function GAApp() {
 
 	const validateAndSetPopulationSize = (value: string) => {
 		const numValue = parseInt(value) || MIN_POPULATION_SIZE;
-		const clampedValue = Math.max(MIN_POPULATION_SIZE, Math.min(MAX_POPULATION_SIZE, numValue));
+		const clampedValue = Math.max(
+			MIN_POPULATION_SIZE,
+			Math.min(MAX_POPULATION_SIZE, numValue),
+		);
 		setPopulationSize(clampedValue);
-		
+
 		if (!isRunning()) {
 			updateGAConfig();
 		}
-		
+
 		return clampedValue;
 	};
 
 	const validateAndSetGenerations = (value: string) => {
 		const numValue = parseInt(value) || MIN_GENERATIONS;
-		const clampedValue = Math.max(MIN_GENERATIONS, Math.min(MAX_GENERATIONS, numValue));
+		const clampedValue = Math.max(
+			MIN_GENERATIONS,
+			Math.min(MAX_GENERATIONS, numValue),
+		);
 		setGenerations(clampedValue);
-		
+
 		if (!isRunning()) {
 			updateGAConfig();
 		}
-		
+
 		return clampedValue;
 	};
 
@@ -130,6 +160,16 @@ export function GAApp() {
 		target.value = clampedValue.toString();
 	};
 
+	const handleFunctionTypeChange = (event: Event) => {
+		const target = event.target as HTMLSelectElement;
+		const newFunctionType = target.value as FunctionType;
+		setFunctionType(newFunctionType);
+
+		if (!isRunning()) {
+			updateGAConfig();
+		}
+	};
+
 	onCleanup(() => {
 		if (intervalId) {
 			clearInterval(intervalId);
@@ -142,14 +182,14 @@ export function GAApp() {
 		<div class="ga-app">
 			<header class="header">
 				<h1>遺伝的アルゴリズム可視化</h1>
-				<p>Sphere関数の最適化過程を可視化</p>
+				<p>最適化関数の最適化過程を可視化</p>
 			</header>
 
 			<div class="main-content">
 				<div class="visualization-panel">
 					<Visualizer
 						population={population()}
-						bounds={DEFAULT_CONFIG.bounds}
+						bounds={ga().getBounds()}
 						generation={statistics().generation}
 						averageFitness={
 							statistics().averageFitness[
@@ -157,6 +197,7 @@ export function GAApp() {
 							] ?? 0
 						}
 						bestIndividual={statistics().currentBest}
+						functionType={functionType()}
 					/>
 				</div>
 
@@ -194,7 +235,22 @@ export function GAApp() {
 
 						<div class="parameter-controls">
 							<div class="parameter-group">
-								<label for="populationSize">個体数 ({MIN_POPULATION_SIZE}-{MAX_POPULATION_SIZE}):</label>
+								<label for="functionType">最適化関数:</label>
+								<select
+									id="functionType"
+									value={functionType()}
+									onChange={handleFunctionTypeChange}
+									disabled={isRunning()}
+								>
+									<option value="sphere">Sphere関数</option>
+									<option value="rosenbrock">Rosenbrock関数</option>
+								</select>
+							</div>
+
+							<div class="parameter-group">
+								<label for="populationSize">
+									個体数 ({MIN_POPULATION_SIZE}-{MAX_POPULATION_SIZE}):
+								</label>
 								<input
 									id="populationSize"
 									type="number"
@@ -206,9 +262,11 @@ export function GAApp() {
 									disabled={isRunning()}
 								/>
 							</div>
-							
+
 							<div class="parameter-group">
-								<label for="generations">世代数 ({MIN_GENERATIONS}-{MAX_GENERATIONS}):</label>
+								<label for="generations">
+									世代数 ({MIN_GENERATIONS}-{MAX_GENERATIONS}):
+								</label>
 								<input
 									id="generations"
 									type="number"
@@ -238,8 +296,7 @@ export function GAApp() {
 
 						<div class="progress">
 							<div class="progress-label">
-								進行状況: {statistics().generation} /{" "}
-								{generations()}
+								進行状況: {statistics().generation} / {generations()}
 							</div>
 							<div class="progress-bar">
 								<div
@@ -303,8 +360,7 @@ export function GAApp() {
 											<polyline
 												points={statistics()
 													.bestFitness.map((fitness, i) => {
-														const x =
-															30 + (i / (generations() - 1)) * 250;
+														const x = 30 + (i / (generations() - 1)) * 250;
 														const maxFitness = Math.max(
 															...statistics().averageFitness,
 														);
@@ -319,8 +375,7 @@ export function GAApp() {
 											<polyline
 												points={statistics()
 													.averageFitness.map((fitness, i) => {
-														const x =
-															30 + (i / (generations() - 1)) * 250;
+														const x = 30 + (i / (generations() - 1)) * 250;
 														const maxFitness = Math.max(
 															...statistics().averageFitness,
 														);

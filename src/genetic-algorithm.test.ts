@@ -12,7 +12,11 @@ interface GeneticAlgorithmTestable {
 	createRandomIndividual(): Individual;
 	gaussianRandom(): number;
 	tournamentSelection(): Individual;
-	blxAlphaCrossover(parent1: Individual, parent2: Individual, alpha?: number): [Individual, Individual];
+	blxAlphaCrossover(
+		parent1: Individual,
+		parent2: Individual,
+		alpha?: number,
+	): [Individual, Individual];
 	gaussianMutation(individual: Individual): Individual;
 	population: Individual[];
 	config: GAConfig;
@@ -155,10 +159,7 @@ describe("GeneticAlgorithm", () => {
 			const parent2: Individual = { x: 4, y: 4, fitness: 32 };
 
 			const testableGA = gaWithBounds as unknown as GeneticAlgorithmTestable;
-			const [child1, child2] = testableGA.blxAlphaCrossover(
-				parent1,
-				parent2,
-			);
+			const [child1, child2] = testableGA.blxAlphaCrossover(parent1, parent2);
 
 			expect(child1.x).toBeGreaterThanOrEqual(-5);
 			expect(child1.x).toBeLessThanOrEqual(5);
@@ -198,7 +199,8 @@ describe("GeneticAlgorithm", () => {
 
 			for (let i = 0; i < 50; i++) {
 				const individual: Individual = { x: 9, y: 9, fitness: 162 };
-				const testableGA = gaAlwaysMutate as unknown as GeneticAlgorithmTestable;
+				const testableGA =
+					gaAlwaysMutate as unknown as GeneticAlgorithmTestable;
 				const mutated = testableGA.gaussianMutation(individual);
 
 				expect(mutated.x).toBeGreaterThanOrEqual(-10);
@@ -335,6 +337,7 @@ describe("GeneticAlgorithm", () => {
 				crossoverRate: 0.9,
 				tournamentSize: 5,
 				bounds: { min: -50, max: 50 },
+				functionType: "sphere",
 			};
 
 			const customGA = new GeneticAlgorithm(customConfig);

@@ -4,6 +4,8 @@ export interface Individual {
 	fitness: number;
 }
 
+export type FunctionType = "sphere" | "rosenbrock";
+
 export interface GAConfig {
 	populationSize: number;
 	generations: number;
@@ -11,6 +13,7 @@ export interface GAConfig {
 	crossoverRate: number;
 	tournamentSize: number;
 	bounds: { min: number; max: number };
+	functionType: FunctionType;
 }
 
 export const DEFAULT_CONFIG: GAConfig = {
@@ -20,6 +23,7 @@ export const DEFAULT_CONFIG: GAConfig = {
 	crossoverRate: 0.8,
 	tournamentSize: 3,
 	bounds: { min: -100, max: 100 },
+	functionType: "sphere",
 };
 
 export class GeneticAlgorithm {
@@ -37,6 +41,23 @@ export class GeneticAlgorithm {
 		return x * x + y * y;
 	}
 
+	private rosenbrockFunction(x: number, y: number): number {
+		const a = 1;
+		const b = 100;
+		return (a - x) ** 2 + b * (y - x ** 2) ** 2;
+	}
+
+	private evaluateFunction(x: number, y: number): number {
+		switch (this.config.functionType) {
+			case "sphere":
+				return this.sphereFunction(x, y);
+			case "rosenbrock":
+				return this.rosenbrockFunction(x, y);
+			default:
+				return this.sphereFunction(x, y);
+		}
+	}
+
 	private createRandomIndividual(): Individual {
 		const { min, max } = this.config.bounds;
 		const x = Math.random() * (max - min) + min;
@@ -44,19 +65,21 @@ export class GeneticAlgorithm {
 		return {
 			x,
 			y,
-			fitness: this.sphereFunction(x, y),
+			fitness: this.evaluateFunction(x, y),
 		};
 	}
 
 	private evaluatePopulation(): void {
 		for (const individual of this.population) {
-			individual.fitness = this.sphereFunction(individual.x, individual.y);
+			individual.fitness = this.evaluateFunction(individual.x, individual.y);
 		}
 	}
 
 	private tournamentSelection(): Individual {
 		if (this.population.length === 0) {
-			throw new Error("Population is empty - cannot perform tournament selection");
+			throw new Error(
+				"Population is empty - cannot perform tournament selection",
+			);
 		}
 
 		let best =
@@ -215,5 +238,9 @@ export class GeneticAlgorithm {
 			averageFitness: [...this.averageFitness],
 			currentBest: this.getBestIndividual(),
 		};
+	}
+
+	getBounds() {
+		return this.config.bounds;
 	}
 }

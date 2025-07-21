@@ -1,5 +1,5 @@
 import { createEffect, createSignal, onMount } from "solid-js";
-import type { Individual } from "./genetic-algorithm";
+import type { FunctionType, Individual } from "./genetic-algorithm";
 
 interface VisualizerProps {
 	population: Individual[];
@@ -7,11 +7,18 @@ interface VisualizerProps {
 	generation: number;
 	averageFitness: number;
 	bestIndividual: Individual | null;
+	functionType: FunctionType;
 }
 
 export function Visualizer(props: VisualizerProps) {
 	let canvasRef: HTMLCanvasElement | undefined;
 	const [canvasSize] = createSignal(500);
+
+	const rosenbrockFunction = (x: number, y: number): number => {
+		const a = 1;
+		const b = 100;
+		return (a - x) ** 2 + b * (y - x ** 2) ** 2;
+	};
 
 	const drawContourLines = (ctx: CanvasRenderingContext2D) => {
 		const { min, max } = props.bounds;
@@ -20,16 +27,91 @@ export function Visualizer(props: VisualizerProps) {
 		ctx.strokeStyle = "#e0e0e0";
 		ctx.lineWidth = 1;
 
-		const levels = [1, 4, 16, 64, 256, 1024, 4096];
+		let levels: number[];
 
-		for (const level of levels) {
-			const radius = Math.sqrt(level);
-			const pixelRadius = (radius / (max - min)) * size;
+		if (props.functionType === "sphere") {
+			levels = [0.25, 1, 4, 9, 16];
+		} else if (props.functionType === "rosenbrock") {
+			levels = [1, 4, 10, 25, 50, 100];
+		} else {
+			levels = [1, 4, 16, 64, 256];
+		}
 
-			if (pixelRadius > 0 && pixelRadius < size / 2) {
+		if (props.functionType === "sphere") {
+			for (const level of levels) {
+				const radius = Math.sqrt(level);
+				const pixelRadius = (radius / (max - min)) * size;
+
+				if (pixelRadius > 0 && pixelRadius < size / 2) {
+					ctx.beginPath();
+					ctx.arc(size / 2, size / 2, pixelRadius, 0, 2 * Math.PI);
+					ctx.stroke();
+				}
+			}
+		} else if (props.functionType === "rosenbrock") {
+			// Rosenbrock関数の等高線を簡易的に描画
+			const resolution = 50;
+			const step = (max - min) / resolution;
+
+			for (const level of levels) {
 				ctx.beginPath();
-				ctx.arc(size / 2, size / 2, pixelRadius, 0, 2 * Math.PI);
-				ctx.stroke();
+				let pathStarted = false;
+
+				// Y軸方向にスキャンして等高線を描画
+				for (let j = 0; j < resolution; j++) {
+					const y = min + j * step;
+					let lastInside = false;
+
+					for (let i = 0; i < resolution; i++) {
+						const x = min + i * step;
+						const value = rosenbrockFunction(x, y);
+						const isInside = value <= level;
+
+						// 等高線の境界を検出
+						if (i > 0 && isInside !== lastInside) {
+							const pixelX = ((x - min) / (max - min)) * size;
+							const pixelY = ((y - min) / (max - min)) * size;
+
+							if (!pathStarted) {
+								ctx.moveTo(pixelX, pixelY);
+								pathStarted = true;
+							} else {
+								ctx.lineTo(pixelX, pixelY);
+							}
+						}
+						lastInside = isInside;
+					}
+				}
+
+				// X軸方向にもスキャンして等高線を補完
+				for (let i = 0; i < resolution; i++) {
+					const x = min + i * step;
+					let lastInside = false;
+
+					for (let j = 0; j < resolution; j++) {
+						const y = min + j * step;
+						const value = rosenbrockFunction(x, y);
+						const isInside = value <= level;
+
+						// 等高線の境界を検出
+						if (j > 0 && isInside !== lastInside) {
+							const pixelX = ((x - min) / (max - min)) * size;
+							const pixelY = ((y - min) / (max - min)) * size;
+
+							if (!pathStarted) {
+								ctx.moveTo(pixelX, pixelY);
+								pathStarted = true;
+							} else {
+								ctx.lineTo(pixelX, pixelY);
+							}
+						}
+						lastInside = isInside;
+					}
+				}
+
+				if (pathStarted) {
+					ctx.stroke();
+				}
 			}
 		}
 	};
