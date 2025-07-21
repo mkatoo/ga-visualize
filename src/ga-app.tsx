@@ -3,8 +3,19 @@ import { DEFAULT_CONFIG, GeneticAlgorithm } from "./genetic-algorithm";
 import { Visualizer } from "./visualizer";
 import "./ga-app.css";
 
+const MIN_POPULATION_SIZE = 1;
+const MAX_POPULATION_SIZE = 1000;
+const MIN_GENERATIONS = 1;
+const MAX_GENERATIONS = 1000;
+
 export function GAApp() {
-	const [ga] = createSignal(new GeneticAlgorithm(DEFAULT_CONFIG));
+	const [populationSize, setPopulationSize] = createSignal(100);
+	const [generations, setGenerations] = createSignal(50);
+	const [ga, setGA] = createSignal(new GeneticAlgorithm({
+		...DEFAULT_CONFIG,
+		populationSize: populationSize(),
+		generations: generations()
+	}));
 	const [population, setPopulation] = createSignal(ga().getPopulation());
 	const [statistics, setStatistics] = createSignal(ga().getStatistics());
 	const [isRunning, setIsRunning] = createSignal(false);
@@ -59,6 +70,64 @@ export function GAApp() {
 			stop();
 			start();
 		}
+	};
+
+	const updateGAConfig = () => {
+		const newGA = new GeneticAlgorithm({
+			...DEFAULT_CONFIG,
+			populationSize: populationSize(),
+			generations: generations()
+		});
+		setGA(newGA);
+		newGA.initializePopulation();
+		setPopulation(newGA.getPopulation());
+		setStatistics(newGA.getStatistics());
+	};
+
+	const validateAndSetPopulationSize = (value: string) => {
+		const numValue = parseInt(value) || MIN_POPULATION_SIZE;
+		const clampedValue = Math.max(MIN_POPULATION_SIZE, Math.min(MAX_POPULATION_SIZE, numValue));
+		setPopulationSize(clampedValue);
+		
+		if (!isRunning()) {
+			updateGAConfig();
+		}
+		
+		return clampedValue;
+	};
+
+	const validateAndSetGenerations = (value: string) => {
+		const numValue = parseInt(value) || MIN_GENERATIONS;
+		const clampedValue = Math.max(MIN_GENERATIONS, Math.min(MAX_GENERATIONS, numValue));
+		setGenerations(clampedValue);
+		
+		if (!isRunning()) {
+			updateGAConfig();
+		}
+		
+		return clampedValue;
+	};
+
+	const handlePopulationSizeChange = (event: Event) => {
+		const target = event.target as HTMLInputElement;
+		validateAndSetPopulationSize(target.value);
+	};
+
+	const handlePopulationSizeBlur = (event: Event) => {
+		const target = event.target as HTMLInputElement;
+		const clampedValue = validateAndSetPopulationSize(target.value);
+		target.value = clampedValue.toString();
+	};
+
+	const handleGenerationsChange = (event: Event) => {
+		const target = event.target as HTMLInputElement;
+		validateAndSetGenerations(target.value);
+	};
+
+	const handleGenerationsBlur = (event: Event) => {
+		const target = event.target as HTMLInputElement;
+		const clampedValue = validateAndSetGenerations(target.value);
+		target.value = clampedValue.toString();
 	};
 
 	onCleanup(() => {
@@ -123,6 +192,36 @@ export function GAApp() {
 							</button>
 						</div>
 
+						<div class="parameter-controls">
+							<div class="parameter-group">
+								<label for="populationSize">個体数 ({MIN_POPULATION_SIZE}-{MAX_POPULATION_SIZE}):</label>
+								<input
+									id="populationSize"
+									type="number"
+									min={MIN_POPULATION_SIZE}
+									max={MAX_POPULATION_SIZE}
+									value={populationSize()}
+									onInput={handlePopulationSizeChange}
+									onBlur={handlePopulationSizeBlur}
+									disabled={isRunning()}
+								/>
+							</div>
+							
+							<div class="parameter-group">
+								<label for="generations">世代数 ({MIN_GENERATIONS}-{MAX_GENERATIONS}):</label>
+								<input
+									id="generations"
+									type="number"
+									min={MIN_GENERATIONS}
+									max={MAX_GENERATIONS}
+									value={generations()}
+									onInput={handleGenerationsChange}
+									onBlur={handleGenerationsBlur}
+									disabled={isRunning()}
+								/>
+							</div>
+						</div>
+
 						<div class="speed-control">
 							<label for="speed">アニメーション速度:</label>
 							<input
@@ -140,13 +239,13 @@ export function GAApp() {
 						<div class="progress">
 							<div class="progress-label">
 								進行状況: {statistics().generation} /{" "}
-								{DEFAULT_CONFIG.generations}
+								{generations()}
 							</div>
 							<div class="progress-bar">
 								<div
 									class="progress-fill"
 									style={{
-										width: `${(statistics().generation / DEFAULT_CONFIG.generations) * 100}%`,
+										width: `${(statistics().generation / generations()) * 100}%`,
 									}}
 								/>
 							</div>
@@ -205,7 +304,7 @@ export function GAApp() {
 												points={statistics()
 													.bestFitness.map((fitness, i) => {
 														const x =
-															30 + (i / (DEFAULT_CONFIG.generations - 1)) * 250;
+															30 + (i / (generations() - 1)) * 250;
 														const maxFitness = Math.max(
 															...statistics().averageFitness,
 														);
@@ -221,7 +320,7 @@ export function GAApp() {
 												points={statistics()
 													.averageFitness.map((fitness, i) => {
 														const x =
-															30 + (i / (DEFAULT_CONFIG.generations - 1)) * 250;
+															30 + (i / (generations() - 1)) * 250;
 														const maxFitness = Math.max(
 															...statistics().averageFitness,
 														);

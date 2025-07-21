@@ -55,13 +55,17 @@ export class GeneticAlgorithm {
 	}
 
 	private tournamentSelection(): Individual {
+		if (this.population.length === 0) {
+			throw new Error("Population is empty - cannot perform tournament selection");
+		}
+
 		let best =
 			this.population[Math.floor(Math.random() * this.population.length)];
 
 		for (let i = 1; i < this.config.tournamentSize; i++) {
 			const candidate =
 				this.population[Math.floor(Math.random() * this.population.length)];
-			if (candidate.fitness < best.fitness) {
+			if (candidate && candidate.fitness < best.fitness) {
 				best = candidate;
 			}
 		}
