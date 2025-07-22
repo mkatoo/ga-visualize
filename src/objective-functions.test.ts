@@ -67,15 +67,66 @@ describe("Objective Functions", () => {
 		});
 	});
 
+	describe("Ackley Function", () => {
+		const ackleyFunction = OBJECTIVE_FUNCTIONS.ackley.fn;
+
+		test("should calculate known values correctly", () => {
+			// Global minimum at origin should be 0
+			expect(ackleyFunction(0, 0)).toBeCloseTo(0, 10);
+			
+			// Test some other known approximate values
+			expect(ackleyFunction(1, 0)).toBeGreaterThan(2);
+			expect(ackleyFunction(0, 1)).toBeGreaterThan(2);
+			expect(ackleyFunction(1, 1)).toBeGreaterThan(3);
+			expect(ackleyFunction(-1, -1)).toBeGreaterThan(3);
+		});
+
+		test("should have global minimum at origin", () => {
+			const globalMin = ackleyFunction(0, 0);
+			expect(globalMin).toBeCloseTo(0, 10);
+
+			// Test that nearby points have higher values
+			expect(ackleyFunction(0.1, 0)).toBeGreaterThan(globalMin);
+			expect(ackleyFunction(0, 0.1)).toBeGreaterThan(globalMin);
+			expect(ackleyFunction(0.1, 0.1)).toBeGreaterThan(globalMin);
+			expect(ackleyFunction(-0.1, -0.1)).toBeGreaterThan(globalMin);
+		});
+
+		test("should implement standard Ackley formula", () => {
+			// f(x,y) = -a*exp(-b*sqrt((x²+y²)/2)) - exp((cos(c*x)+cos(c*y))/2) + a + e
+			// where a=20, b=0.2, c=2π
+			const x = 1;
+			const y = 0.5;
+			const a = 20;
+			const b = 0.2;
+			const c = 2 * Math.PI;
+			const expected =
+				-a * Math.exp(-b * Math.sqrt((x * x + y * y) / 2)) -
+				Math.exp((Math.cos(c * x) + Math.cos(c * y)) / 2) +
+				a +
+				Math.E;
+
+			expect(ackleyFunction(x, y)).toBeCloseTo(expected, 10);
+		});
+
+		test("should be symmetric", () => {
+			// Ackley function should be symmetric around origin
+			expect(ackleyFunction(2, 1)).toBeCloseTo(ackleyFunction(-2, 1), 10);
+			expect(ackleyFunction(1, 2)).toBeCloseTo(ackleyFunction(1, -2), 10);
+			expect(ackleyFunction(2, 1)).toBeCloseTo(ackleyFunction(1, 2), 10);
+		});
+	});
+
 	describe("OBJECTIVE_FUNCTIONS constant", () => {
 		test("should contain all expected function types", () => {
 			expect(OBJECTIVE_FUNCTIONS).toHaveProperty("sphere");
 			expect(OBJECTIVE_FUNCTIONS).toHaveProperty("rosenbrock");
-			expect(Object.keys(OBJECTIVE_FUNCTIONS)).toHaveLength(2);
+			expect(OBJECTIVE_FUNCTIONS).toHaveProperty("ackley");
+			expect(Object.keys(OBJECTIVE_FUNCTIONS)).toHaveLength(3);
 		});
 
 		test("should have correct structure for each function", () => {
-			const functionTypes: FunctionType[] = ["sphere", "rosenbrock"];
+			const functionTypes: FunctionType[] = ["sphere", "rosenbrock", "ackley"];
 
 			functionTypes.forEach((type) => {
 				const func = OBJECTIVE_FUNCTIONS[type];
@@ -101,6 +152,11 @@ describe("Objective Functions", () => {
 			expect(rosenbrock.bounds.min).toBeLessThan(rosenbrock.bounds.max);
 			expect(typeof rosenbrock.bounds.min).toBe("number");
 			expect(typeof rosenbrock.bounds.max).toBe("number");
+
+			const ackley = OBJECTIVE_FUNCTIONS.ackley;
+			expect(ackley.bounds.min).toBeLessThan(ackley.bounds.max);
+			expect(typeof ackley.bounds.min).toBe("number");
+			expect(typeof ackley.bounds.max).toBe("number");
 		});
 
 		test("should have non-empty contour levels", () => {
@@ -110,6 +166,9 @@ describe("Objective Functions", () => {
 			expect(
 				OBJECTIVE_FUNCTIONS.rosenbrock.contourLevels.length,
 			).toBeGreaterThan(0);
+			expect(
+				OBJECTIVE_FUNCTIONS.ackley.contourLevels.length,
+			).toBeGreaterThan(0);
 
 			// Contour levels should be positive numbers
 			OBJECTIVE_FUNCTIONS.sphere.contourLevels.forEach((level) => {
@@ -118,11 +177,15 @@ describe("Objective Functions", () => {
 			OBJECTIVE_FUNCTIONS.rosenbrock.contourLevels.forEach((level) => {
 				expect(level).toBeGreaterThan(0);
 			});
+			OBJECTIVE_FUNCTIONS.ackley.contourLevels.forEach((level) => {
+				expect(level).toBeGreaterThan(0);
+			});
 		});
 
 		test("should have appropriate function names", () => {
 			expect(OBJECTIVE_FUNCTIONS.sphere.name).toBe("Sphere Function");
 			expect(OBJECTIVE_FUNCTIONS.rosenbrock.name).toBe("Rosenbrock Function");
+			expect(OBJECTIVE_FUNCTIONS.ackley.name).toBe("Ackley Function");
 		});
 	});
 
@@ -139,21 +202,35 @@ describe("Objective Functions", () => {
 			expect(rosenbrockObj.name).toBe("Rosenbrock Function");
 		});
 
+		test("should return correct function object for ackley", () => {
+			const ackleyObj = getObjectiveFunction("ackley");
+			expect(ackleyObj).toBe(OBJECTIVE_FUNCTIONS.ackley);
+			expect(ackleyObj.name).toBe("Ackley Function");
+		});
+
 		test("should return functional calculation function", () => {
 			const sphereObj = getObjectiveFunction("sphere");
 			expect(sphereObj.fn(3, 4)).toBe(25);
 
 			const rosenbrockObj = getObjectiveFunction("rosenbrock");
 			expect(rosenbrockObj.fn(1, 1)).toBe(0);
+
+			const ackleyObj = getObjectiveFunction("ackley");
+			expect(ackleyObj.fn(0, 0)).toBeCloseTo(0, 10);
 		});
 
 		test("should return different objects for different function types", () => {
 			const sphereObj = getObjectiveFunction("sphere");
 			const rosenbrockObj = getObjectiveFunction("rosenbrock");
+			const ackleyObj = getObjectiveFunction("ackley");
 
 			expect(sphereObj).not.toBe(rosenbrockObj);
+			expect(sphereObj).not.toBe(ackleyObj);
+			expect(rosenbrockObj).not.toBe(ackleyObj);
 			expect(sphereObj.bounds).not.toEqual(rosenbrockObj.bounds);
+			expect(sphereObj.bounds).not.toEqual(ackleyObj.bounds);
 			expect(sphereObj.contourLevels).not.toEqual(rosenbrockObj.contourLevels);
+			expect(sphereObj.contourLevels).not.toEqual(ackleyObj.contourLevels);
 		});
 	});
 });

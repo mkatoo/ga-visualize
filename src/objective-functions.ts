@@ -1,4 +1,4 @@
-export type FunctionType = "sphere" | "rosenbrock";
+export type FunctionType = "sphere" | "rosenbrock" | "ackley";
 
 export interface ObjectiveFunction {
 	name: string;
@@ -23,6 +23,22 @@ export const OBJECTIVE_FUNCTIONS: Record<FunctionType, ObjectiveFunction> = {
 		},
 		bounds: { min: -2, max: 2 },
 		contourLevels: [0.5, 1, 2, 4, 6, 10, 15, 25, 35, 50, 70, 100, 150, 200],
+	},
+	ackley: {
+		name: "Ackley Function",
+		fn: (x: number, y: number): number => {
+			const a = 20;
+			const b = 0.2;
+			const c = 2 * Math.PI;
+			return (
+				-a * Math.exp(-b * Math.sqrt((x * x + y * y) / 2)) -
+				Math.exp((Math.cos(c * x) + Math.cos(c * y)) / 2) +
+				a +
+				Math.E
+			);
+		},
+		bounds: { min: -5, max: 5 },
+		contourLevels: [0.5, 1, 2, 3, 5, 7, 10, 13, 16, 20],
 	},
 };
 
