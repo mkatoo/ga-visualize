@@ -73,7 +73,7 @@ describe("Objective Functions", () => {
 		test("should calculate known values correctly", () => {
 			// Global minimum at origin should be 0
 			expect(ackleyFunction(0, 0)).toBeCloseTo(0, 10);
-			
+
 			// Test some other known approximate values
 			expect(ackleyFunction(1, 0)).toBeGreaterThan(2);
 			expect(ackleyFunction(0, 1)).toBeGreaterThan(2);
@@ -117,16 +117,83 @@ describe("Objective Functions", () => {
 		});
 	});
 
+	describe("Rastrigin Function", () => {
+		const rastriginFunction = OBJECTIVE_FUNCTIONS.rastrigin.fn;
+
+		test("should calculate known values correctly", () => {
+			// Global minimum at origin should be 0
+			expect(rastriginFunction(0, 0)).toBe(0);
+
+			// Test some other known values
+			expect(rastriginFunction(1, 0)).toBeCloseTo(1, 10);
+			expect(rastriginFunction(0, 1)).toBeCloseTo(1, 10);
+			expect(rastriginFunction(1, 1)).toBeCloseTo(2, 10);
+			expect(rastriginFunction(-1, -1)).toBeCloseTo(2, 10);
+		});
+
+		test("should have global minimum at origin", () => {
+			const globalMin = rastriginFunction(0, 0);
+			expect(globalMin).toBe(0);
+
+			// Test that nearby points have higher values
+			expect(rastriginFunction(0.1, 0)).toBeGreaterThan(globalMin);
+			expect(rastriginFunction(0, 0.1)).toBeGreaterThan(globalMin);
+			expect(rastriginFunction(0.1, 0.1)).toBeGreaterThan(globalMin);
+			expect(rastriginFunction(-0.1, -0.1)).toBeGreaterThan(globalMin);
+		});
+
+		test("should implement standard Rastrigin formula", () => {
+			// f(x,y) = A*n + (x² - A*cos(2π*x)) + (y² - A*cos(2π*y))
+			// where A=10, n=2
+			const x = 1.5;
+			const y = 0.7;
+			const A = 10;
+			const n = 2;
+			const expected =
+				A * n +
+				(x * x - A * Math.cos(2 * Math.PI * x)) +
+				(y * y - A * Math.cos(2 * Math.PI * y));
+
+			expect(rastriginFunction(x, y)).toBeCloseTo(expected, 10);
+		});
+
+		test("should be symmetric", () => {
+			// Rastrigin function should be symmetric around origin
+			expect(rastriginFunction(2, 1)).toBeCloseTo(rastriginFunction(-2, 1), 10);
+			expect(rastriginFunction(1, 2)).toBeCloseTo(rastriginFunction(1, -2), 10);
+			expect(rastriginFunction(2, 1)).toBeCloseTo(rastriginFunction(1, 2), 10);
+		});
+
+		test("should have multiple local minima", () => {
+			// Rastrigin function is known for having many local minima
+			// Test that it has local minima at integer coordinates other than origin
+			const localMin1 = rastriginFunction(1, 0);
+			const localMin2 = rastriginFunction(0, 1);
+			const localMin3 = rastriginFunction(1, 1);
+
+			// These should be local minima (lower than nearby non-integer points)
+			expect(localMin1).toBeLessThan(rastriginFunction(1.2, 0));
+			expect(localMin2).toBeLessThan(rastriginFunction(0, 1.2));
+			expect(localMin3).toBeLessThan(rastriginFunction(1.2, 1.2));
+		});
+	});
+
 	describe("OBJECTIVE_FUNCTIONS constant", () => {
 		test("should contain all expected function types", () => {
 			expect(OBJECTIVE_FUNCTIONS).toHaveProperty("sphere");
 			expect(OBJECTIVE_FUNCTIONS).toHaveProperty("rosenbrock");
 			expect(OBJECTIVE_FUNCTIONS).toHaveProperty("ackley");
-			expect(Object.keys(OBJECTIVE_FUNCTIONS)).toHaveLength(3);
+			expect(OBJECTIVE_FUNCTIONS).toHaveProperty("rastrigin");
+			expect(Object.keys(OBJECTIVE_FUNCTIONS)).toHaveLength(4);
 		});
 
 		test("should have correct structure for each function", () => {
-			const functionTypes: FunctionType[] = ["sphere", "rosenbrock", "ackley"];
+			const functionTypes: FunctionType[] = [
+				"sphere",
+				"rosenbrock",
+				"ackley",
+				"rastrigin",
+			];
 
 			functionTypes.forEach((type) => {
 				const func = OBJECTIVE_FUNCTIONS[type];
@@ -157,6 +224,11 @@ describe("Objective Functions", () => {
 			expect(ackley.bounds.min).toBeLessThan(ackley.bounds.max);
 			expect(typeof ackley.bounds.min).toBe("number");
 			expect(typeof ackley.bounds.max).toBe("number");
+
+			const rastrigin = OBJECTIVE_FUNCTIONS.rastrigin;
+			expect(rastrigin.bounds.min).toBeLessThan(rastrigin.bounds.max);
+			expect(typeof rastrigin.bounds.min).toBe("number");
+			expect(typeof rastrigin.bounds.max).toBe("number");
 		});
 
 		test("should have non-empty contour levels", () => {
@@ -166,8 +238,11 @@ describe("Objective Functions", () => {
 			expect(
 				OBJECTIVE_FUNCTIONS.rosenbrock.contourLevels.length,
 			).toBeGreaterThan(0);
+			expect(OBJECTIVE_FUNCTIONS.ackley.contourLevels.length).toBeGreaterThan(
+				0,
+			);
 			expect(
-				OBJECTIVE_FUNCTIONS.ackley.contourLevels.length,
+				OBJECTIVE_FUNCTIONS.rastrigin.contourLevels.length,
 			).toBeGreaterThan(0);
 
 			// Contour levels should be positive numbers
@@ -180,12 +255,16 @@ describe("Objective Functions", () => {
 			OBJECTIVE_FUNCTIONS.ackley.contourLevels.forEach((level) => {
 				expect(level).toBeGreaterThan(0);
 			});
+			OBJECTIVE_FUNCTIONS.rastrigin.contourLevels.forEach((level) => {
+				expect(level).toBeGreaterThan(0);
+			});
 		});
 
 		test("should have appropriate function names", () => {
 			expect(OBJECTIVE_FUNCTIONS.sphere.name).toBe("Sphere Function");
 			expect(OBJECTIVE_FUNCTIONS.rosenbrock.name).toBe("Rosenbrock Function");
 			expect(OBJECTIVE_FUNCTIONS.ackley.name).toBe("Ackley Function");
+			expect(OBJECTIVE_FUNCTIONS.rastrigin.name).toBe("Rastrigin Function");
 		});
 	});
 
@@ -208,6 +287,12 @@ describe("Objective Functions", () => {
 			expect(ackleyObj.name).toBe("Ackley Function");
 		});
 
+		test("should return correct function object for rastrigin", () => {
+			const rastriginObj = getObjectiveFunction("rastrigin");
+			expect(rastriginObj).toBe(OBJECTIVE_FUNCTIONS.rastrigin);
+			expect(rastriginObj.name).toBe("Rastrigin Function");
+		});
+
 		test("should return functional calculation function", () => {
 			const sphereObj = getObjectiveFunction("sphere");
 			expect(sphereObj.fn(3, 4)).toBe(25);
@@ -217,20 +302,29 @@ describe("Objective Functions", () => {
 
 			const ackleyObj = getObjectiveFunction("ackley");
 			expect(ackleyObj.fn(0, 0)).toBeCloseTo(0, 10);
+
+			const rastriginObj = getObjectiveFunction("rastrigin");
+			expect(rastriginObj.fn(0, 0)).toBe(0);
 		});
 
 		test("should return different objects for different function types", () => {
 			const sphereObj = getObjectiveFunction("sphere");
 			const rosenbrockObj = getObjectiveFunction("rosenbrock");
 			const ackleyObj = getObjectiveFunction("ackley");
+			const rastriginObj = getObjectiveFunction("rastrigin");
 
 			expect(sphereObj).not.toBe(rosenbrockObj);
 			expect(sphereObj).not.toBe(ackleyObj);
+			expect(sphereObj).not.toBe(rastriginObj);
 			expect(rosenbrockObj).not.toBe(ackleyObj);
+			expect(rosenbrockObj).not.toBe(rastriginObj);
+			expect(ackleyObj).not.toBe(rastriginObj);
 			expect(sphereObj.bounds).not.toEqual(rosenbrockObj.bounds);
 			expect(sphereObj.bounds).not.toEqual(ackleyObj.bounds);
+			expect(sphereObj.bounds).not.toEqual(rastriginObj.bounds);
 			expect(sphereObj.contourLevels).not.toEqual(rosenbrockObj.contourLevels);
 			expect(sphereObj.contourLevels).not.toEqual(ackleyObj.contourLevels);
+			expect(sphereObj.contourLevels).not.toEqual(rastriginObj.contourLevels);
 		});
 	});
 });

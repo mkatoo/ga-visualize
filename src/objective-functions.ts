@@ -1,4 +1,4 @@
-export type FunctionType = "sphere" | "rosenbrock" | "ackley";
+export type FunctionType = "sphere" | "rosenbrock" | "ackley" | "rastrigin";
 
 export interface ObjectiveFunction {
 	name: string;
@@ -39,6 +39,20 @@ export const OBJECTIVE_FUNCTIONS: Record<FunctionType, ObjectiveFunction> = {
 		},
 		bounds: { min: -5, max: 5 },
 		contourLevels: [0.5, 1, 2, 3, 5, 7, 10, 13, 16, 20],
+	},
+	rastrigin: {
+		name: "Rastrigin Function",
+		fn: (x: number, y: number): number => {
+			const A = 10;
+			const n = 2;
+			return (
+				A * n +
+				(x * x - A * Math.cos(2 * Math.PI * x)) +
+				(y * y - A * Math.cos(2 * Math.PI * y))
+			);
+		},
+		bounds: { min: -5.12, max: 5.12 },
+		contourLevels: [0.5, 1, 2, 5, 10, 20, 30, 40, 50, 60, 80, 100],
 	},
 };
 
