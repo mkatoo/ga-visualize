@@ -7,6 +7,8 @@
 - **複数の最適化関数**:
   - **Sphere関数**: f(x,y) = x² + y² の最小値探索
   - **Rosenbrock関数**: f(x,y) = (1-x)² + 100(y-x²)² の最小値探索
+  - **Ackley関数**: f(x,y) = -20·exp(-0.2·√((x²+y²)/2)) - exp((cos(2πx)+cos(2πy))/2) + 20 + e の最小値探索
+  - **Rastrigin関数**: f(x,y) = 20 + x² - 10·cos(2πx) + y² - 10·cos(2πy) の最小値探索
 - **リアルタイム可視化**: 世代ごとの個体分布と収束過程を2Dグラフで表示
 - **等高線表示**: 選択した関数の等高線を背景に表示
 - **統計情報**: 最良適応度・平均適応度の推移をグラフで表示
@@ -22,6 +24,8 @@
 - **変数範囲**:
   - Sphere関数: x, y ∈ [-10, 10]
   - Rosenbrock関数: x, y ∈ [-2, 2]
+  - Ackley関数: x, y ∈ [-5, 5]
+  - Rastrigin関数: x, y ∈ [-5.12, 5.12]
 - **選択手法**: トーナメント選択（サイズ: 3）
 - **交叉手法**: BLX-α交叉（α = 0.5）
 - **突然変異**: ガウシアン変異（突然変異率: 0.1）
@@ -71,7 +75,7 @@ npm run check:fix     # 自動修正
 ## 使い方
 
 ### 基本操作
-1. **最適化関数の選択**: ドロップダウンからSphere関数またはRosenbrock関数を選択
+1. **最適化関数の選択**: ドロップダウンから最適化関数を選択
 2. **パラメータ設定**:
    - 個体数（1-1000）
    - 世代数（1-1000）
@@ -106,6 +110,8 @@ npm run check:fix     # 自動修正
 src/
 ├── genetic-algorithm.ts      # 遺伝的アルゴリズムの実装
 ├── genetic-algorithm.test.ts # 単体テスト
+├── objective-functions.ts    # 最適化関数の定義
+├── objective-functions.test.ts # 最適化関数の単体テスト
 ├── visualizer.tsx            # Canvas可視化コンポーネント
 ├── ga-app.tsx               # メインアプリケーション
 ├── ga-app.css               # スタイルシート
@@ -122,7 +128,7 @@ src/
 - `mutationRate`: 突然変異率（0.0-1.0、デフォルト: 0.1）
 - `crossoverRate`: 交叉率（0.0-1.0、デフォルト: 0.8）
 - `tournamentSize`: トーナメントサイズ（デフォルト: 3）
-- `functionType`: 最適化関数（"sphere" | "rosenbrock"）
+- `functionType`: 最適化関数
 - `bounds`: 変数の範囲（関数タイプに応じて自動設定）
 
 ### UI制約
