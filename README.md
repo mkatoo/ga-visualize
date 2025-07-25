@@ -2,7 +2,7 @@
 
 2次元実数値関数の最適化問題を遺伝的アルゴリズムで解き、その収束過程をリアルタイムで可視化するWebアプリケーションです。
 
-**[https://mkatoo.github.io/ga-visualize/index.html](https://mkatoo.github.io/ga-visualize/index.html)**
+**[https://mkatoo.github.io/ga-visualize/](https://mkatoo.github.io/ga-visualize/)**
 
 ## 特徴
 
