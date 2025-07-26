@@ -1,4 +1,9 @@
-export type FunctionType = "sphere" | "rosenbrock" | "ackley" | "rastrigin";
+export type FunctionType =
+	| "sphere"
+	| "rosenbrock"
+	| "ackley"
+	| "rastrigin"
+	| "beale";
 
 export interface ObjectiveFunction {
 	name: string;
@@ -53,6 +58,17 @@ export const OBJECTIVE_FUNCTIONS: Record<FunctionType, ObjectiveFunction> = {
 		},
 		bounds: { min: -5.12, max: 5.12 },
 		contourLevels: [0.5, 1, 2, 5, 10, 20, 30, 40, 50, 60, 80, 100],
+	},
+	beale: {
+		name: "Beale Function",
+		fn: (x: number, y: number): number => {
+			const term1 = (1.5 - x + x * y) ** 2;
+			const term2 = (2.25 - x + x * y * y) ** 2;
+			const term3 = (2.625 - x + x * y * y * y) ** 2;
+			return term1 + term2 + term3;
+		},
+		bounds: { min: -4.5, max: 4.5 },
+		contourLevels: [0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000],
 	},
 };
 

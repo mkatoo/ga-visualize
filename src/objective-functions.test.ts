@@ -178,13 +178,65 @@ describe("Objective Functions", () => {
 		});
 	});
 
+	describe("Beale Function", () => {
+		const bealeFunction = OBJECTIVE_FUNCTIONS.beale.fn;
+
+		test("should calculate known values correctly", () => {
+			// Global minimum at (3, 0.5) should be 0
+			expect(bealeFunction(3, 0.5)).toBeCloseTo(0, 10);
+
+			// Test some other known values
+			expect(bealeFunction(0, 0)).toBeCloseTo(14.203125, 6);
+			expect(bealeFunction(1, 1)).toBeCloseTo(14.203125, 6);
+			expect(bealeFunction(2, 2)).toBeCloseTo(356.703125, 6);
+		});
+
+		test("should have global minimum at (3, 0.5)", () => {
+			const globalMin = bealeFunction(3, 0.5);
+			expect(globalMin).toBeCloseTo(0, 10);
+
+			// Test that nearby points have higher values
+			expect(bealeFunction(3.1, 0.5)).toBeGreaterThan(globalMin);
+			expect(bealeFunction(2.9, 0.5)).toBeGreaterThan(globalMin);
+			expect(bealeFunction(3, 0.6)).toBeGreaterThan(globalMin);
+			expect(bealeFunction(3, 0.4)).toBeGreaterThan(globalMin);
+		});
+
+		test("should implement standard Beale formula", () => {
+			// f(x,y) = (1.5-x+xy)² + (2.25-x+xy²)² + (2.625-x+xy³)²
+			const x = 1.5;
+			const y = 0.7;
+			const term1 = (1.5 - x + x * y) ** 2;
+			const term2 = (2.25 - x + x * y * y) ** 2;
+			const term3 = (2.625 - x + x * y * y * y) ** 2;
+			const expected = term1 + term2 + term3;
+
+			expect(bealeFunction(x, y)).toBeCloseTo(expected, 10);
+		});
+
+		test("should have narrow valley structure", () => {
+			// Beale function is known for having a narrow valley leading to the global minimum
+			// Test that the function has high gradients perpendicular to the valley
+			const valleyPoint1 = bealeFunction(2.5, 0.4);
+			const valleyPoint2 = bealeFunction(3.5, 0.6);
+
+			// Points off the valley should have much higher values
+			const offValley1 = bealeFunction(2.5, 1.0);
+			const offValley2 = bealeFunction(3.5, 1.0);
+
+			expect(offValley1).toBeGreaterThan(valleyPoint1 * 2);
+			expect(offValley2).toBeGreaterThan(valleyPoint2 * 2);
+		});
+	});
+
 	describe("OBJECTIVE_FUNCTIONS constant", () => {
 		test("should contain all expected function types", () => {
 			expect(OBJECTIVE_FUNCTIONS).toHaveProperty("sphere");
 			expect(OBJECTIVE_FUNCTIONS).toHaveProperty("rosenbrock");
 			expect(OBJECTIVE_FUNCTIONS).toHaveProperty("ackley");
 			expect(OBJECTIVE_FUNCTIONS).toHaveProperty("rastrigin");
-			expect(Object.keys(OBJECTIVE_FUNCTIONS)).toHaveLength(4);
+			expect(OBJECTIVE_FUNCTIONS).toHaveProperty("beale");
+			expect(Object.keys(OBJECTIVE_FUNCTIONS)).toHaveLength(5);
 		});
 
 		test("should have correct structure for each function", () => {
@@ -193,6 +245,7 @@ describe("Objective Functions", () => {
 				"rosenbrock",
 				"ackley",
 				"rastrigin",
+				"beale",
 			];
 
 			functionTypes.forEach((type) => {
@@ -229,6 +282,11 @@ describe("Objective Functions", () => {
 			expect(rastrigin.bounds.min).toBeLessThan(rastrigin.bounds.max);
 			expect(typeof rastrigin.bounds.min).toBe("number");
 			expect(typeof rastrigin.bounds.max).toBe("number");
+
+			const beale = OBJECTIVE_FUNCTIONS.beale;
+			expect(beale.bounds.min).toBeLessThan(beale.bounds.max);
+			expect(typeof beale.bounds.min).toBe("number");
+			expect(typeof beale.bounds.max).toBe("number");
 		});
 
 		test("should have non-empty contour levels", () => {
@@ -244,6 +302,7 @@ describe("Objective Functions", () => {
 			expect(
 				OBJECTIVE_FUNCTIONS.rastrigin.contourLevels.length,
 			).toBeGreaterThan(0);
+			expect(OBJECTIVE_FUNCTIONS.beale.contourLevels.length).toBeGreaterThan(0);
 
 			// Contour levels should be positive numbers
 			OBJECTIVE_FUNCTIONS.sphere.contourLevels.forEach((level) => {
@@ -258,6 +317,9 @@ describe("Objective Functions", () => {
 			OBJECTIVE_FUNCTIONS.rastrigin.contourLevels.forEach((level) => {
 				expect(level).toBeGreaterThan(0);
 			});
+			OBJECTIVE_FUNCTIONS.beale.contourLevels.forEach((level) => {
+				expect(level).toBeGreaterThan(0);
+			});
 		});
 
 		test("should have appropriate function names", () => {
@@ -265,6 +327,7 @@ describe("Objective Functions", () => {
 			expect(OBJECTIVE_FUNCTIONS.rosenbrock.name).toBe("Rosenbrock Function");
 			expect(OBJECTIVE_FUNCTIONS.ackley.name).toBe("Ackley Function");
 			expect(OBJECTIVE_FUNCTIONS.rastrigin.name).toBe("Rastrigin Function");
+			expect(OBJECTIVE_FUNCTIONS.beale.name).toBe("Beale Function");
 		});
 	});
 
@@ -293,6 +356,12 @@ describe("Objective Functions", () => {
 			expect(rastriginObj.name).toBe("Rastrigin Function");
 		});
 
+		test("should return correct function object for beale", () => {
+			const bealeObj = getObjectiveFunction("beale");
+			expect(bealeObj).toBe(OBJECTIVE_FUNCTIONS.beale);
+			expect(bealeObj.name).toBe("Beale Function");
+		});
+
 		test("should return functional calculation function", () => {
 			const sphereObj = getObjectiveFunction("sphere");
 			expect(sphereObj.fn(3, 4)).toBe(25);
@@ -305,6 +374,9 @@ describe("Objective Functions", () => {
 
 			const rastriginObj = getObjectiveFunction("rastrigin");
 			expect(rastriginObj.fn(0, 0)).toBe(0);
+
+			const bealeObj = getObjectiveFunction("beale");
+			expect(bealeObj.fn(3, 0.5)).toBeCloseTo(0, 10);
 		});
 
 		test("should return different objects for different function types", () => {
@@ -312,19 +384,26 @@ describe("Objective Functions", () => {
 			const rosenbrockObj = getObjectiveFunction("rosenbrock");
 			const ackleyObj = getObjectiveFunction("ackley");
 			const rastriginObj = getObjectiveFunction("rastrigin");
+			const bealeObj = getObjectiveFunction("beale");
 
 			expect(sphereObj).not.toBe(rosenbrockObj);
 			expect(sphereObj).not.toBe(ackleyObj);
 			expect(sphereObj).not.toBe(rastriginObj);
+			expect(sphereObj).not.toBe(bealeObj);
 			expect(rosenbrockObj).not.toBe(ackleyObj);
 			expect(rosenbrockObj).not.toBe(rastriginObj);
+			expect(rosenbrockObj).not.toBe(bealeObj);
 			expect(ackleyObj).not.toBe(rastriginObj);
+			expect(ackleyObj).not.toBe(bealeObj);
+			expect(rastriginObj).not.toBe(bealeObj);
 			expect(sphereObj.bounds).not.toEqual(rosenbrockObj.bounds);
 			expect(sphereObj.bounds).not.toEqual(ackleyObj.bounds);
 			expect(sphereObj.bounds).not.toEqual(rastriginObj.bounds);
+			expect(sphereObj.bounds).not.toEqual(bealeObj.bounds);
 			expect(sphereObj.contourLevels).not.toEqual(rosenbrockObj.contourLevels);
 			expect(sphereObj.contourLevels).not.toEqual(ackleyObj.contourLevels);
 			expect(sphereObj.contourLevels).not.toEqual(rastriginObj.contourLevels);
+			expect(sphereObj.contourLevels).not.toEqual(bealeObj.contourLevels);
 		});
 	});
 });
