@@ -105,11 +105,10 @@ export class GeneticAlgorithm {
 			fitness: 0,
 		};
 
-		const { min, max } = this.config.bounds;
-		child1.x = Math.max(min, Math.min(max, child1.x));
-		child1.y = Math.max(min, Math.min(max, child1.y));
-		child2.x = Math.max(min, Math.min(max, child2.x));
-		child2.y = Math.max(min, Math.min(max, child2.y));
+		child1.x = this.clampToBounds(child1.x);
+		child1.y = this.clampToBounds(child1.y);
+		child2.x = this.clampToBounds(child2.x);
+		child2.y = this.clampToBounds(child2.y);
 
 		return [child1, child2];
 	}
@@ -122,12 +121,16 @@ export class GeneticAlgorithm {
 			mutated.x += this.gaussianRandom() * sigma;
 			mutated.y += this.gaussianRandom() * sigma;
 
-			const { min, max } = this.config.bounds;
-			mutated.x = Math.max(min, Math.min(max, mutated.x));
-			mutated.y = Math.max(min, Math.min(max, mutated.y));
+			mutated.x = this.clampToBounds(mutated.x);
+			mutated.y = this.clampToBounds(mutated.y);
 		}
 
 		return mutated;
+	}
+
+	private clampToBounds(value: number): number {
+		const { min, max } = this.config.bounds;
+		return Math.max(min, Math.min(max, value));
 	}
 
 	private gaussianRandom(): number {
