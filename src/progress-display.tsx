@@ -4,7 +4,8 @@ interface ProgressDisplayProps {
 }
 
 export function ProgressDisplay(props: ProgressDisplayProps) {
-	const progressPercentage = (props.currentGeneration / props.totalGenerations) * 100;
+	const progressPercentage =
+		(props.currentGeneration / props.totalGenerations) * 100;
 
 	return (
 		<div class="progress">

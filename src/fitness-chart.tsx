@@ -12,37 +12,13 @@ export function FitnessChart(props: FitnessChartProps) {
 				<svg width="300" height="200" viewBox="0 0 300 200">
 					<title>遺伝的アルゴリズムの適応度推移グラフ</title>
 					<defs>
-						<linearGradient
-							id="bestGradient"
-							x1="0%"
-							y1="0%"
-							x2="0%"
-							y2="100%"
-						>
-							<stop
-								offset="0%"
-								style="stop-color:#ff6b6b;stop-opacity:0.3"
-							/>
-							<stop
-								offset="100%"
-								style="stop-color:#ff6b6b;stop-opacity:0.1"
-							/>
+						<linearGradient id="bestGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+							<stop offset="0%" style="stop-color:#ff6b6b;stop-opacity:0.3" />
+							<stop offset="100%" style="stop-color:#ff6b6b;stop-opacity:0.1" />
 						</linearGradient>
-						<linearGradient
-							id="avgGradient"
-							x1="0%"
-							y1="0%"
-							x2="0%"
-							y2="100%"
-						>
-							<stop
-								offset="0%"
-								style="stop-color:#4ecdc4;stop-opacity:0.3"
-							/>
-							<stop
-								offset="100%"
-								style="stop-color:#4ecdc4;stop-opacity:0.1"
-							/>
+						<linearGradient id="avgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+							<stop offset="0%" style="stop-color:#4ecdc4;stop-opacity:0.3" />
+							<stop offset="100%" style="stop-color:#4ecdc4;stop-opacity:0.1" />
 						</linearGradient>
 					</defs>
 
@@ -58,9 +34,7 @@ export function FitnessChart(props: FitnessChartProps) {
 									points={props.bestFitness
 										.map((fitness, i) => {
 											const x = 30 + (i / (props.totalGenerations - 1)) * 250;
-											const maxFitness = Math.max(
-												...props.averageFitness,
-											);
+											const maxFitness = Math.max(...props.averageFitness);
 											const y = 170 - (fitness / maxFitness) * 150;
 											return `${x},${y}`;
 										})
@@ -73,9 +47,7 @@ export function FitnessChart(props: FitnessChartProps) {
 									points={props.averageFitness
 										.map((fitness, i) => {
 											const x = 30 + (i / (props.totalGenerations - 1)) * 250;
-											const maxFitness = Math.max(
-												...props.averageFitness,
-											);
+											const maxFitness = Math.max(...props.averageFitness);
 											const y = 170 - (fitness / maxFitness) * 150;
 											return `${x},${y}`;
 										})
@@ -105,17 +77,11 @@ export function FitnessChart(props: FitnessChartProps) {
 				</svg>
 				<div class="legend">
 					<div class="legend-item">
-						<span
-							class="legend-color"
-							style="background-color: #ff6b6b"
-						></span>
+						<span class="legend-color" style="background-color: #ff6b6b"></span>
 						最良適応度
 					</div>
 					<div class="legend-item">
-						<span
-							class="legend-color"
-							style="background-color: #4ecdc4"
-						></span>
+						<span class="legend-color" style="background-color: #4ecdc4"></span>
 						平均適応度
 					</div>
 				</div>

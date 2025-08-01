@@ -1,13 +1,10 @@
 import { createSignal, onCleanup } from "solid-js";
-import { DEFAULT_CONFIG, GeneticAlgorithm } from "./genetic-algorithm";
-import {
-	type FunctionType,
-	getObjectiveFunction,
-} from "./objective-functions";
-import { Visualizer } from "./visualizer";
 import { ControlPanel } from "./control-panel";
-import { ProgressDisplay } from "./progress-display";
 import { FitnessChart } from "./fitness-chart";
+import { DEFAULT_CONFIG, GeneticAlgorithm } from "./genetic-algorithm";
+import { type FunctionType, getObjectiveFunction } from "./objective-functions";
+import { ProgressDisplay } from "./progress-display";
+import { Visualizer } from "./visualizer";
 import "./ga-app.css";
 
 const MIN_POPULATION_SIZE = 1;

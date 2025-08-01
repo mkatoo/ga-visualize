@@ -8,7 +8,7 @@ interface ControlPanelProps {
 	populationSize: number;
 	generations: number;
 	animationSpeed: number;
-	
+
 	// Event handlers
 	onStart: () => void;
 	onStop: () => void;
@@ -20,7 +20,7 @@ interface ControlPanelProps {
 	onGenerationsChange: (event: Event) => void;
 	onGenerationsBlur: (event: Event) => void;
 	onSpeedChange: (event: Event) => void;
-	
+
 	// Constants
 	minPopulationSize: number;
 	maxPopulationSize: number;
