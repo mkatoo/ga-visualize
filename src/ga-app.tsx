@@ -1,10 +1,4 @@
 import { createSignal, onCleanup } from "solid-js";
-import { ControlPanel } from "./control-panel";
-import { FitnessChart } from "./fitness-chart";
-import { DEFAULT_CONFIG, GeneticAlgorithm } from "./genetic-algorithm";
-import { type FunctionType, getObjectiveFunction } from "./objective-functions";
-import { ProgressDisplay } from "./progress-display";
-import { Visualizer } from "./visualizer";
 import {
 	DEFAULT_ANIMATION_SPEED,
 	DEFAULT_FUNCTION_TYPE,
@@ -15,13 +9,22 @@ import {
 	MIN_GENERATIONS,
 	MIN_POPULATION_SIZE,
 } from "./constants";
+import { ControlPanel } from "./control-panel";
+import { FitnessChart } from "./fitness-chart";
+import { DEFAULT_CONFIG, GeneticAlgorithm } from "./genetic-algorithm";
+import { type FunctionType, getObjectiveFunction } from "./objective-functions";
+import { ProgressDisplay } from "./progress-display";
+import { Visualizer } from "./visualizer";
 import "./ga-app.css";
 
-
 export function GAApp() {
-	const [populationSize, setPopulationSize] = createSignal(DEFAULT_POPULATION_SIZE);
+	const [populationSize, setPopulationSize] = createSignal(
+		DEFAULT_POPULATION_SIZE,
+	);
 	const [generations, setGenerations] = createSignal(DEFAULT_GENERATIONS);
-	const [functionType, setFunctionType] = createSignal<FunctionType>(DEFAULT_FUNCTION_TYPE);
+	const [functionType, setFunctionType] = createSignal<FunctionType>(
+		DEFAULT_FUNCTION_TYPE,
+	);
 
 	const getBoundsForFunction = (type: FunctionType) => {
 		return getObjectiveFunction(type).bounds;
@@ -39,7 +42,9 @@ export function GAApp() {
 	const [population, setPopulation] = createSignal(ga().getPopulation());
 	const [statistics, setStatistics] = createSignal(ga().getStatistics());
 	const [isRunning, setIsRunning] = createSignal(false);
-	const [animationSpeed, setAnimationSpeed] = createSignal(DEFAULT_ANIMATION_SPEED);
+	const [animationSpeed, setAnimationSpeed] = createSignal(
+		DEFAULT_ANIMATION_SPEED,
+	);
 
 	let intervalId: number | null = null;
 

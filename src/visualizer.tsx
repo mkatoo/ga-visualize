@@ -1,8 +1,12 @@
 import { createEffect, createSignal, onMount } from "solid-js";
+import {
+	AXIS_LABEL_THRESHOLD,
+	CANVAS_SIZE,
+	CONTOUR_RESOLUTION,
+} from "./constants";
 import type { Individual } from "./genetic-algorithm";
 import type { FunctionType } from "./objective-functions";
 import { getObjectiveFunction } from "./objective-functions";
-import { CONTOUR_RESOLUTION, CANVAS_SIZE, AXIS_LABEL_THRESHOLD } from "./constants";
 
 interface VisualizerProps {
 	population: Individual[];

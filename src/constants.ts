@@ -1,7 +1,7 @@
 // 等高線計算用の定数
 export const CONTOUR_RESOLUTION = 80;
 
-// キャンバス描画用の定数  
+// キャンバス描画用の定数
 export const CANVAS_SIZE = 500;
 
 // アニメーション速度の定数
