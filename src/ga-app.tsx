@@ -5,17 +5,23 @@ import { DEFAULT_CONFIG, GeneticAlgorithm } from "./genetic-algorithm";
 import { type FunctionType, getObjectiveFunction } from "./objective-functions";
 import { ProgressDisplay } from "./progress-display";
 import { Visualizer } from "./visualizer";
+import {
+	DEFAULT_ANIMATION_SPEED,
+	DEFAULT_FUNCTION_TYPE,
+	DEFAULT_GENERATIONS,
+	DEFAULT_POPULATION_SIZE,
+	MAX_GENERATIONS,
+	MAX_POPULATION_SIZE,
+	MIN_GENERATIONS,
+	MIN_POPULATION_SIZE,
+} from "./constants";
 import "./ga-app.css";
 
-const MIN_POPULATION_SIZE = 1;
-const MAX_POPULATION_SIZE = 1000;
-const MIN_GENERATIONS = 1;
-const MAX_GENERATIONS = 1000;
 
 export function GAApp() {
-	const [populationSize, setPopulationSize] = createSignal(100);
-	const [generations, setGenerations] = createSignal(50);
-	const [functionType, setFunctionType] = createSignal<FunctionType>("sphere");
+	const [populationSize, setPopulationSize] = createSignal(DEFAULT_POPULATION_SIZE);
+	const [generations, setGenerations] = createSignal(DEFAULT_GENERATIONS);
+	const [functionType, setFunctionType] = createSignal<FunctionType>(DEFAULT_FUNCTION_TYPE);
 
 	const getBoundsForFunction = (type: FunctionType) => {
 		return getObjectiveFunction(type).bounds;
@@ -33,7 +39,7 @@ export function GAApp() {
 	const [population, setPopulation] = createSignal(ga().getPopulation());
 	const [statistics, setStatistics] = createSignal(ga().getStatistics());
 	const [isRunning, setIsRunning] = createSignal(false);
-	const [animationSpeed, setAnimationSpeed] = createSignal(500);
+	const [animationSpeed, setAnimationSpeed] = createSignal(DEFAULT_ANIMATION_SPEED);
 
 	let intervalId: number | null = null;
 

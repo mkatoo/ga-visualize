@@ -2,6 +2,7 @@ import { createEffect, createSignal, onMount } from "solid-js";
 import type { Individual } from "./genetic-algorithm";
 import type { FunctionType } from "./objective-functions";
 import { getObjectiveFunction } from "./objective-functions";
+import { CONTOUR_RESOLUTION, CANVAS_SIZE, AXIS_LABEL_THRESHOLD } from "./constants";
 
 interface VisualizerProps {
 	population: Individual[];
@@ -14,7 +15,7 @@ interface VisualizerProps {
 
 export function Visualizer(props: VisualizerProps) {
 	let canvasRef: HTMLCanvasElement | undefined;
-	const [canvasSize] = createSignal(500);
+	const [canvasSize] = createSignal(CANVAS_SIZE);
 
 	const drawContourLines = (ctx: CanvasRenderingContext2D) => {
 		const { min, max } = props.bounds;
@@ -27,7 +28,7 @@ export function Visualizer(props: VisualizerProps) {
 		const levels = objFunc.contourLevels;
 		const functionToUse = objFunc.fn;
 
-		const resolution = 80;
+		const resolution = CONTOUR_RESOLUTION;
 		const step = (max - min) / resolution;
 
 		// 座標と関数値のグリッドを作成
@@ -154,7 +155,7 @@ export function Visualizer(props: VisualizerProps) {
 			const value = min + i * step;
 			const pos = (i / 4) * size;
 
-			if (Math.abs(value) > 0.1) {
+			if (Math.abs(value) > AXIS_LABEL_THRESHOLD) {
 				ctx.fillText(value.toFixed(0), pos, size / 2 + 15);
 				ctx.fillText((-value).toFixed(0), size / 2 + 15, pos);
 			}
