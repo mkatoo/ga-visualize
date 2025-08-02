@@ -17,12 +17,147 @@ interface VisualizerProps {
 	functionType: FunctionType;
 }
 
+interface Point {
+	x: number;
+	y: number;
+}
+
+interface Segment {
+	start: Point;
+	end: Point;
+}
+
+// Utility function for linear interpolation to find contour intersections
+const interpolate = (
+	x1: number,
+	y1: number,
+	v1: number,
+	x2: number,
+	y2: number,
+	v2: number,
+	level: number,
+): Point | null => {
+	if (v1 === v2) return null;
+	const t = (level - v1) / (v2 - v1);
+	if (t < 0 || t > 1) return null;
+	return {
+		x: x1 + t * (x2 - x1),
+		y: y1 + t * (y2 - y1),
+	};
+};
+
+// Creates a grid of function values for contour line calculation
+const createFunctionGrid = (
+	objFunc: (x: number, y: number) => number,
+	bounds: { min: number; max: number },
+	resolution: number,
+): number[][] => {
+	const { min, max } = bounds;
+	const step = (max - min) / resolution;
+	const grid: number[][] = [];
+
+	for (let i = 0; i <= resolution; i++) {
+		grid[i] = [];
+		for (let j = 0; j <= resolution; j++) {
+			const x = min + i * step;
+			const y = min + j * step;
+			grid[i][j] = objFunc(x, y);
+		}
+	}
+
+	return grid;
+};
+
+// Finds contour line intersections for a specific level using marching squares algorithm
+const findContourIntersections = (
+	grid: number[][],
+	level: number,
+	bounds: { min: number; max: number },
+	resolution: number,
+): Segment[] => {
+	const { min, max } = bounds;
+	const step = (max - min) / resolution;
+	const segments: Segment[] = [];
+
+	// グリッドの各セルを処理
+	for (let i = 0; i < resolution; i++) {
+		for (let j = 0; j < resolution; j++) {
+			const x1 = min + i * step;
+			const y1 = min + j * step;
+			const x2 = min + (i + 1) * step;
+			const y2 = min + (j + 1) * step;
+
+			const v1 = grid[i][j]; // 左下
+			const v2 = grid[i + 1][j]; // 右下
+			const v3 = grid[i + 1][j + 1]; // 右上
+			const v4 = grid[i][j + 1]; // 左上
+
+			const intersections: Point[] = [];
+
+			// 各辺で等高線との交点をチェック
+			const bottom = interpolate(x1, y1, v1, x2, y1, v2, level);
+			const right = interpolate(x2, y1, v2, x2, y2, v3, level);
+			const top = interpolate(x2, y2, v3, x1, y2, v4, level);
+			const left = interpolate(x1, y2, v4, x1, y1, v1, level);
+
+			if (bottom) intersections.push(bottom);
+			if (right) intersections.push(right);
+			if (top) intersections.push(top);
+			if (left) intersections.push(left);
+
+			// 2つの交点がある場合、線分として追加
+			if (intersections.length === 2) {
+				segments.push({
+					start: intersections[0],
+					end: intersections[1],
+				});
+			}
+			// 4つの交点がある場合は特殊ケース（サドルポイント）
+			else if (intersections.length === 4) {
+				// 対角線で結ぶ
+				segments.push({
+					start: intersections[0],
+					end: intersections[1],
+				});
+				segments.push({
+					start: intersections[2],
+					end: intersections[3],
+				});
+			}
+		}
+	}
+
+	return segments;
+};
+
+// Draws contour line segments on the canvas
+const drawContourSegments = (
+	ctx: CanvasRenderingContext2D,
+	segments: Segment[],
+	bounds: { min: number; max: number },
+	canvasSize: number,
+): void => {
+	const { min, max } = bounds;
+
+	// 線分を描画
+	for (const segment of segments) {
+		const startX = ((segment.start.x - min) / (max - min)) * canvasSize;
+		const startY = ((segment.start.y - min) / (max - min)) * canvasSize;
+		const endX = ((segment.end.x - min) / (max - min)) * canvasSize;
+		const endY = ((segment.end.y - min) / (max - min)) * canvasSize;
+
+		ctx.beginPath();
+		ctx.moveTo(startX, startY);
+		ctx.lineTo(endX, endY);
+		ctx.stroke();
+	}
+};
+
 export function Visualizer(props: VisualizerProps) {
 	let canvasRef: HTMLCanvasElement | undefined;
 	const [canvasSize] = createSignal(CANVAS_SIZE);
 
 	const drawContourLines = (ctx: CanvasRenderingContext2D) => {
-		const { min, max } = props.bounds;
 		const size = canvasSize();
 
 		ctx.strokeStyle = "#e0e0e0";
@@ -33,105 +168,19 @@ export function Visualizer(props: VisualizerProps) {
 		const functionToUse = objFunc.fn;
 
 		const resolution = CONTOUR_RESOLUTION;
-		const step = (max - min) / resolution;
 
-		// 座標と関数値のグリッドを作成
-		const grid: number[][] = [];
-		for (let i = 0; i <= resolution; i++) {
-			grid[i] = [];
-			for (let j = 0; j <= resolution; j++) {
-				const x = min + i * step;
-				const y = min + j * step;
-				grid[i][j] = functionToUse(x, y);
-			}
-		}
+		// Create function value grid
+		const grid = createFunctionGrid(functionToUse, props.bounds, resolution);
 
-		// 線形補間で等高線の交点を計算
-		const interpolate = (
-			x1: number,
-			y1: number,
-			v1: number,
-			x2: number,
-			y2: number,
-			v2: number,
-			level: number,
-		) => {
-			if (v1 === v2) return null;
-			const t = (level - v1) / (v2 - v1);
-			if (t < 0 || t > 1) return null;
-			return {
-				x: x1 + t * (x2 - x1),
-				y: y1 + t * (y2 - y1),
-			};
-		};
-
-		// 各等高線レベルについて処理
+		// Process each contour level
 		for (const level of levels) {
-			const segments: Array<{
-				start: { x: number; y: number };
-				end: { x: number; y: number };
-			}> = [];
-
-			// グリッドの各セルを処理
-			for (let i = 0; i < resolution; i++) {
-				for (let j = 0; j < resolution; j++) {
-					const x1 = min + i * step;
-					const y1 = min + j * step;
-					const x2 = min + (i + 1) * step;
-					const y2 = min + (j + 1) * step;
-
-					const v1 = grid[i][j]; // 左下
-					const v2 = grid[i + 1][j]; // 右下
-					const v3 = grid[i + 1][j + 1]; // 右上
-					const v4 = grid[i][j + 1]; // 左上
-
-					const intersections: Array<{ x: number; y: number }> = [];
-
-					// 各辺で等高線との交点をチェック
-					const bottom = interpolate(x1, y1, v1, x2, y1, v2, level);
-					const right = interpolate(x2, y1, v2, x2, y2, v3, level);
-					const top = interpolate(x2, y2, v3, x1, y2, v4, level);
-					const left = interpolate(x1, y2, v4, x1, y1, v1, level);
-
-					if (bottom) intersections.push(bottom);
-					if (right) intersections.push(right);
-					if (top) intersections.push(top);
-					if (left) intersections.push(left);
-
-					// 2つの交点がある場合、線分として追加
-					if (intersections.length === 2) {
-						segments.push({
-							start: intersections[0],
-							end: intersections[1],
-						});
-					}
-					// 4つの交点がある場合は特殊ケース（サドルポイント）
-					else if (intersections.length === 4) {
-						// 対角線で結ぶ
-						segments.push({
-							start: intersections[0],
-							end: intersections[1],
-						});
-						segments.push({
-							start: intersections[2],
-							end: intersections[3],
-						});
-					}
-				}
-			}
-
-			// 線分を描画
-			for (const segment of segments) {
-				const startX = ((segment.start.x - min) / (max - min)) * size;
-				const startY = ((segment.start.y - min) / (max - min)) * size;
-				const endX = ((segment.end.x - min) / (max - min)) * size;
-				const endY = ((segment.end.y - min) / (max - min)) * size;
-
-				ctx.beginPath();
-				ctx.moveTo(startX, startY);
-				ctx.lineTo(endX, endY);
-				ctx.stroke();
-			}
+			const segments = findContourIntersections(
+				grid,
+				level,
+				props.bounds,
+				resolution,
+			);
+			drawContourSegments(ctx, segments, props.bounds, size);
 		}
 	};
 
