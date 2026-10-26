@@ -104,6 +104,8 @@ export function useGeneticAlgorithm() {
 			MIN_POPULATION_SIZE,
 			Math.min(MAX_POPULATION_SIZE, numValue),
 		);
+		if (clampedValue === populationSize()) return clampedValue;
+
 		setPopulationSize(clampedValue);
 
 		if (!isRunning()) {
@@ -119,6 +121,8 @@ export function useGeneticAlgorithm() {
 			MIN_GENERATIONS,
 			Math.min(MAX_GENERATIONS, numValue),
 		);
+		if (clampedValue === generations()) return clampedValue;
+
 		setGenerations(clampedValue);
 
 		if (!isRunning()) {
