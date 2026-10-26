@@ -142,9 +142,9 @@ const drawContourSegments = (
 	// 線分を描画
 	for (const segment of segments) {
 		const startX = ((segment.start.x - min) / (max - min)) * canvasSize;
-		const startY = ((segment.start.y - min) / (max - min)) * canvasSize;
+		const startY = ((max - segment.start.y) / (max - min)) * canvasSize;
 		const endX = ((segment.end.x - min) / (max - min)) * canvasSize;
-		const endY = ((segment.end.y - min) / (max - min)) * canvasSize;
+		const endY = ((max - segment.end.y) / (max - min)) * canvasSize;
 
 		ctx.beginPath();
 		ctx.moveTo(startX, startY);
@@ -228,7 +228,7 @@ export function Visualizer(props: VisualizerProps) {
 
 		props.population.forEach((individual) => {
 			const x = ((individual.x - min) / range) * size;
-			const y = ((individual.y - min) / range) * size;
+			const y = ((max - individual.y) / range) * size;
 
 			if (individual === bestIndividual) {
 				ctx.fillStyle = "#ff0000";
