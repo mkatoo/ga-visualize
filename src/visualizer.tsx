@@ -1,27 +1,18 @@
-import { createEffect, createMemo, For } from "solid-js";
+import { createEffect, createMemo } from "solid-js";
 import {
 	AXIS_LABEL_THRESHOLD,
 	CANVAS_SIZE,
 	CONTOUR_RESOLUTION,
 } from "./constants";
-import {
-	FITNESS_COLOR_GRADIENT,
-	type FitnessColorScale,
-	getFitnessColor,
-	getFitnessColorPosition,
-	getFitnessValueAtPosition,
-} from "./fitness-colors";
+import { getFitnessColor, getFitnessColorPosition } from "./fitness-colors";
 import type { Individual } from "./genetic-algorithm";
-import type { FunctionType } from "./objective-functions";
+import { createFunctionGrid, type Landscape } from "./landscape";
 import { getObjectiveFunction } from "./objective-functions";
 
 interface VisualizerProps {
 	population: Individual[];
-	bounds: { min: number; max: number };
-	generation: number;
-	averageFitness: number;
 	bestIndividual: Individual | null;
-	functionType: FunctionType;
+	landscape: Landscape;
 }
 
 interface Point {
@@ -44,35 +35,13 @@ const interpolate = (
 	v2: number,
 	level: number,
 ): Point | null => {
-	if (v1 === v2) return null;
+	if (!Number.isFinite(v1) || !Number.isFinite(v2) || v1 === v2) return null;
 	const t = (level - v1) / (v2 - v1);
 	if (t < 0 || t > 1) return null;
 	return {
 		x: x1 + t * (x2 - x1),
 		y: y1 + t * (y2 - y1),
 	};
-};
-
-// Creates a grid of function values for contour line calculation
-const createFunctionGrid = (
-	objFunc: (x: number, y: number) => number,
-	bounds: { min: number; max: number },
-	resolution: number,
-): number[][] => {
-	const { min, max } = bounds;
-	const step = (max - min) / resolution;
-	const grid: number[][] = [];
-
-	for (let i = 0; i <= resolution; i++) {
-		grid[i] = [];
-		for (let j = 0; j <= resolution; j++) {
-			const x = min + i * step;
-			const y = min + j * step;
-			grid[i][j] = objFunc(x, y);
-		}
-	}
-
-	return grid;
 };
 
 // Finds contour line intersections for a specific level using marching squares algorithm
@@ -198,33 +167,23 @@ const drawAxes = (
 	}
 };
 
-const createLandscape = (
-	functionType: FunctionType,
-	bounds: { min: number; max: number },
-	size: number,
-) => {
-	const objective = getObjectiveFunction(functionType);
-	const grid = createFunctionGrid(objective.fn, bounds, size - 1);
-	let maximum = 0;
-	for (const column of grid) {
-		for (const value of column) maximum = Math.max(maximum, value);
-	}
-	const scale: FitnessColorScale = {
-		maximum,
-		logarithmic: functionType === "rosenbrock" || functionType === "beale",
-	};
+const createBackground = (landscape: Landscape, size: number) => {
+	const { grid, bounds, colorScale: scale } = landscape;
+	const objective = getObjectiveFunction(landscape.functionType);
 
 	const canvas = document.createElement("canvas");
 	canvas.width = size;
 	canvas.height = size;
 	const ctx = canvas.getContext("2d");
-	if (!ctx) return { canvas, scale };
+	if (!ctx) return canvas;
 
 	const image = ctx.createImageData(size, size);
 	for (let y = 0; y < size; y++) {
 		for (let x = 0; x < size; x++) {
 			const value = grid[x][size - 1 - y];
-			const color = getFitnessColor(getFitnessColorPosition(value, scale));
+			const color = getFitnessColor(
+				getFitnessColorPosition(Number.isFinite(value) ? value : 0, scale),
+			);
 			const offset = (y * size + x) * 4;
 			image.data[offset] = color[0];
 			image.data[offset + 1] = color[1];
@@ -251,50 +210,23 @@ const createLandscape = (
 		drawContourSegments(ctx, segments, bounds, size);
 	}
 	drawAxes(ctx, bounds, size);
-	return { canvas, scale };
+	return canvas;
 };
-
-const fitnessNumberFormat = new Intl.NumberFormat("ja-JP", {
-	maximumFractionDigits: 1,
-});
 
 export function Visualizer(props: VisualizerProps) {
 	let canvasRef: HTMLCanvasElement | undefined;
-	const settings = createMemo(
-		() => ({
-			functionType: props.functionType,
-			min: props.bounds.min,
-			max: props.bounds.max,
-		}),
-		undefined,
-		{
-			equals: (previous, next) =>
-				previous.functionType === next.functionType &&
-				previous.min === next.min &&
-				previous.max === next.max,
-		},
-	);
-	const landscape = createMemo(() => {
-		const { functionType, min, max } = settings();
-		return createLandscape(functionType, { min, max }, CANVAS_SIZE);
-	});
-	const colorTicks = createMemo(() =>
-		[0, 0.25, 0.5, 0.75, 1].map((position) => ({
-			position,
-			value: getFitnessValueAtPosition(position, landscape().scale),
-		})),
+	const background = createMemo(() =>
+		createBackground(props.landscape, CANVAS_SIZE),
 	);
 
 	const drawPopulation = (ctx: CanvasRenderingContext2D) => {
-		const { min, max } = props.bounds;
+		const { min, max } = props.landscape.bounds;
 		const size = CANVAS_SIZE;
 		const range = max - min;
 
 		if (props.population.length === 0) return;
 
-		const bestIndividual = props.population.reduce((best, current) =>
-			current.fitness < best.fitness ? current : best,
-		);
+		const bestIndividual = props.bestIndividual;
 
 		const drawIndividual = (individual: Individual, best: boolean) => {
 			const x = ((individual.x - min) / range) * size;
@@ -313,7 +245,7 @@ export function Visualizer(props: VisualizerProps) {
 			if (individual !== bestIndividual) drawIndividual(individual, false);
 		});
 		// Keep the best individual visible even when the population converges.
-		drawIndividual(bestIndividual, true);
+		if (bestIndividual) drawIndividual(bestIndividual, true);
 	};
 
 	const draw = () => {
@@ -324,93 +256,24 @@ export function Visualizer(props: VisualizerProps) {
 		if (!ctx) return;
 
 		ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-		ctx.drawImage(landscape().canvas, 0, 0);
+		ctx.drawImage(background(), 0, 0);
 		drawPopulation(ctx);
 	};
 
 	createEffect(draw);
 
 	return (
-		<div class="visualizer">
-			<div class="canvas-container">
-				<canvas
-					ref={canvasRef}
-					width={CANVAS_SIZE}
-					height={CANVAS_SIZE}
-					aria-label="最適化関数の地形と個体分布"
-					style={{
-						border: "1px solid #ccc",
-						"border-radius": "4px",
-					}}
-				/>
-			</div>
-			<figure class="fitness-scale" aria-label="背景色と評価値の対応">
-				<figcaption class="fitness-scale-header">
-					<span>評価値</span>
-					<span>{landscape().scale.logarithmic ? "対数目盛" : "線形目盛"}</span>
-				</figcaption>
-				<div
-					class="fitness-scale-bar"
-					style={{ background: FITNESS_COLOR_GRADIENT }}
-					aria-hidden="true"
-				/>
-				<div class="fitness-scale-ticks">
-					<For each={colorTicks()}>
-						{(tick) => (
-							<span
-								style={{ left: `${tick.position * 100}%` }}
-								title={tick.value.toString()}
-							>
-								{fitnessNumberFormat.format(tick.value)}
-							</span>
-						)}
-					</For>
-				</div>
-				<div class="fitness-scale-direction">
-					<span>低い・良い</span>
-					<span>高い・悪い</span>
-				</div>
-			</figure>
-			<div class="stats">
-				<div class="stat-item">
-					<span class="label">世代</span>
-					<span class="value">{props.generation}</span>
-				</div>
-				<div class="stat-item best-individual">
-					<span class="label">最良個体</span>
-					<div class="best-individual-details">
-						{props.bestIndividual ? (
-							<>
-								<div class="coordinate-display">
-									<span class="coord-label">座標:</span>
-									<span
-										class="coord-value tooltip"
-										title={`座標: (${props.bestIndividual.x}, ${props.bestIndividual.y})`}
-									>
-										({props.bestIndividual.x.toFixed(3)},{" "}
-										{props.bestIndividual.y.toFixed(3)})
-									</span>
-								</div>
-								<div class="fitness-display">
-									<span class="fitness-label">適応度:</span>
-									<span
-										class="fitness-value tooltip"
-										title={`適応度: ${props.bestIndividual.fitness}`}
-									>
-										{props.bestIndividual.fitness.toFixed(4)}
-									</span>
-								</div>
-							</>
-						) : (
-							<span class="no-data">データなし</span>
-						)}
-					</div>
-				</div>
-				<div class="stat-item">
-					<span class="label">平均適応度</span>
-					<span class="value">{props.averageFitness.toFixed(4)}</span>
-				</div>
-			</div>
+		<div class="canvas-container">
+			<canvas
+				ref={canvasRef}
+				width={CANVAS_SIZE}
+				height={CANVAS_SIZE}
+				aria-label="最適化関数の地形と個体分布"
+				style={{
+					border: "1px solid #ccc",
+					"border-radius": "4px",
+				}}
+			/>
 		</div>
 	);
 }

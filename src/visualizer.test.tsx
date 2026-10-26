@@ -1,9 +1,9 @@
 import { cleanup, render } from "@solidjs/testing-library";
 import { batch, createSignal } from "solid-js";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { GAVisualization as Visualizer } from "./components/ga-visualization";
 import type { Individual } from "./genetic-algorithm";
 import { type FunctionType, OBJECTIVE_FUNCTIONS } from "./objective-functions";
-import { Visualizer } from "./visualizer";
 
 const createContext = () => ({
 	clearRect: vi.fn(),
