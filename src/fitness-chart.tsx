@@ -1,3 +1,5 @@
+import { createMemo } from "solid-js";
+
 interface FitnessChartProps {
 	bestFitness: number[];
 	averageFitness: number[];
@@ -5,6 +7,8 @@ interface FitnessChartProps {
 }
 
 export function FitnessChart(props: FitnessChartProps) {
+	const maxFitness = createMemo(() => Math.max(...props.averageFitness) || 1);
+
 	return (
 		<div class="fitness-chart">
 			<h3>適応度の推移</h3>
@@ -34,8 +38,7 @@ export function FitnessChart(props: FitnessChartProps) {
 									points={props.bestFitness
 										.map((fitness, i) => {
 											const x = 30 + (i / props.totalGenerations) * 250;
-											const maxFitness = Math.max(...props.averageFitness);
-											const y = 170 - (fitness / maxFitness) * 150;
+											const y = 170 - (fitness / maxFitness()) * 150;
 											return `${x},${y}`;
 										})
 										.join(" ")}
@@ -47,8 +50,7 @@ export function FitnessChart(props: FitnessChartProps) {
 									points={props.averageFitness
 										.map((fitness, i) => {
 											const x = 30 + (i / props.totalGenerations) * 250;
-											const maxFitness = Math.max(...props.averageFitness);
-											const y = 170 - (fitness / maxFitness) * 150;
+											const y = 170 - (fitness / maxFitness()) * 150;
 											return `${x},${y}`;
 										})
 										.join(" ")}
