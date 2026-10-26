@@ -4,7 +4,7 @@ interface ProgressDisplayProps {
 }
 
 export function ProgressDisplay(props: ProgressDisplayProps) {
-	const progressPercentage =
+	const progressPercentage = () =>
 		(props.currentGeneration / props.totalGenerations) * 100;
 
 	return (
@@ -16,7 +16,7 @@ export function ProgressDisplay(props: ProgressDisplayProps) {
 				<div
 					class="progress-fill"
 					style={{
-						width: `${progressPercentage}%`,
+						width: `${progressPercentage()}%`,
 					}}
 				/>
 			</div>
