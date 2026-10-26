@@ -1,9 +1,16 @@
-import { createEffect, createSignal, onMount } from "solid-js";
+import { createEffect, createMemo, For } from "solid-js";
 import {
 	AXIS_LABEL_THRESHOLD,
 	CANVAS_SIZE,
 	CONTOUR_RESOLUTION,
 } from "./constants";
+import {
+	FITNESS_COLOR_GRADIENT,
+	type FitnessColorScale,
+	getFitnessColor,
+	getFitnessColorPosition,
+	getFitnessValueAtPosition,
+} from "./fitness-colors";
 import type { Individual } from "./genetic-algorithm";
 import type { FunctionType } from "./objective-functions";
 import { getObjectiveFunction } from "./objective-functions";
@@ -139,6 +146,8 @@ const drawContourSegments = (
 ): void => {
 	const { min, max } = bounds;
 
+	if (segments.length === 0) return;
+	ctx.beginPath();
 	// 線分を描画
 	for (const segment of segments) {
 		const startX = ((segment.start.x - min) / (max - min)) * canvasSize;
@@ -146,78 +155,139 @@ const drawContourSegments = (
 		const endX = ((segment.end.x - min) / (max - min)) * canvasSize;
 		const endY = ((max - segment.end.y) / (max - min)) * canvasSize;
 
-		ctx.beginPath();
 		ctx.moveTo(startX, startY);
 		ctx.lineTo(endX, endY);
-		ctx.stroke();
+	}
+	ctx.stroke();
+};
+
+const drawAxes = (
+	ctx: CanvasRenderingContext2D,
+	bounds: { min: number; max: number },
+	size: number,
+) => {
+	ctx.strokeStyle = "rgba(30, 41, 59, 0.6)";
+	ctx.lineWidth = 1;
+
+	ctx.beginPath();
+	ctx.moveTo(size / 2, 0);
+	ctx.lineTo(size / 2, size);
+	ctx.moveTo(0, size / 2);
+	ctx.lineTo(size, size / 2);
+	ctx.stroke();
+
+	ctx.fillStyle = "#334155";
+	ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+	ctx.lineWidth = 3;
+	ctx.font = "12px Arial";
+	ctx.textAlign = "center";
+
+	const { min, max } = bounds;
+	const step = (max - min) / 4;
+
+	for (let i = 0; i <= 4; i++) {
+		const value = min + i * step;
+		const pos = (i / 4) * size;
+
+		if (Math.abs(value) > AXIS_LABEL_THRESHOLD) {
+			ctx.strokeText(value.toFixed(0), pos, size / 2 + 15);
+			ctx.fillText(value.toFixed(0), pos, size / 2 + 15);
+			ctx.strokeText((-value).toFixed(0), size / 2 + 15, pos);
+			ctx.fillText((-value).toFixed(0), size / 2 + 15, pos);
+		}
 	}
 };
 
+const createLandscape = (
+	functionType: FunctionType,
+	bounds: { min: number; max: number },
+	size: number,
+) => {
+	const objective = getObjectiveFunction(functionType);
+	const grid = createFunctionGrid(objective.fn, bounds, size - 1);
+	let maximum = 0;
+	for (const column of grid) {
+		for (const value of column) maximum = Math.max(maximum, value);
+	}
+	const scale: FitnessColorScale = {
+		maximum,
+		logarithmic: functionType === "rosenbrock" || functionType === "beale",
+	};
+
+	const canvas = document.createElement("canvas");
+	canvas.width = size;
+	canvas.height = size;
+	const ctx = canvas.getContext("2d");
+	if (!ctx) return { canvas, scale };
+
+	const image = ctx.createImageData(size, size);
+	for (let y = 0; y < size; y++) {
+		for (let x = 0; x < size; x++) {
+			const value = grid[x][size - 1 - y];
+			const color = getFitnessColor(getFitnessColorPosition(value, scale));
+			const offset = (y * size + x) * 4;
+			image.data[offset] = color[0];
+			image.data[offset + 1] = color[1];
+			image.data[offset + 2] = color[2];
+			image.data[offset + 3] = 255;
+		}
+	}
+	ctx.putImageData(image, 0, 0);
+
+	ctx.strokeStyle = "rgba(30, 41, 59, 0.24)";
+	ctx.lineWidth = 0.8;
+	const contourGrid = createFunctionGrid(
+		objective.fn,
+		bounds,
+		CONTOUR_RESOLUTION,
+	);
+	for (const level of objective.contourLevels) {
+		const segments = findContourIntersections(
+			contourGrid,
+			level,
+			bounds,
+			CONTOUR_RESOLUTION,
+		);
+		drawContourSegments(ctx, segments, bounds, size);
+	}
+	drawAxes(ctx, bounds, size);
+	return { canvas, scale };
+};
+
+const fitnessNumberFormat = new Intl.NumberFormat("ja-JP", {
+	maximumFractionDigits: 1,
+});
+
 export function Visualizer(props: VisualizerProps) {
 	let canvasRef: HTMLCanvasElement | undefined;
-	const [canvasSize] = createSignal(CANVAS_SIZE);
-
-	const drawContourLines = (ctx: CanvasRenderingContext2D) => {
-		const size = canvasSize();
-
-		ctx.strokeStyle = "#e0e0e0";
-		ctx.lineWidth = 1;
-
-		const objFunc = getObjectiveFunction(props.functionType);
-		const levels = objFunc.contourLevels;
-		const functionToUse = objFunc.fn;
-
-		const resolution = CONTOUR_RESOLUTION;
-
-		// Create function value grid
-		const grid = createFunctionGrid(functionToUse, props.bounds, resolution);
-
-		// Process each contour level
-		for (const level of levels) {
-			const segments = findContourIntersections(
-				grid,
-				level,
-				props.bounds,
-				resolution,
-			);
-			drawContourSegments(ctx, segments, props.bounds, size);
-		}
-	};
-
-	const drawAxes = (ctx: CanvasRenderingContext2D) => {
-		const size = canvasSize();
-
-		ctx.strokeStyle = "#666";
-		ctx.lineWidth = 1;
-
-		ctx.beginPath();
-		ctx.moveTo(size / 2, 0);
-		ctx.lineTo(size / 2, size);
-		ctx.moveTo(0, size / 2);
-		ctx.lineTo(size, size / 2);
-		ctx.stroke();
-
-		ctx.fillStyle = "#666";
-		ctx.font = "12px Arial";
-		ctx.textAlign = "center";
-
-		const { min, max } = props.bounds;
-		const step = (max - min) / 4;
-
-		for (let i = 0; i <= 4; i++) {
-			const value = min + i * step;
-			const pos = (i / 4) * size;
-
-			if (Math.abs(value) > AXIS_LABEL_THRESHOLD) {
-				ctx.fillText(value.toFixed(0), pos, size / 2 + 15);
-				ctx.fillText((-value).toFixed(0), size / 2 + 15, pos);
-			}
-		}
-	};
+	const settings = createMemo(
+		() => ({
+			functionType: props.functionType,
+			min: props.bounds.min,
+			max: props.bounds.max,
+		}),
+		undefined,
+		{
+			equals: (previous, next) =>
+				previous.functionType === next.functionType &&
+				previous.min === next.min &&
+				previous.max === next.max,
+		},
+	);
+	const landscape = createMemo(() => {
+		const { functionType, min, max } = settings();
+		return createLandscape(functionType, { min, max }, CANVAS_SIZE);
+	});
+	const colorTicks = createMemo(() =>
+		[0, 0.25, 0.5, 0.75, 1].map((position) => ({
+			position,
+			value: getFitnessValueAtPosition(position, landscape().scale),
+		})),
+	);
 
 	const drawPopulation = (ctx: CanvasRenderingContext2D) => {
 		const { min, max } = props.bounds;
-		const size = canvasSize();
+		const size = CANVAS_SIZE;
 		const range = max - min;
 
 		if (props.population.length === 0) return;
@@ -226,22 +296,24 @@ export function Visualizer(props: VisualizerProps) {
 			current.fitness < best.fitness ? current : best,
 		);
 
-		props.population.forEach((individual) => {
+		const drawIndividual = (individual: Individual, best: boolean) => {
 			const x = ((individual.x - min) / range) * size;
 			const y = ((max - individual.y) / range) * size;
 
-			if (individual === bestIndividual) {
-				ctx.fillStyle = "#ff0000";
-				ctx.beginPath();
-				ctx.arc(x, y, 4, 0, 2 * Math.PI);
-				ctx.fill();
-			} else {
-				ctx.fillStyle = "#0066cc";
-				ctx.beginPath();
-				ctx.arc(x, y, 2, 0, 2 * Math.PI);
-				ctx.fill();
-			}
+			ctx.fillStyle = best ? "#ff0000" : "#0066cc";
+			ctx.strokeStyle = "#fff";
+			ctx.lineWidth = best ? 2.5 : 2;
+			ctx.beginPath();
+			ctx.arc(x, y, best ? 4 : 2, 0, 2 * Math.PI);
+			ctx.stroke();
+			ctx.fill();
+		};
+
+		props.population.forEach((individual) => {
+			if (individual !== bestIndividual) drawIndividual(individual, false);
 		});
+		// Keep the best individual visible even when the population converges.
+		drawIndividual(bestIndividual, true);
 	};
 
 	const draw = () => {
@@ -251,39 +323,54 @@ export function Visualizer(props: VisualizerProps) {
 		const ctx = canvas.getContext("2d");
 		if (!ctx) return;
 
-		ctx.clearRect(0, 0, canvasSize(), canvasSize());
-
-		ctx.fillStyle = "#f8f8f8";
-		ctx.fillRect(0, 0, canvasSize(), canvasSize());
-
-		drawContourLines(ctx);
-		drawAxes(ctx);
+		ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+		ctx.drawImage(landscape().canvas, 0, 0);
 		drawPopulation(ctx);
 	};
 
-	createEffect(() => {
-		if (props.population.length > 0) {
-			draw();
-		}
-	});
-
-	onMount(() => {
-		draw();
-	});
+	createEffect(draw);
 
 	return (
 		<div class="visualizer">
 			<div class="canvas-container">
 				<canvas
 					ref={canvasRef}
-					width={canvasSize()}
-					height={canvasSize()}
+					width={CANVAS_SIZE}
+					height={CANVAS_SIZE}
+					aria-label="最適化関数の地形と個体分布"
 					style={{
 						border: "1px solid #ccc",
 						"border-radius": "4px",
 					}}
 				/>
 			</div>
+			<figure class="fitness-scale" aria-label="背景色と評価値の対応">
+				<figcaption class="fitness-scale-header">
+					<span>評価値</span>
+					<span>{landscape().scale.logarithmic ? "対数目盛" : "線形目盛"}</span>
+				</figcaption>
+				<div
+					class="fitness-scale-bar"
+					style={{ background: FITNESS_COLOR_GRADIENT }}
+					aria-hidden="true"
+				/>
+				<div class="fitness-scale-ticks">
+					<For each={colorTicks()}>
+						{(tick) => (
+							<span
+								style={{ left: `${tick.position * 100}%` }}
+								title={tick.value.toString()}
+							>
+								{fitnessNumberFormat.format(tick.value)}
+							</span>
+						)}
+					</For>
+				</div>
+				<div class="fitness-scale-direction">
+					<span>低い・良い</span>
+					<span>高い・悪い</span>
+				</div>
+			</figure>
 			<div class="stats">
 				<div class="stat-item">
 					<span class="label">世代</span>

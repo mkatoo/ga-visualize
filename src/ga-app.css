@@ -51,6 +51,63 @@
 	margin-bottom: 20px;
 }
 
+.canvas-container canvas {
+	display: block;
+	max-width: 100%;
+	height: auto;
+	margin: 0 auto;
+}
+
+.fitness-scale {
+	max-width: 500px;
+	margin: 0 auto 20px;
+	color: #475569;
+	font-size: 0.8rem;
+}
+
+.fitness-scale-header,
+.fitness-scale-direction {
+	display: flex;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.fitness-scale-header {
+	margin-bottom: 6px;
+}
+
+.fitness-scale-header span:first-child {
+	color: #334155;
+	font-weight: 600;
+}
+
+.fitness-scale-bar {
+	height: 12px;
+	border: 1px solid rgba(30, 41, 59, 0.12);
+	border-radius: 4px;
+}
+
+.fitness-scale-ticks {
+	position: relative;
+	height: 24px;
+	margin-top: 5px;
+	font-variant-numeric: tabular-nums;
+}
+
+.fitness-scale-ticks span {
+	position: absolute;
+	transform: translateX(-50%);
+	white-space: nowrap;
+}
+
+.fitness-scale-ticks span:first-child {
+	transform: none;
+}
+
+.fitness-scale-ticks span:last-child {
+	transform: translateX(-100%);
+}
+
 .stats {
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
