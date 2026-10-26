@@ -66,7 +66,7 @@ export function useGeneticAlgorithm() {
 		if (isRunning()) return;
 
 		setIsRunning(true);
-		intervalId = setInterval(() => {
+		intervalId = window.setInterval(() => {
 			step();
 		}, animationSpeed());
 	};

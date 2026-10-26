@@ -6,6 +6,13 @@ export interface Individual {
 	fitness: number;
 }
 
+export interface Statistics {
+	generation: number;
+	bestFitness: number[];
+	averageFitness: number[];
+	currentBest: Individual | null;
+}
+
 export interface GAConfig {
 	populationSize: number;
 	generations: number;
@@ -218,7 +225,7 @@ export class GeneticAlgorithm {
 		);
 	}
 
-	getStatistics() {
+	getStatistics(): Statistics {
 		return {
 			generation: this.generation,
 			bestFitness: [...this.bestFitness],

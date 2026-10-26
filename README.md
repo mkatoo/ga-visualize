@@ -46,7 +46,7 @@
 ## セットアップ
 
 ### 必要な環境
-- Node.js 18+
+- Node.js 24
 - npm
 
 ### インストールと実行
@@ -66,6 +66,12 @@ npm run serve
 
 # テスト実行
 npm run test
+
+# テストを1回実行
+npm run test:ci
+
+# 型チェック
+npm run typecheck
 
 # コード品質チェック
 npm run lint          # linting
