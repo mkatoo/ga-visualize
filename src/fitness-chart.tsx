@@ -33,7 +33,7 @@ export function FitnessChart(props: FitnessChartProps) {
 								<polyline
 									points={props.bestFitness
 										.map((fitness, i) => {
-											const x = 30 + (i / (props.totalGenerations - 1)) * 250;
+											const x = 30 + (i / props.totalGenerations) * 250;
 											const maxFitness = Math.max(...props.averageFitness);
 											const y = 170 - (fitness / maxFitness) * 150;
 											return `${x},${y}`;
@@ -46,7 +46,7 @@ export function FitnessChart(props: FitnessChartProps) {
 								<polyline
 									points={props.averageFitness
 										.map((fitness, i) => {
-											const x = 30 + (i / (props.totalGenerations - 1)) * 250;
+											const x = 30 + (i / props.totalGenerations) * 250;
 											const maxFitness = Math.max(...props.averageFitness);
 											const y = 170 - (fitness / maxFitness) * 150;
 											return `${x},${y}`;
