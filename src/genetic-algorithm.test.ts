@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
 	DEFAULT_CONFIG,
 	type GAConfig,
@@ -26,7 +26,19 @@ describe("GeneticAlgorithm", () => {
 	let ga: GeneticAlgorithm;
 
 	beforeEach(() => {
-		ga = new GeneticAlgorithm();
+		let randomState = 42;
+		vi.spyOn(Math, "random").mockImplementation(() => {
+			randomState = (Math.imul(randomState, 1664525) + 1013904223) >>> 0;
+			return randomState / 2 ** 32;
+		});
+		ga = new GeneticAlgorithm({
+			...DEFAULT_CONFIG,
+			bounds: { ...DEFAULT_CONFIG.bounds },
+		});
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
 	});
 
 	describe("Objective Function Integration", () => {
@@ -305,7 +317,7 @@ describe("GeneticAlgorithm", () => {
 			expect(newSize).toBe(initialSize);
 		});
 
-		test("should improve fitness over generations (statistical test)", () => {
+		test("should improve fitness over generations with seeded randomness", () => {
 			ga.initializePopulation();
 			const initialBest = ga.getBestIndividual()?.fitness;
 			expect(initialBest).toBeDefined();
@@ -318,8 +330,7 @@ describe("GeneticAlgorithm", () => {
 			const finalBest = ga.getBestIndividual()?.fitness;
 			expect(finalBest).toBeDefined();
 
-			// In most cases, fitness should improve (lower values are better)
-			// This is a statistical test, might occasionally fail
+			// This fixed random sequence should improve fitness (lower is better).
 			if (initialBest !== undefined && finalBest !== undefined) {
 				expect(finalBest).toBeLessThanOrEqual(initialBest);
 			}
