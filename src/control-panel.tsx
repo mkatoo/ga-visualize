@@ -35,18 +35,12 @@ export function ControlPanel(props: ControlPanelProps) {
 				<button
 					type="button"
 					class="btn btn-primary"
-					onClick={props.onStart}
-					disabled={props.isRunning}
+					onClick={() => {
+						if (props.isRunning) props.onStop();
+						else props.onStart();
+					}}
 				>
-					開始
-				</button>
-				<button
-					type="button"
-					class="btn btn-secondary"
-					onClick={props.onStop}
-					disabled={!props.isRunning}
-				>
-					停止
+					{props.isRunning ? "一時停止" : "開始"}
 				</button>
 				<button
 					type="button"
@@ -54,9 +48,9 @@ export function ControlPanel(props: ControlPanelProps) {
 					onClick={props.onStep}
 					disabled={props.isRunning}
 				>
-					ステップ
+					1世代進める
 				</button>
-				<button type="button" class="btn btn-outline" onClick={props.onReset}>
+				<button type="button" class="btn btn-text" onClick={props.onReset}>
 					リセット
 				</button>
 			</div>

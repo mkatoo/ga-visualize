@@ -318,20 +318,31 @@
 }
 
 .button-group {
-	display: flex;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
 	gap: 10px;
 	margin-bottom: 20px;
-	flex-wrap: wrap;
 }
 
 .btn {
-	padding: 10px 20px;
-	border: none;
+	min-width: 0;
+	min-height: 44px;
+	padding: 10px 16px;
+	border: 1px solid transparent;
 	border-radius: 6px;
+	font: inherit;
 	font-size: 1rem;
 	cursor: pointer;
-	transition: all 0.2s;
+	transition:
+		background-color 0.2s,
+		border-color 0.2s,
+		color 0.2s;
 	font-weight: 500;
+}
+
+.btn:focus-visible {
+	outline: 2px solid #0284c7;
+	outline-offset: 3px;
 }
 
 .btn:disabled {
@@ -340,32 +351,36 @@
 }
 
 .btn-primary {
-	background-color: #007bff;
+	grid-column: 1 / -1;
+	background-color: #0066cc;
 	color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-	background-color: #0056b3;
+	background-color: #0052a3;
 }
 
 .btn-secondary {
-	background-color: #6c757d;
-	color: white;
+	background-color: #f8fafc;
+	border-color: #cbd5e1;
+	color: #334155;
 }
 
 .btn-secondary:hover:not(:disabled) {
-	background-color: #545b62;
+	background-color: #f1f5f9;
+	border-color: #94a3b8;
 }
 
-.btn-outline {
+.btn-text {
+	padding-inline: 8px;
 	background-color: transparent;
-	color: #007bff;
-	border: 2px solid #007bff;
+	color: #64748b;
+	font-size: 0.9rem;
 }
 
-.btn-outline:hover:not(:disabled) {
-	background-color: #007bff;
-	color: white;
+.btn-text:hover:not(:disabled) {
+	background-color: #f1f5f9;
+	color: #334155;
 }
 
 .parameter-controls {
@@ -528,10 +543,6 @@
 @media (max-width: 768px) {
 	.header h1 {
 		font-size: 2rem;
-	}
-
-	.button-group {
-		justify-content: center;
 	}
 
 	.stats {

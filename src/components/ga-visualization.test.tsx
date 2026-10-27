@@ -237,10 +237,46 @@ describe("2D / 3D visualization", () => {
 			generationOnePopulation,
 			expect.any(Object),
 		);
-		expect(view.getByRole("button", { name: "開始" })).toBeDisabled();
+		expect(view.getByRole("button", { name: "一時停止" })).toBeEnabled();
 		vi.advanceTimersByTime(500);
 		expect(view.container.querySelector(".stat-item .value")).toHaveTextContent(
 			"2",
 		);
+	});
+
+	test("pauses, resumes, steps, and resets using the unified playback controls", () => {
+		const view = render(() => <GAApp />);
+		const generation = () => view.container.querySelector(".stat-item .value");
+		const stepButton = view.getByRole("button", { name: "1世代進める" });
+		vi.useFakeTimers();
+
+		fireEvent.click(view.getByRole("button", { name: "開始" }));
+		expect(stepButton).toBeDisabled();
+		expect(view.getByLabelText("最適化関数:")).toBeDisabled();
+		vi.advanceTimersByTime(500);
+		expect(generation()).toHaveTextContent(/^1$/);
+
+		fireEvent.click(view.getByRole("button", { name: "一時停止" }));
+		expect(view.getByRole("button", { name: "開始" })).toBeEnabled();
+		expect(stepButton).toBeEnabled();
+		expect(view.getByLabelText("最適化関数:")).toBeEnabled();
+		vi.advanceTimersByTime(1500);
+		expect(generation()).toHaveTextContent(/^1$/);
+
+		fireEvent.click(stepButton);
+		expect(generation()).toHaveTextContent(/^2$/);
+		vi.advanceTimersByTime(1000);
+		expect(generation()).toHaveTextContent(/^2$/);
+
+		fireEvent.click(view.getByRole("button", { name: "開始" }));
+		vi.advanceTimersByTime(500);
+		expect(generation()).toHaveTextContent(/^3$/);
+
+		fireEvent.click(view.getByRole("button", { name: "リセット" }));
+		expect(view.getByRole("button", { name: "開始" })).toBeEnabled();
+		expect(stepButton).toBeEnabled();
+		expect(generation()).toHaveTextContent(/^0$/);
+		vi.advanceTimersByTime(1000);
+		expect(generation()).toHaveTextContent(/^0$/);
 	});
 });
