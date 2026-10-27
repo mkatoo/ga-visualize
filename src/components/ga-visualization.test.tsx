@@ -59,6 +59,7 @@ describe("2D / 3D visualization", () => {
 		vi.useRealTimers();
 		vi.restoreAllMocks();
 		vi.clearAllMocks();
+		vi.unstubAllGlobals();
 	});
 
 	const renderPanel = () => {
@@ -291,5 +292,80 @@ describe("2D / 3D visualization", () => {
 		).toHaveLength(2);
 		vi.advanceTimersByTime(1000);
 		expect(generation()).toHaveTextContent(/^0$/);
+	});
+
+	test("preserves settings and a running simulation when switching mobile and desktop layouts", () => {
+		const listeners = new Set<(event: MediaQueryListEvent) => void>();
+		const media = {
+			matches: true,
+			addEventListener: vi.fn(
+				(_type: string, listener: (event: MediaQueryListEvent) => void) => {
+					listeners.add(listener);
+				},
+			),
+			removeEventListener: vi.fn(
+				(_type: string, listener: (event: MediaQueryListEvent) => void) => {
+					listeners.delete(listener);
+				},
+			),
+		};
+		vi.stubGlobal(
+			"matchMedia",
+			vi.fn(() => media),
+		);
+		const setMobile = (matches: boolean) => {
+			media.matches = matches;
+			for (const listener of listeners) {
+				listener({ matches } as MediaQueryListEvent);
+			}
+		};
+		const view = render(() => <GAApp />);
+		const settings = view.container.querySelector(".settings-details");
+		const summary = view.container.querySelector("summary");
+		const generation = () =>
+			view.container.querySelector(".generation-stat .value");
+		expect(settings).not.toHaveAttribute("open");
+		if (!summary) throw new Error("Settings summary is missing");
+		fireEvent.click(summary);
+		expect(settings).toHaveAttribute("open");
+		fireEvent.input(view.getByLabelText("個体数 (1-1000):"), {
+			target: { value: "150" },
+		});
+		fireEvent.input(view.getByLabelText("世代数 (1-1000):"), {
+			target: { value: "75" },
+		});
+		fireEvent.change(view.getByLabelText("最適化関数:"), {
+			target: { value: "ackley" },
+		});
+		fireEvent.input(view.getByLabelText("アニメーション速度:"), {
+			target: { value: "1000" },
+		});
+		expect(summary).toHaveTextContent(OBJECTIVE_FUNCTIONS.ackley.name);
+		expect(summary).toHaveTextContent("150個体・75世代");
+		fireEvent.click(summary);
+		expect(settings).not.toHaveAttribute("open");
+
+		vi.useFakeTimers();
+		fireEvent.click(view.getByRole("button", { name: "開始" }));
+		vi.advanceTimersByTime(1000);
+		expect(generation()).toHaveTextContent(/^1$/);
+		setMobile(false);
+		expect(settings).toHaveAttribute("open");
+		expect(view.getByLabelText("個体数 (1-1000):")).toHaveValue(150);
+		expect(view.getByLabelText("世代数 (1-1000):")).toHaveValue(75);
+		expect(view.getByLabelText("最適化関数:")).toHaveValue("ackley");
+		expect(view.getByLabelText("最適化関数:")).toBeDisabled();
+		expect(view.getByLabelText("アニメーション速度:")).toHaveValue("1000");
+		expect(generation()).toHaveTextContent(/^1$/);
+		setMobile(true);
+		expect(settings).not.toHaveAttribute("open");
+		vi.advanceTimersByTime(1000);
+		expect(generation()).toHaveTextContent(/^2$/);
+		fireEvent.click(view.getByRole("button", { name: "一時停止" }));
+		vi.advanceTimersByTime(1000);
+		expect(generation()).toHaveTextContent(/^2$/);
+
+		view.unmount();
+		expect(listeners.size).toBe(0);
 	});
 });

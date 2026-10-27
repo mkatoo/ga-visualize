@@ -42,26 +42,6 @@ export function GAApp() {
 			</header>
 
 			<div class="main-content">
-				<div class="visualization-workspace">
-					<GAVisualization
-						population={population()}
-						bounds={ga().getBounds()}
-						generation={statistics().generation}
-						averageFitness={
-							statistics().averageFitness[
-								statistics().averageFitness.length - 1
-							] ?? 0
-						}
-						bestIndividual={statistics().currentBest}
-						functionType={functionType()}
-					/>
-					<FitnessChart
-						bestFitness={statistics().bestFitness}
-						averageFitness={statistics().averageFitness}
-						totalGenerations={generations()}
-					/>
-				</div>
-
 				<GAControls
 					isRunning={isRunning()}
 					functionType={functionType()}
@@ -81,6 +61,25 @@ export function GAApp() {
 					onSpeedChange={handleSpeedChange}
 					constraints={constraints}
 				/>
+				<div class="visualization-workspace">
+					<GAVisualization
+						population={population()}
+						bounds={ga().getBounds()}
+						generation={statistics().generation}
+						averageFitness={
+							statistics().averageFitness[
+								statistics().averageFitness.length - 1
+							] ?? 0
+						}
+						bestIndividual={statistics().currentBest}
+						functionType={functionType()}
+					/>
+					<FitnessChart
+						bestFitness={statistics().bestFitness}
+						averageFitness={statistics().averageFitness}
+						totalGenerations={generations()}
+					/>
+				</div>
 			</div>
 		</div>
 	);

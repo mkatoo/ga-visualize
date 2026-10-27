@@ -1,3 +1,4 @@
+import { onCleanup, onMount } from "solid-js";
 import type { FunctionType } from "./objective-functions";
 import { OBJECTIVE_FUNCTIONS } from "./objective-functions";
 
@@ -29,9 +30,24 @@ interface ControlPanelProps {
 }
 
 export function ControlPanel(props: ControlPanelProps) {
+	let settings!: HTMLDetailsElement;
+	let mobileQuery: MediaQueryList | undefined;
+	const handleLayoutChange = (event: MediaQueryListEvent) => {
+		settings.open = !event.matches;
+	};
+	onMount(() => {
+		if (typeof window.matchMedia !== "function") return;
+		mobileQuery = window.matchMedia("(max-width: 1024px)");
+		settings.open = !mobileQuery.matches;
+		mobileQuery.addEventListener("change", handleLayoutChange);
+	});
+	onCleanup(() => {
+		mobileQuery?.removeEventListener("change", handleLayoutChange);
+	});
+
 	return (
 		<div class="controls">
-			<div class="button-group">
+			<fieldset class="button-group" aria-label="実行操作">
 				<button
 					type="button"
 					class="btn btn-primary"
@@ -53,69 +69,83 @@ export function ControlPanel(props: ControlPanelProps) {
 				<button type="button" class="btn btn-text" onClick={props.onReset}>
 					リセット
 				</button>
-			</div>
+			</fieldset>
 
-			<div class="parameter-controls">
-				<div class="parameter-group">
-					<label for="functionType">最適化関数:</label>
-					<select
-						id="functionType"
-						value={props.functionType}
-						onChange={props.onFunctionTypeChange}
-						disabled={props.isRunning}
-					>
-						{Object.entries(OBJECTIVE_FUNCTIONS).map(([key, func]) => (
-							<option value={key}>{func.name}</option>
-						))}
-					</select>
+			<details class="settings-details" ref={settings} open>
+				<summary class="settings-toggle">
+					<span class="settings-title">実験設定</span>
+					<span class="settings-overview">
+						{OBJECTIVE_FUNCTIONS[props.functionType].name}・
+						{props.populationSize}
+						個体・{props.generations}世代
+					</span>
+				</summary>
+				<div class="settings-content">
+					<div class="parameter-controls">
+						<div class="parameter-group function-parameter">
+							<label for="functionType">最適化関数:</label>
+							<select
+								id="functionType"
+								value={props.functionType}
+								onChange={props.onFunctionTypeChange}
+								disabled={props.isRunning}
+							>
+								{Object.entries(OBJECTIVE_FUNCTIONS).map(([key, func]) => (
+									<option value={key}>{func.name}</option>
+								))}
+							</select>
+						</div>
+
+						<div class="parameter-group">
+							<label for="populationSize">
+								個体数 ({props.minPopulationSize}-{props.maxPopulationSize}):
+							</label>
+							<input
+								id="populationSize"
+								type="number"
+								inputmode="numeric"
+								min={props.minPopulationSize}
+								max={props.maxPopulationSize}
+								value={props.populationSize}
+								onInput={props.onPopulationSizeChange}
+								onBlur={props.onPopulationSizeBlur}
+								disabled={props.isRunning}
+							/>
+						</div>
+
+						<div class="parameter-group">
+							<label for="generations">
+								世代数 ({props.minGenerations}-{props.maxGenerations}):
+							</label>
+							<input
+								id="generations"
+								type="number"
+								inputmode="numeric"
+								min={props.minGenerations}
+								max={props.maxGenerations}
+								value={props.generations}
+								onInput={props.onGenerationsChange}
+								onBlur={props.onGenerationsBlur}
+								disabled={props.isRunning}
+							/>
+						</div>
+					</div>
+
+					<div class="speed-control">
+						<label for="speed">アニメーション速度:</label>
+						<input
+							id="speed"
+							type="range"
+							min="50"
+							max="2000"
+							step="50"
+							value={props.animationSpeed}
+							onInput={props.onSpeedChange}
+						/>
+						<span>{props.animationSpeed}ms</span>
+					</div>
 				</div>
-
-				<div class="parameter-group">
-					<label for="populationSize">
-						個体数 ({props.minPopulationSize}-{props.maxPopulationSize}):
-					</label>
-					<input
-						id="populationSize"
-						type="number"
-						min={props.minPopulationSize}
-						max={props.maxPopulationSize}
-						value={props.populationSize}
-						onInput={props.onPopulationSizeChange}
-						onBlur={props.onPopulationSizeBlur}
-						disabled={props.isRunning}
-					/>
-				</div>
-
-				<div class="parameter-group">
-					<label for="generations">
-						世代数 ({props.minGenerations}-{props.maxGenerations}):
-					</label>
-					<input
-						id="generations"
-						type="number"
-						min={props.minGenerations}
-						max={props.maxGenerations}
-						value={props.generations}
-						onInput={props.onGenerationsChange}
-						onBlur={props.onGenerationsBlur}
-						disabled={props.isRunning}
-					/>
-				</div>
-			</div>
-
-			<div class="speed-control">
-				<label for="speed">アニメーション速度:</label>
-				<input
-					id="speed"
-					type="range"
-					min="50"
-					max="2000"
-					step="50"
-					value={props.animationSpeed}
-					onInput={props.onSpeedChange}
-				/>
-				<span>{props.animationSpeed}ms</span>
-			</div>
+			</details>
 		</div>
 	);
 }
