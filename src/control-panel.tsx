@@ -30,6 +30,7 @@ interface ControlPanelProps {
 }
 
 export function ControlPanel(props: ControlPanelProps) {
+	const speedLabel = () => `${props.animationSpeed / 1000}秒／世代`;
 	let settings!: HTMLDetailsElement;
 	let mobileQuery: MediaQueryList | undefined;
 	const handleLayoutChange = (event: MediaQueryListEvent) => {
@@ -141,8 +142,9 @@ export function ControlPanel(props: ControlPanelProps) {
 							step="50"
 							value={props.animationSpeed}
 							onInput={props.onSpeedChange}
+							aria-valuetext={speedLabel()}
 						/>
-						<span>{props.animationSpeed}ms</span>
+						<span>{speedLabel()}</span>
 					</div>
 				</div>
 			</details>

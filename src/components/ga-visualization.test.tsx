@@ -337,9 +337,15 @@ describe("2D / 3D visualization", () => {
 		fireEvent.change(view.getByLabelText("最適化関数:"), {
 			target: { value: "ackley" },
 		});
+		expect(view.getByText("0.5秒／世代")).toBeTruthy();
 		fireEvent.input(view.getByLabelText("アニメーション速度:"), {
 			target: { value: "1000" },
 		});
+		expect(view.getByText("1秒／世代")).toBeTruthy();
+		expect(view.getByLabelText("アニメーション速度:")).toHaveAttribute(
+			"aria-valuetext",
+			"1秒／世代",
+		);
 		expect(summary).toHaveTextContent(OBJECTIVE_FUNCTIONS.ackley.name);
 		expect(summary).toHaveTextContent("150個体・75世代");
 		fireEvent.click(summary);
