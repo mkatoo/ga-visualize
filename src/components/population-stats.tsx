@@ -39,7 +39,7 @@ export function PopulationStats(props: PopulationStatsProps) {
 					<dd class="value no-data">データなし</dd>
 				)}
 			</div>
-			<div class="stat-item">
+			<div class="stat-item average-fitness">
 				<dt class="label">平均適応度</dt>
 				<dd class="value" title={`平均適応度: ${props.averageFitness}`}>
 					{formatFitness(props.averageFitness)}

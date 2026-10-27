@@ -204,7 +204,7 @@ describe("Visualizer", () => {
 				functionType="sphere"
 			/>
 		));
-		expect(colors).toEqual(["#0066cc", "#ff0000"]);
+		expect(colors).toEqual(["#1d4ed8", "#b91c1c"]);
 		expect(outlines).toEqual(["#fff", "#fff"]);
 		expect(context.arc).toHaveBeenLastCalledWith(250, 250, 4, 0, 2 * Math.PI);
 	});

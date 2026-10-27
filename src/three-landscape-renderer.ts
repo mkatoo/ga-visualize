@@ -31,6 +31,7 @@ import {
 	type Landscape,
 	type SurfaceGrid,
 } from "./landscape";
+import { VISUALIZATION_COLORS } from "./visualization-colors";
 
 export interface CameraState {
 	position: [number, number, number];
@@ -179,7 +180,7 @@ export class ThreeLandscapeRenderer {
 						3,
 					).setUsage(DynamicDrawUsage),
 				),
-				createMarkerMaterial("#0066cc", 9),
+				createMarkerMaterial(VISUALIZATION_COLORS.population, 9),
 			);
 			this.populationPoints.geometry.setDrawRange(0, 0);
 			this.scene.add(this.populationPoints);
@@ -190,14 +191,14 @@ export class ThreeLandscapeRenderer {
 						DynamicDrawUsage,
 					),
 				),
-				createMarkerMaterial("#ff0000", 15),
+				createMarkerMaterial(VISUALIZATION_COLORS.best, 15),
 			);
 			this.bestPoint.visible = false;
 			this.bestPoint.renderOrder = 2;
 			this.scene.add(this.bestPoint);
 			const ring = new Points(
 				this.bestPoint.geometry,
-				createMarkerMaterial("#ff0000", 25, true),
+				createMarkerMaterial(VISUALIZATION_COLORS.best, 25, true),
 			);
 			ring.renderOrder = 10;
 			this.bestPoint.add(ring);

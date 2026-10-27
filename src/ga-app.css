@@ -209,11 +209,11 @@
 	border-radius: 50%;
 	border: 2px solid white;
 	box-shadow: 0 0 0 1px #cbd5e1;
-	background: #0066cc;
+	background: var(--color-population);
 }
 
 .population-dot.best {
-	background: #ff0000;
+	background: var(--color-best);
 }
 
 .visualizer {
@@ -318,12 +318,12 @@
 }
 
 .best-individual {
-	background: #f1f5f9;
-	border-color: #cbd5e1;
+	background: #fef2f2;
+	border-color: #fecaca;
 }
 
 .best-individual .label {
-	color: #334155;
+	color: var(--color-best);
 	font-weight: 600;
 }
 
@@ -331,7 +331,12 @@
 	font-size: clamp(1.75rem, 3vw, 2.25rem);
 	font-weight: 700;
 	line-height: 1.2;
-	color: #0f172a;
+	color: var(--color-best);
+}
+
+.average-fitness .label,
+.average-fitness .value {
+	color: var(--color-population);
 }
 
 .stat-item .no-data {

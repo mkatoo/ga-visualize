@@ -7,6 +7,7 @@ import {
 	onMount,
 	Show,
 } from "solid-js";
+import { VISUALIZATION_COLORS } from "./visualization-colors";
 
 interface FitnessChartProps {
 	bestFitness: number[];
@@ -72,13 +73,13 @@ export function FitnessChart(props: FitnessChartProps) {
 	const series = [
 		{
 			label: "最良適応度",
-			color: "#ff6b6b",
+			color: VISUALIZATION_COLORS.best,
 			dash: undefined,
 			values: () => props.bestFitness,
 		},
 		{
 			label: "平均適応度",
-			color: "#4ecdc4",
+			color: VISUALIZATION_COLORS.population,
 			dash: "6 4",
 			values: () => props.averageFitness,
 		},

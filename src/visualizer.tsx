@@ -8,6 +8,7 @@ import { getFitnessColor, getFitnessColorPosition } from "./fitness-colors";
 import type { Individual } from "./genetic-algorithm";
 import { createFunctionGrid, type Landscape } from "./landscape";
 import { getObjectiveFunction } from "./objective-functions";
+import { VISUALIZATION_COLORS } from "./visualization-colors";
 
 interface VisualizerProps {
 	population: Individual[];
@@ -232,7 +233,9 @@ export function Visualizer(props: VisualizerProps) {
 			const x = ((individual.x - min) / range) * size;
 			const y = ((max - individual.y) / range) * size;
 
-			ctx.fillStyle = best ? "#ff0000" : "#0066cc";
+			ctx.fillStyle = best
+				? VISUALIZATION_COLORS.best
+				: VISUALIZATION_COLORS.population;
 			ctx.strokeStyle = "#fff";
 			ctx.lineWidth = best ? 2.5 : 2;
 			ctx.beginPath();
