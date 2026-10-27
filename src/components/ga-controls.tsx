@@ -1,5 +1,4 @@
 import { ControlPanel } from "../control-panel";
-import { FitnessChart } from "../fitness-chart";
 import type { Statistics } from "../genetic-algorithm";
 import type { FunctionType } from "../objective-functions";
 import { ProgressDisplay } from "../progress-display";
@@ -56,12 +55,6 @@ export function GAControls(props: GAControlsProps) {
 
 			<ProgressDisplay
 				currentGeneration={props.statistics.generation}
-				totalGenerations={props.generations}
-			/>
-
-			<FitnessChart
-				bestFitness={props.statistics.bestFitness}
-				averageFitness={props.statistics.averageFitness}
 				totalGenerations={props.generations}
 			/>
 		</div>

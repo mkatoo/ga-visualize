@@ -1,5 +1,6 @@
 import { GAControls } from "./components/ga-controls";
 import { GAVisualization } from "./components/ga-visualization";
+import { FitnessChart } from "./fitness-chart";
 import { useGeneticAlgorithm } from "./hooks/use-genetic-algorithm";
 import "./ga-app.css";
 
@@ -34,18 +35,25 @@ export function GAApp() {
 			</header>
 
 			<div class="main-content">
-				<GAVisualization
-					population={population()}
-					bounds={ga().getBounds()}
-					generation={statistics().generation}
-					averageFitness={
-						statistics().averageFitness[
-							statistics().averageFitness.length - 1
-						] ?? 0
-					}
-					bestIndividual={statistics().currentBest}
-					functionType={functionType()}
-				/>
+				<div class="visualization-workspace">
+					<GAVisualization
+						population={population()}
+						bounds={ga().getBounds()}
+						generation={statistics().generation}
+						averageFitness={
+							statistics().averageFitness[
+								statistics().averageFitness.length - 1
+							] ?? 0
+						}
+						bestIndividual={statistics().currentBest}
+						functionType={functionType()}
+					/>
+					<FitnessChart
+						bestFitness={statistics().bestFitness}
+						averageFitness={statistics().averageFitness}
+						totalGenerations={generations()}
+					/>
+				</div>
 
 				<GAControls
 					isRunning={isRunning()}

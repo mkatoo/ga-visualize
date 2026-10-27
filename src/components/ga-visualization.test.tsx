@@ -255,6 +255,12 @@ describe("2D / 3D visualization", () => {
 		expect(view.getByLabelText("最適化関数:")).toBeDisabled();
 		vi.advanceTimersByTime(500);
 		expect(generation()).toHaveTextContent(/^1$/);
+		expect(
+			Array.from(
+				view.container.querySelectorAll(".fitness-chart polyline"),
+				(line) => line.getAttribute("points")?.split(" ").length,
+			),
+		).toEqual([2, 2]);
 
 		fireEvent.click(view.getByRole("button", { name: "一時停止" }));
 		expect(view.getByRole("button", { name: "開始" })).toBeEnabled();
@@ -276,6 +282,12 @@ describe("2D / 3D visualization", () => {
 		expect(view.getByRole("button", { name: "開始" })).toBeEnabled();
 		expect(stepButton).toBeEnabled();
 		expect(generation()).toHaveTextContent(/^0$/);
+		expect(
+			view.container.querySelectorAll(".fitness-chart polyline"),
+		).toHaveLength(0);
+		expect(
+			view.container.querySelectorAll(".fitness-chart circle"),
+		).toHaveLength(2);
 		vi.advanceTimersByTime(1000);
 		expect(generation()).toHaveTextContent(/^0$/);
 	});
