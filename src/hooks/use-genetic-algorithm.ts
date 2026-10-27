@@ -57,13 +57,13 @@ export function useGeneticAlgorithm() {
 		setPopulation(ga().getPopulation());
 		setStatistics(ga().getStatistics());
 
-		if (!canContinue) {
+		if (!canContinue || ga().getGeneration() >= generations()) {
 			stop();
 		}
 	};
 
 	const start = () => {
-		if (isRunning()) return;
+		if (isRunning() || ga().getGeneration() >= generations()) return;
 
 		setIsRunning(true);
 		intervalId = window.setInterval(() => {
@@ -145,6 +145,7 @@ export function useGeneticAlgorithm() {
 
 	const handlePopulationSizeChange = (event: Event) => {
 		const target = event.target as HTMLInputElement;
+		if (target.value === "") return;
 		validateAndSetPopulationSize(target.value);
 	};
 
@@ -156,6 +157,7 @@ export function useGeneticAlgorithm() {
 
 	const handleGenerationsChange = (event: Event) => {
 		const target = event.target as HTMLInputElement;
+		if (target.value === "") return;
 		validateAndSetGenerations(target.value);
 	};
 

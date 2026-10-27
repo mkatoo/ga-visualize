@@ -37,6 +37,10 @@ const interpolate = (
 	level: number,
 ): Point | null => {
 	if (!Number.isFinite(v1) || !Number.isFinite(v2) || v1 === v2) return null;
+	// Classify vertices on the level consistently across neighboring cells.
+	const startBelow = v1 < level;
+	const endBelow = v2 < level;
+	if (startBelow === endBelow) return null;
 	const t = (level - v1) / (v2 - v1);
 	if (t < 0 || t > 1) return null;
 	return {
@@ -55,6 +59,11 @@ const findContourIntersections = (
 	const { min, max } = bounds;
 	const step = (max - min) / resolution;
 	const segments: Segment[] = [];
+	const addSegment = (start: Point, end: Point) => {
+		if (Math.hypot(end.x - start.x, end.y - start.y) > step * 1e-9) {
+			segments.push({ start, end });
+		}
+	};
 
 	// グリッドの各セルを処理
 	for (let i = 0; i < resolution; i++) {
@@ -84,22 +93,13 @@ const findContourIntersections = (
 
 			// 2つの交点がある場合、線分として追加
 			if (intersections.length === 2) {
-				segments.push({
-					start: intersections[0],
-					end: intersections[1],
-				});
+				addSegment(intersections[0], intersections[1]);
 			}
 			// 4つの交点がある場合は特殊ケース（サドルポイント）
 			else if (intersections.length === 4) {
 				// 対角線で結ぶ
-				segments.push({
-					start: intersections[0],
-					end: intersections[1],
-				});
-				segments.push({
-					start: intersections[2],
-					end: intersections[3],
-				});
+				addSegment(intersections[0], intersections[1]);
+				addSegment(intersections[2], intersections[3]);
 			}
 		}
 	}
@@ -131,6 +131,10 @@ const drawContourSegments = (
 	ctx.stroke();
 };
 
+const axisNumberFormat = new Intl.NumberFormat("ja-JP", {
+	maximumFractionDigits: 2,
+});
+
 const drawAxes = (
 	ctx: CanvasRenderingContext2D,
 	bounds: { min: number; max: number },
@@ -160,10 +164,12 @@ const drawAxes = (
 		const pos = (i / 4) * size;
 
 		if (Math.abs(value) > AXIS_LABEL_THRESHOLD) {
-			ctx.strokeText(value.toFixed(0), pos, size / 2 + 15);
-			ctx.fillText(value.toFixed(0), pos, size / 2 + 15);
-			ctx.strokeText((-value).toFixed(0), size / 2 + 15, pos);
-			ctx.fillText((-value).toFixed(0), size / 2 + 15, pos);
+			const xLabel = axisNumberFormat.format(value);
+			const yLabel = axisNumberFormat.format(-value);
+			ctx.strokeText(xLabel, pos, size / 2 + 15);
+			ctx.fillText(xLabel, pos, size / 2 + 15);
+			ctx.strokeText(yLabel, size / 2 + 15, pos);
+			ctx.fillText(yLabel, size / 2 + 15, pos);
 		}
 	}
 };

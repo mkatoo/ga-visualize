@@ -247,6 +247,7 @@
 }
 
 .fitness-scale {
+	container-type: inline-size;
 	max-width: var(--visualization-size);
 	margin: 0 auto 20px;
 	color: #475569;
@@ -294,6 +295,12 @@
 
 .fitness-scale-ticks span:last-child {
 	transform: translateX(-100%);
+}
+
+@container (max-width: 400px) {
+	.fitness-scale-ticks span:nth-child(even) {
+		display: none;
+	}
 }
 
 .stats {
