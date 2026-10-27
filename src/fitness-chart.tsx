@@ -72,13 +72,13 @@ export function FitnessChart(props: FitnessChartProps) {
 	);
 	const series = [
 		{
-			label: "最良適応度",
+			label: "最良評価値",
 			color: VISUALIZATION_COLORS.best,
 			dash: undefined,
 			values: () => props.bestFitness,
 		},
 		{
-			label: "平均適応度",
+			label: "平均評価値",
 			color: VISUALIZATION_COLORS.population,
 			dash: "6 4",
 			values: () => props.averageFitness,
@@ -88,7 +88,7 @@ export function FitnessChart(props: FitnessChartProps) {
 	return (
 		<figure class="fitness-chart">
 			<figcaption class="chart-header">
-				<h2>適応度の推移</h2>
+				<h2>評価値の推移</h2>
 				<p>小さいほど良い</p>
 			</figcaption>
 			<div class="chart-container" ref={container}>
@@ -100,9 +100,9 @@ export function FitnessChart(props: FitnessChartProps) {
 					aria-labelledby={`${id}-title`}
 					aria-describedby={`${id}-description`}
 				>
-					<title id={`${id}-title`}>遺伝的アルゴリズムの適応度推移グラフ</title>
+					<title id={`${id}-title`}>遺伝的アルゴリズムの評価値推移グラフ</title>
 					<desc id={`${id}-description`}>
-						横軸は世代、縦軸は適応度です。適応度は小さいほど良い解です。実線は最良適応度、破線は平均適応度を示します。
+						横軸は世代、縦軸は評価値です。評価値は小さいほど良い解です。実線は最良評価値、破線は平均評価値を示します。
 					</desc>
 					<g class="chart-y-ticks">
 						<For each={fitnessTicks()}>
@@ -199,7 +199,7 @@ export function FitnessChart(props: FitnessChartProps) {
 					</g>
 					<g class="chart-labels">
 						<text x={PLOT_LEFT} y="13" class="axis-label">
-							適応度
+							評価値
 						</text>
 						<text
 							x={PLOT_LEFT + plotWidth() / 2}

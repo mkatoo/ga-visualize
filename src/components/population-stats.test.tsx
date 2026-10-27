@@ -21,10 +21,10 @@ describe("Population statistics fitness values", () => {
 				/>
 			));
 
-			expect(getByTitle(`適応度: ${fitness}`)).toHaveTextContent(
+			expect(getByTitle(`評価値: ${fitness}`)).toHaveTextContent(
 				displayedValue,
 			);
-			expect(getByTitle(`平均適応度: ${fitness}`)).toHaveTextContent(
+			expect(getByTitle(`平均評価値: ${fitness}`)).toHaveTextContent(
 				displayedValue,
 			);
 			expect(getByTitle("座標: (1.23456, -2.34567)")).toHaveTextContent(

@@ -15,12 +15,12 @@ export function PopulationStats(props: PopulationStatsProps) {
 	return (
 		<dl class="stats" aria-label="集団の統計">
 			<div class="stat-item best-individual">
-				<dt class="label">最良適応度</dt>
+				<dt class="label">最良評価値</dt>
 				{props.bestIndividual ? (
 					<>
 						<dd
 							class="value fitness-value"
-							title={`適応度: ${props.bestIndividual.fitness}`}
+							title={`評価値: ${props.bestIndividual.fitness}`}
 						>
 							{formatFitness(props.bestIndividual.fitness)}
 						</dd>
@@ -40,8 +40,8 @@ export function PopulationStats(props: PopulationStatsProps) {
 				)}
 			</div>
 			<div class="stat-item average-fitness">
-				<dt class="label">平均適応度</dt>
-				<dd class="value" title={`平均適応度: ${props.averageFitness}`}>
+				<dt class="label">平均評価値</dt>
+				<dd class="value" title={`平均評価値: ${props.averageFitness}`}>
 					{formatFitness(props.averageFitness)}
 				</dd>
 			</div>

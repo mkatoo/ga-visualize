@@ -213,7 +213,7 @@ describe("2D / 3D visualization", () => {
 			"コンテキストが失われました",
 		);
 		expect(view.getByText("7")).toBeTruthy();
-		expect(view.getByTitle("適応度: 5")).toBeTruthy();
+		expect(view.getByTitle("評価値: 5")).toBeTruthy();
 	});
 
 	test("keeps the GA running and its current population when switching views", async () => {
