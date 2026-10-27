@@ -254,7 +254,7 @@ describe("2D / 3D visualization", () => {
 
 		fireEvent.click(view.getByRole("button", { name: "開始" }));
 		expect(stepButton).toBeDisabled();
-		expect(view.getByLabelText("最適化関数:")).toBeDisabled();
+		expect(view.getByLabelText("目的関数:")).toBeDisabled();
 		vi.advanceTimersByTime(500);
 		expect(generation()).toHaveTextContent(/^1$/);
 		expect(
@@ -267,7 +267,7 @@ describe("2D / 3D visualization", () => {
 		fireEvent.click(view.getByRole("button", { name: "一時停止" }));
 		expect(view.getByRole("button", { name: "開始" })).toBeEnabled();
 		expect(stepButton).toBeEnabled();
-		expect(view.getByLabelText("最適化関数:")).toBeEnabled();
+		expect(view.getByLabelText("目的関数:")).toBeEnabled();
 		vi.advanceTimersByTime(1500);
 		expect(generation()).toHaveTextContent(/^1$/);
 
@@ -334,7 +334,7 @@ describe("2D / 3D visualization", () => {
 		fireEvent.input(view.getByLabelText("世代数 (1-1000):"), {
 			target: { value: "75" },
 		});
-		fireEvent.change(view.getByLabelText("最適化関数:"), {
+		fireEvent.change(view.getByLabelText("目的関数:"), {
 			target: { value: "ackley" },
 		});
 		expect(view.getByText("0.5秒／世代")).toBeTruthy();
@@ -359,8 +359,8 @@ describe("2D / 3D visualization", () => {
 		expect(settings).toHaveAttribute("open");
 		expect(view.getByLabelText("個体数 (1-1000):")).toHaveValue(150);
 		expect(view.getByLabelText("世代数 (1-1000):")).toHaveValue(75);
-		expect(view.getByLabelText("最適化関数:")).toHaveValue("ackley");
-		expect(view.getByLabelText("最適化関数:")).toBeDisabled();
+		expect(view.getByLabelText("目的関数:")).toHaveValue("ackley");
+		expect(view.getByLabelText("目的関数:")).toBeDisabled();
 		expect(view.getByLabelText("アニメーション速度:")).toHaveValue("1000");
 		expect(generation()).toHaveTextContent(/^1$/);
 		setMobile(true);

@@ -271,7 +271,7 @@ export function Visualizer(props: VisualizerProps) {
 				ref={canvasRef}
 				width={CANVAS_SIZE}
 				height={CANVAS_SIZE}
-				aria-label="最適化関数の地形と個体分布"
+				aria-label="目的関数の地形と個体分布"
 				style={{
 					border: "1px solid #ccc",
 					"border-radius": "4px",

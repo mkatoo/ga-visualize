@@ -38,7 +38,7 @@ export function GAApp() {
 		>
 			<header class="header">
 				<h1>遺伝的アルゴリズム可視化</h1>
-				<p>最適化関数の最適化過程を可視化</p>
+				<p>目的関数の最適化過程を可視化</p>
 			</header>
 
 			<div class="main-content">

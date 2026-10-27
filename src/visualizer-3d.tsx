@@ -70,7 +70,7 @@ export function Visualizer3D(props: Visualizer3DProps) {
 		<section
 			ref={host}
 			class="three-container"
-			aria-label="最適化関数の3D地形と個体分布"
+			aria-label="目的関数の3D地形と個体分布"
 		/>
 	);
 }

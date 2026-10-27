@@ -84,7 +84,7 @@ export function ControlPanel(props: ControlPanelProps) {
 				<div class="settings-content">
 					<div class="parameter-controls">
 						<div class="parameter-group function-parameter">
-							<label for="functionType">最適化関数:</label>
+							<label for="functionType">目的関数:</label>
 							<select
 								id="functionType"
 								value={props.functionType}
