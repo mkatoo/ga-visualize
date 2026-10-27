@@ -222,9 +222,9 @@ describe("2D / 3D visualization", () => {
 		vi.useFakeTimers();
 		fireEvent.click(view.getByRole("button", { name: "開始" }));
 		vi.advanceTimersByTime(500);
-		expect(view.container.querySelector(".stat-item .value")).toHaveTextContent(
-			"1",
-		);
+		expect(
+			view.container.querySelector(".generation-stat .value"),
+		).toHaveTextContent("1");
 		expect(renderer.updatePopulation.mock.lastCall?.[0]).not.toEqual(
 			population,
 		);
@@ -239,14 +239,15 @@ describe("2D / 3D visualization", () => {
 		);
 		expect(view.getByRole("button", { name: "一時停止" })).toBeEnabled();
 		vi.advanceTimersByTime(500);
-		expect(view.container.querySelector(".stat-item .value")).toHaveTextContent(
-			"2",
-		);
+		expect(
+			view.container.querySelector(".generation-stat .value"),
+		).toHaveTextContent("2");
 	});
 
 	test("pauses, resumes, steps, and resets using the unified playback controls", () => {
 		const view = render(() => <GAApp />);
-		const generation = () => view.container.querySelector(".stat-item .value");
+		const generation = () =>
+			view.container.querySelector(".generation-stat .value");
 		const stepButton = view.getByRole("button", { name: "1世代進める" });
 		vi.useFakeTimers();
 

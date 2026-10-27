@@ -285,30 +285,60 @@
 
 .stats {
 	display: grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: 15px;
-	margin-top: 15px;
+	grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 0.6fr);
+	gap: 12px;
+	margin: 16px 0 0;
 }
 
 .stat-item {
-	background: #f8f9fa;
-	padding: 15px;
+	min-width: 0;
+	background: #f8fafc;
+	padding: 16px;
+	border: 1px solid transparent;
 	border-radius: 6px;
-	text-align: center;
+	text-align: left;
 }
 
 .stat-item .label {
 	display: block;
-	font-size: 0.9rem;
-	color: #666;
-	margin-bottom: 5px;
+	font-size: 0.85rem;
+	color: #64748b;
+	margin-bottom: 8px;
 }
 
 .stat-item .value {
 	display: block;
-	font-size: 1.4rem;
-	font-weight: bold;
-	color: #333;
+	margin: 0;
+	font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+	font-size: 1.25rem;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	color: #334155;
+	overflow-wrap: anywhere;
+}
+
+.best-individual {
+	background: #f1f5f9;
+	border-color: #cbd5e1;
+}
+
+.best-individual .label {
+	color: #334155;
+	font-weight: 600;
+}
+
+.best-individual .value {
+	font-size: clamp(1.75rem, 3vw, 2.25rem);
+	font-weight: 700;
+	line-height: 1.2;
+	color: #0f172a;
+}
+
+.stat-item .no-data {
+	font-family: inherit;
+	font-size: 1rem;
+	font-weight: 400;
+	color: #64748b;
 }
 
 .control-panel {
@@ -577,48 +607,44 @@
 		font-size: 2rem;
 	}
 
-	.stats {
-		grid-template-columns: 1fr;
-	}
-
 	.parameter-controls {
 		grid-template-columns: 1fr;
 		gap: 10px;
 	}
 }
 
-.best-individual-details {
-	margin-top: 8px;
-	text-align: left;
+@media (max-width: 600px) {
+	.stats {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.stat-item {
+		padding: 12px;
+	}
+
+	.best-individual {
+		grid-column: 1 / -1;
+	}
 }
 
-.coordinate-display,
-.fitness-display {
+@media (max-width: 420px) {
+	.stats {
+		grid-template-columns: 1fr;
+	}
+}
+
+.coordinate-display {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 4px 8px;
-	justify-content: space-between;
-	margin: 4px 0;
-	font-size: 0.9rem;
-}
-
-.coord-label,
-.fitness-label {
-	color: #666;
-	font-weight: 500;
+	margin: 8px 0 0;
+	font-size: 0.8rem;
+	line-height: 1.6;
+	color: #64748b;
 }
 
 .coord-value {
-	font-family: "Courier New", monospace;
-	font-weight: 600;
-}
-
-.fitness-value {
-	font-family: "Courier New", monospace;
-	font-weight: 600;
-}
-
-.no-data {
-	color: #999;
-	font-style: italic;
+	font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+	font-variant-numeric: tabular-nums;
+	overflow-wrap: anywhere;
 }
