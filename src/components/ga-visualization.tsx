@@ -135,8 +135,10 @@ export function GAVisualization(props: GAVisualizationProps) {
 									setHeightScale(e.currentTarget.value as HeightScale)
 								}
 							>
-								<option value="linear">線形</option>
-								<option value="logarithmic">対数（log(1 + f)）</option>
+								<option value="linear">線形（評価値に比例）</option>
+								<option value="logarithmic">
+									対数（小さな評価値の違いを強調）
+								</option>
 							</select>
 						</label>
 						<label>

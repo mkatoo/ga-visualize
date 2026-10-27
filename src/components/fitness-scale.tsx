@@ -40,8 +40,8 @@ export function FitnessScale(props: { scale: FitnessColorScale }) {
 				</For>
 			</div>
 			<div class="fitness-scale-direction">
-				<span>低い・良い</span>
-				<span>高い・悪い</span>
+				<span>小さいほど良い</span>
+				<span>大きいほど悪い</span>
 			</div>
 		</figure>
 	);
