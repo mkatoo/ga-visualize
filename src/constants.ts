@@ -8,8 +8,8 @@ export const CANVAS_SIZE = 500;
 export const DEFAULT_ANIMATION_SPEED = 500;
 
 // GA設定のデフォルト値
-export const DEFAULT_POPULATION_SIZE = 100;
-export const DEFAULT_GENERATIONS = 50;
+export const DEFAULT_POPULATION_SIZE = 50;
+export const DEFAULT_GENERATIONS = 20;
 export const DEFAULT_FUNCTION_TYPE = "sphere" as const;
 
 // UI制約値の定数

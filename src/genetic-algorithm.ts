@@ -1,3 +1,8 @@
+import {
+	DEFAULT_FUNCTION_TYPE,
+	DEFAULT_GENERATIONS,
+	DEFAULT_POPULATION_SIZE,
+} from "./constants";
 import { type FunctionType, getObjectiveFunction } from "./objective-functions";
 
 export interface Individual {
@@ -43,13 +48,13 @@ export interface GAConfig {
 }
 
 export const DEFAULT_CONFIG: GAConfig = {
-	populationSize: 100,
-	generations: 50,
+	populationSize: DEFAULT_POPULATION_SIZE,
+	generations: DEFAULT_GENERATIONS,
 	mutationRate: 0.1,
 	crossoverRate: 0.8,
 	tournamentSize: 3,
 	bounds: { min: -100, max: 100 },
-	functionType: "sphere",
+	functionType: DEFAULT_FUNCTION_TYPE,
 };
 
 export class GeneticAlgorithm {
