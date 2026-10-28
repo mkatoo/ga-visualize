@@ -170,13 +170,6 @@ export function GAVisualization(props: GAVisualizationProps) {
 							格子線のみ
 						</label>
 					</div>
-					<p class="height-scale-description">
-						高さ・色:{" "}
-						{heightScale() === "linear"
-							? "評価値（線形尺度）"
-							: "評価値（log(1 + f)尺度）"}
-						。低いほど良い解です。
-					</p>
 				</Show>
 				<div class="landscape-view">
 					<Show

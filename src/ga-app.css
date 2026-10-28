@@ -189,6 +189,7 @@
 	flex-wrap: wrap;
 	align-items: center;
 	gap: 10px 16px;
+	margin-bottom: 12px;
 	text-align: left;
 	font-size: 0.85rem;
 	color: #475569;
@@ -253,15 +254,10 @@
 		0 0 5px white;
 }
 
-.height-scale-description,
 .three-help {
 	color: #64748b;
 	font-size: 0.8rem;
 	line-height: 1.6;
-	text-align: left;
-}
-
-.three-help {
 	text-align: center;
 }
 
