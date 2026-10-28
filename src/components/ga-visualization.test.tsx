@@ -230,7 +230,7 @@ describe("2D / 3D visualization", () => {
 			"aria-pressed",
 			"true",
 		);
-		expect(view.getByText("7")).toBeTruthy();
+		expect(view.getByRole("heading", { name: "第7世代のデータ" })).toBeTruthy();
 		expect(ThreeLandscapeRenderer).not.toHaveBeenCalled();
 		await open3D(view);
 		expect(view.queryByRole("status")).toBeNull();
@@ -261,7 +261,7 @@ describe("2D / 3D visualization", () => {
 		expect(view.getByRole("status")).toHaveTextContent(
 			"コンテキストが失われました",
 		);
-		expect(view.getByText("7")).toBeTruthy();
+		expect(view.getByRole("heading", { name: "第7世代のデータ" })).toBeTruthy();
 		expect(view.getByTitle("評価値: 5")).toBeTruthy();
 	});
 
@@ -273,8 +273,8 @@ describe("2D / 3D visualization", () => {
 		fireEvent.click(view.getByRole("button", { name: "開始" }));
 		vi.advanceTimersByTime(500);
 		expect(
-			view.container.querySelector(".generation-stat .value"),
-		).toHaveTextContent("1");
+			view.getByRole("heading", { name: /^第\d+世代のデータ$/ }),
+		).toHaveTextContent("第1世代のデータ");
 		expect(renderer.updatePopulation.mock.lastCall?.[0]).not.toEqual(
 			population,
 		);
@@ -290,14 +290,14 @@ describe("2D / 3D visualization", () => {
 		expect(view.getByRole("button", { name: "一時停止" })).toBeEnabled();
 		vi.advanceTimersByTime(500);
 		expect(
-			view.container.querySelector(".generation-stat .value"),
-		).toHaveTextContent("2");
+			view.getByRole("heading", { name: /^第\d+世代のデータ$/ }),
+		).toHaveTextContent("第2世代のデータ");
 	});
 
 	test("pauses, resumes, steps, and resets using the unified playback controls", () => {
 		const view = render(() => <GAApp />);
 		const generation = () =>
-			view.container.querySelector(".generation-stat .value");
+			view.getByRole("heading", { name: /^第\d+世代のデータ$/ });
 		const stepButton = view.getByRole("button", { name: "1世代進める" });
 		vi.useFakeTimers();
 
@@ -305,7 +305,7 @@ describe("2D / 3D visualization", () => {
 		expect(stepButton).toBeDisabled();
 		expect(view.getByLabelText("目的関数:")).toBeDisabled();
 		vi.advanceTimersByTime(500);
-		expect(generation()).toHaveTextContent(/^1$/);
+		expect(generation()).toHaveTextContent(/^第1世代のデータ$/);
 		expect(
 			Array.from(
 				view.container.querySelectorAll(".fitness-chart polyline"),
@@ -318,21 +318,21 @@ describe("2D / 3D visualization", () => {
 		expect(stepButton).toBeEnabled();
 		expect(view.getByLabelText("目的関数:")).toBeDisabled();
 		vi.advanceTimersByTime(1500);
-		expect(generation()).toHaveTextContent(/^1$/);
+		expect(generation()).toHaveTextContent(/^第1世代のデータ$/);
 
 		fireEvent.click(stepButton);
-		expect(generation()).toHaveTextContent(/^2$/);
+		expect(generation()).toHaveTextContent(/^第2世代のデータ$/);
 		vi.advanceTimersByTime(1000);
-		expect(generation()).toHaveTextContent(/^2$/);
+		expect(generation()).toHaveTextContent(/^第2世代のデータ$/);
 
 		fireEvent.click(view.getByRole("button", { name: "再開" }));
 		vi.advanceTimersByTime(500);
-		expect(generation()).toHaveTextContent(/^3$/);
+		expect(generation()).toHaveTextContent(/^第3世代のデータ$/);
 
 		fireEvent.click(view.getByRole("button", { name: "リセット" }));
 		expect(view.getByRole("button", { name: "開始" })).toBeEnabled();
 		expect(stepButton).toBeEnabled();
-		expect(generation()).toHaveTextContent(/^0$/);
+		expect(generation()).toHaveTextContent(/^第0世代のデータ$/);
 		expect(
 			view.container.querySelectorAll(".fitness-chart polyline"),
 		).toHaveLength(0);
@@ -340,7 +340,7 @@ describe("2D / 3D visualization", () => {
 			view.container.querySelectorAll(".fitness-chart circle"),
 		).toHaveLength(2);
 		vi.advanceTimersByTime(1000);
-		expect(generation()).toHaveTextContent(/^0$/);
+		expect(generation()).toHaveTextContent(/^第0世代のデータ$/);
 	});
 
 	test("synchronizes history with the 3D population, statistics and chart", async () => {
@@ -371,8 +371,8 @@ describe("2D / 3D visualization", () => {
 		expect(view.getByRole("button", { name: "最新から再開" })).toBeEnabled();
 		expect(renderer.updatePopulation.mock.lastCall?.[0]).toEqual(generationOne);
 		expect(
-			view.container.querySelector(".generation-stat .value"),
-		).toHaveTextContent(/^1$/);
+			view.getByRole("heading", { name: /^第\d+世代のデータ$/ }),
+		).toHaveTextContent(/^第1世代のデータ$/);
 		expect(generationInput).toHaveValue(1);
 		expect(
 			view.getByRole("region", { name: "選択した世代の評価値" }),
@@ -382,8 +382,8 @@ describe("2D / 3D visualization", () => {
 		});
 		expect(slider).toHaveValue("2");
 		expect(
-			view.container.querySelector(".generation-stat .value"),
-		).toHaveTextContent(/^2$/);
+			view.getByRole("heading", { name: /^第\d+世代のデータ$/ }),
+		).toHaveTextContent(/^第2世代のデータ$/);
 		fireEvent.click(view.getByRole("button", { name: "最新世代に戻る" }));
 		expect(slider).toHaveValue("3");
 		expect(generationInput).toHaveValue(3);
@@ -413,8 +413,8 @@ describe("2D / 3D visualization", () => {
 		fireEvent.click(view.getByRole("button", { name: "最新から再開" }));
 		vi.advanceTimersByTime(500);
 		expect(
-			view.container.querySelector(".generation-stat .value"),
-		).toHaveTextContent(/^4$/);
+			view.getByRole("heading", { name: /^第\d+世代のデータ$/ }),
+		).toHaveTextContent(/^第4世代のデータ$/);
 		expect(generationInput).toHaveValue(4);
 		expect(slider).toHaveValue("4");
 		fireEvent.click(view.getByRole("button", { name: "リセット" }));
@@ -441,8 +441,8 @@ describe("2D / 3D visualization", () => {
 		fireEvent.click(view.getByRole("button", { name: "もう一度実行" }));
 		expect(view.getByRole("status")).toHaveTextContent("実行中");
 		expect(
-			view.container.querySelector(".generation-stat .value"),
-		).toHaveTextContent(/^0$/);
+			view.getByRole("heading", { name: /^第\d+世代のデータ$/ }),
+		).toHaveTextContent(/^第0世代のデータ$/);
 		vi.advanceTimersByTime(500);
 		expect(view.getByRole("status")).toHaveTextContent("実行が完了しました");
 	});
@@ -501,7 +501,7 @@ describe("2D / 3D visualization", () => {
 		const settings = view.container.querySelector(".settings-details");
 		const summary = view.container.querySelector("summary");
 		const generation = () =>
-			view.container.querySelector(".generation-stat .value");
+			view.getByRole("heading", { name: /^第\d+世代のデータ$/ });
 		expect(settings).not.toHaveAttribute("open");
 		if (!summary) throw new Error("Settings summary is missing");
 		fireEvent.click(summary);
@@ -532,7 +532,7 @@ describe("2D / 3D visualization", () => {
 		vi.useFakeTimers();
 		fireEvent.click(view.getByRole("button", { name: "開始" }));
 		vi.advanceTimersByTime(1000);
-		expect(generation()).toHaveTextContent(/^1$/);
+		expect(generation()).toHaveTextContent(/^第1世代のデータ$/);
 		setMobile(false);
 		expect(settings).toHaveAttribute("open");
 		expect(view.getByLabelText("個体数 (1-1000):")).toHaveValue(150);
@@ -540,14 +540,14 @@ describe("2D / 3D visualization", () => {
 		expect(view.getByLabelText("目的関数:")).toHaveValue("ackley");
 		expect(view.getByLabelText("目的関数:")).toBeDisabled();
 		expect(view.getByLabelText("アニメーション速度:")).toHaveValue("1000");
-		expect(generation()).toHaveTextContent(/^1$/);
+		expect(generation()).toHaveTextContent(/^第1世代のデータ$/);
 		setMobile(true);
 		expect(settings).not.toHaveAttribute("open");
 		vi.advanceTimersByTime(1000);
-		expect(generation()).toHaveTextContent(/^2$/);
+		expect(generation()).toHaveTextContent(/^第2世代のデータ$/);
 		fireEvent.click(view.getByRole("button", { name: "一時停止" }));
 		vi.advanceTimersByTime(1000);
-		expect(generation()).toHaveTextContent(/^2$/);
+		expect(generation()).toHaveTextContent(/^第2世代のデータ$/);
 
 		view.unmount();
 		expect(listeners.size).toBe(0);

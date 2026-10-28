@@ -41,11 +41,14 @@ describe("Population statistics fitness values", () => {
 				bestEverGeneration={4}
 			/>
 		));
-		expect(view.getByTitle("これまでの最良評価値: 0")).toHaveTextContent(
+		expect(view.getByTitle("第8世代までの最良評価値: 0")).toHaveTextContent(
 			"0.0000",
 		);
 		expect(view.getByTitle("評価値: 14.203125")).toHaveTextContent("14.2031");
 		expect(view.getByText(/第4世代で発見/)).toBeTruthy();
+		expect(
+			view.getByRole("region", { name: "第8世代のデータ" }),
+		).toHaveTextContent("最良評価値");
 	});
 
 	test.each([

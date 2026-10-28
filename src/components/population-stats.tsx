@@ -1,3 +1,4 @@
+import { createUniqueId } from "solid-js";
 import type { Individual } from "../genetic-algorithm";
 
 interface PopulationStatsProps {
@@ -14,6 +15,8 @@ const formatFitness = (value: number) =>
 		: value.toFixed(4);
 
 export function PopulationStats(props: PopulationStatsProps) {
+	const generationHeadingId = createUniqueId();
+	const bestEverLabel = () => `第${props.generation}世代までの最良評価値`;
 	const bestEver = () => props.bestEver ?? props.bestIndividual;
 	const bestEverFitness = () => {
 		const best = bestEver();
@@ -28,27 +31,22 @@ export function PopulationStats(props: PopulationStatsProps) {
 	return (
 		<section class="stats" aria-label="集団の統計">
 			<dl class="stat-item best-ever">
-				<dt class="label">この世代までの最良評価値</dt>
-				<dd
-					class="value"
-					title={`これまでの最良評価値: ${bestEver()?.fitness}`}
-				>
+				<dt class="label">{bestEverLabel()}</dt>
+				<dd class="value" title={`${bestEverLabel()}: ${bestEver()?.fitness}`}>
 					{bestEverFitness()}
 				</dd>
 				<dd class="coordinate-display">{bestEverDescription()}</dd>
 			</dl>
 			<section
 				class="stat-item current-generation"
-				aria-label="この世代のデータ"
+				aria-labelledby={generationHeadingId}
 			>
-				<h3 class="label">この世代のデータ</h3>
+				<h3 id={generationHeadingId} class="label">
+					第{props.generation}世代のデータ
+				</h3>
 				<dl class="generation-data">
-					<div class="generation-stat">
-						<dt class="label">世代</dt>
-						<dd class="value">{props.generation}</dd>
-					</div>
 					<div class="best-individual">
-						<dt class="label">この世代の最良評価値</dt>
+						<dt class="label">最良評価値</dt>
 						{props.bestIndividual ? (
 							<>
 								<dd

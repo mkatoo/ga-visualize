@@ -446,21 +446,6 @@
 	margin-bottom: 4px;
 }
 
-.generation-stat {
-	grid-column: 1 / -1;
-	display: flex;
-	align-items: baseline;
-	gap: 8px;
-}
-
-.generation-stat .label {
-	margin: 0;
-}
-
-.generation-stat .value {
-	font-size: 1rem;
-}
-
 .best-individual .label {
 	color: var(--color-best);
 	font-weight: 600;
