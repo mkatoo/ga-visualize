@@ -802,18 +802,6 @@
 	color: #64748b;
 }
 
-.chart-readout {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px 16px;
-	padding: 12px;
-	border-radius: 4px;
-	background: #f8fafc;
-	font-size: 0.85rem;
-	color: #334155;
-	font-variant-numeric: tabular-nums;
-}
-
 .chart-gridline {
 	stroke: #e2e8f0;
 }

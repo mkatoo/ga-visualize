@@ -116,7 +116,7 @@ export function FitnessChart(props: FitnessChartProps) {
 				<h2>評価値の推移</h2>
 			</figcaption>
 			<p class="chart-help">
-				グラフをタップするか、上部の表示世代を指定すると評価値を確認できます。
+				グラフをタップするか、上部の表示世代を指定すると、統計カードで評価値を確認できます。
 			</p>
 			<div class="chart-container" ref={container}>
 				<svg
@@ -257,17 +257,6 @@ export function FitnessChart(props: FitnessChartProps) {
 					</g>
 				</svg>
 			</div>
-			<section class="chart-readout" aria-label="選択した世代の評価値">
-				<strong>第{selectedGeneration()}世代</strong>
-				<span>
-					この世代の最良評価値:{" "}
-					{(props.bestFitness[selectedGeneration()] ?? 0).toPrecision(5)}
-				</span>
-				<span>
-					平均評価値:{" "}
-					{(props.averageFitness[selectedGeneration()] ?? 0).toPrecision(5)}
-				</span>
-			</section>
 			<div class="legend">
 				<For each={series}>
 					{(item) => (

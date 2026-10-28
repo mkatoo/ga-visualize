@@ -51,9 +51,8 @@ describe("FitnessChart scale", () => {
 				?.split(" "),
 		).toHaveLength(51);
 		setSelectedGeneration(35);
-		expect(
-			view.getByRole("region", { name: "選択した世代の評価値" }),
-		).toHaveTextContent("この世代の最良評価値: 15.000");
+		expect(view.getByText("この世代の最良評価値: 15")).toBeInTheDocument();
+		expect(view.getByText("平均評価値: 65")).toBeInTheDocument();
 		expect(
 			view.container.querySelector(".chart-x-ticks text"),
 		).toHaveTextContent(/^0$/);
@@ -78,9 +77,8 @@ describe("FitnessChart scale", () => {
 		} as DOMRect);
 		fireEvent.pointerDown(chart, { clientX: 446 });
 		expect(onSelect).toHaveBeenLastCalledWith(1);
-		expect(
-			view.getByRole("region", { name: "選択した世代の評価値" }),
-		).toHaveTextContent("第1世代");
+		expect(view.getByText("この世代の最良評価値: 2")).toBeInTheDocument();
+		expect(view.getByText("平均評価値: 6")).toBeInTheDocument();
 	});
 
 	test("draws both zero-fitness series along the bottom axis", () => {

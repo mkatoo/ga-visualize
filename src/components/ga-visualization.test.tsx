@@ -364,6 +364,9 @@ describe("2D / 3D visualization", () => {
 		fireEvent.click(view.getByRole("button", { name: "開始" }));
 		vi.advanceTimersByTime(500);
 		const generationOne = renderer.updatePopulation.mock.lastCall?.[0];
+		const generationOneStatistics = view.getByRole("region", {
+			name: "第1世代のデータ",
+		}).textContent;
 		vi.advanceTimersByTime(1000);
 		fireEvent.input(slider, {
 			target: { value: "1" },
@@ -375,8 +378,8 @@ describe("2D / 3D visualization", () => {
 		).toHaveTextContent(/^第1世代のデータ$/);
 		expect(generationInput).toHaveValue(1);
 		expect(
-			view.getByRole("region", { name: "選択した世代の評価値" }),
-		).toHaveTextContent("第1世代");
+			view.getByRole("region", { name: "第1世代のデータ" }).textContent,
+		).toBe(generationOneStatistics);
 		fireEvent.input(generationInput, {
 			target: { value: "2" },
 		});
@@ -409,6 +412,9 @@ describe("2D / 3D visualization", () => {
 		fireEvent.pointerDown(chart, { clientX: 100 });
 		expect(generationInput).toHaveValue(1);
 		expect(slider).toHaveValue("1");
+		expect(
+			view.getByRole("region", { name: "第1世代のデータ" }).textContent,
+		).toBe(generationOneStatistics);
 		expect(renderer.updatePopulation.mock.lastCall?.[0]).toEqual(generationOne);
 		fireEvent.click(view.getByRole("button", { name: "最新から再開" }));
 		vi.advanceTimersByTime(500);
