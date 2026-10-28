@@ -3,6 +3,7 @@ import {
 	createEffect,
 	createMemo,
 	createSignal,
+	type JSX,
 	onCleanup,
 	Show,
 } from "solid-js";
@@ -33,6 +34,7 @@ interface GAVisualizationProps {
 	bestEver?: Individual | null;
 	bestEverGeneration?: number;
 	functionType: FunctionType;
+	children?: JSX.Element;
 }
 
 export function GAVisualization(props: GAVisualizationProps) {
@@ -96,36 +98,39 @@ export function GAVisualization(props: GAVisualizationProps) {
 	onCleanup(() => request++);
 	return (
 		<div class="visualization-panel">
-			<div class="view-toolbar">
-				<fieldset class="view-toggle" aria-label="表示方式">
-					<button
-						type="button"
-						aria-pressed={mode() === "2d"}
-						onClick={() => {
-							request++;
-							setMode("2d");
-						}}
-					>
-						2D
-					</button>
-					<button
-						type="button"
-						aria-pressed={mode() === "3d"}
-						onClick={select3D}
-					>
-						3D
-					</button>
-				</fieldset>
-				<Show when={mode() === "3d"}>
-					<button
-						type="button"
-						class="view-reset"
-						onClick={() => setResetView((v) => v + 1)}
-					>
-						視点リセット
-					</button>
-				</Show>
-			</div>
+			<fieldset class="visualization-toolbar" aria-label="表示ツールバー">
+				<div class="view-toolbar">
+					<fieldset class="view-toggle" aria-label="表示方式">
+						<button
+							type="button"
+							aria-pressed={mode() === "2d"}
+							onClick={() => {
+								request++;
+								setMode("2d");
+							}}
+						>
+							2D
+						</button>
+						<button
+							type="button"
+							aria-pressed={mode() === "3d"}
+							onClick={select3D}
+						>
+							3D
+						</button>
+					</fieldset>
+					<Show when={mode() === "3d"}>
+						<button
+							type="button"
+							class="view-reset"
+							onClick={() => setResetView((v) => v + 1)}
+						>
+							視点リセット
+						</button>
+					</Show>
+				</div>
+				{props.children}
+			</fieldset>
 			<Show when={error()}>
 				<output class="visualization-error">{error()}</output>
 			</Show>

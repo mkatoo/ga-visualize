@@ -32,13 +32,13 @@ describe("FitnessChart scale", () => {
 	});
 
 	test("keeps the full generation interval when selecting a generation", () => {
-		const onSelect = vi.fn();
+		const [selectedGeneration, setSelectedGeneration] = createSignal(50);
 		const view = render(() => (
 			<FitnessChart
 				bestFitness={Array.from({ length: 51 }, (_, i) => 50 - i)}
 				averageFitness={Array.from({ length: 51 }, (_, i) => 100 - i)}
 				totalGenerations={100}
-				onSelectGeneration={onSelect}
+				selectedGeneration={selectedGeneration()}
 			/>
 		));
 		const ticks = view.container.querySelectorAll(".chart-x-ticks text");
@@ -50,10 +50,7 @@ describe("FitnessChart scale", () => {
 				?.getAttribute("points")
 				?.split(" "),
 		).toHaveLength(51);
-		fireEvent.input(view.getByLabelText("確認する世代"), {
-			target: { value: "35" },
-		});
-		expect(onSelect).toHaveBeenLastCalledWith(35);
+		setSelectedGeneration(35);
 		expect(
 			view.getByRole("region", { name: "選択した世代の評価値" }),
 		).toHaveTextContent("この世代の最良評価値: 15.000");
@@ -81,7 +78,9 @@ describe("FitnessChart scale", () => {
 		} as DOMRect);
 		fireEvent.pointerDown(chart, { clientX: 446 });
 		expect(onSelect).toHaveBeenLastCalledWith(1);
-		expect(view.getByLabelText("確認する世代")).toHaveValue(1);
+		expect(
+			view.getByRole("region", { name: "選択した世代の評価値" }),
+		).toHaveTextContent("第1世代");
 	});
 
 	test("draws both zero-fitness series along the bottom axis", () => {

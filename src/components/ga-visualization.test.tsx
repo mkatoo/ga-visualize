@@ -345,13 +345,27 @@ describe("2D / 3D visualization", () => {
 
 	test("synchronizes history with the 3D population, statistics and chart", async () => {
 		const view = render(() => <GAApp />);
+		const toolbar = within(view.getByRole("group", { name: "表示ツールバー" }));
+		const slider = toolbar.getByRole("slider", {
+			name: "表示世代のスライダー",
+		});
+		const generationInput = toolbar.getByRole("spinbutton", {
+			name: "表示世代",
+		});
+		expect(slider).toBeDisabled();
+		expect(generationInput).toBeDisabled();
+		expect(
+			within(
+				view.container.querySelector(".fitness-chart") as HTMLElement,
+			).queryByRole("spinbutton"),
+		).toBeNull();
 		await open3D(view);
 		vi.useFakeTimers();
 		fireEvent.click(view.getByRole("button", { name: "開始" }));
 		vi.advanceTimersByTime(500);
 		const generationOne = renderer.updatePopulation.mock.lastCall?.[0];
 		vi.advanceTimersByTime(1000);
-		fireEvent.input(view.getByLabelText(/表示する世代:/), {
+		fireEvent.input(slider, {
 			target: { value: "1" },
 		});
 		expect(view.getByRole("button", { name: "最新から再開" })).toBeEnabled();
@@ -359,24 +373,54 @@ describe("2D / 3D visualization", () => {
 		expect(
 			view.container.querySelector(".generation-stat .value"),
 		).toHaveTextContent(/^1$/);
-		expect(view.getByLabelText("確認する世代")).toHaveValue(1);
+		expect(generationInput).toHaveValue(1);
 		expect(
 			view.getByRole("region", { name: "選択した世代の評価値" }),
 		).toHaveTextContent("第1世代");
-		fireEvent.input(view.getByLabelText("確認する世代"), {
+		fireEvent.input(generationInput, {
 			target: { value: "2" },
 		});
-		expect(view.getByLabelText(/表示する世代:/)).toHaveValue("2");
+		expect(slider).toHaveValue("2");
 		expect(
 			view.container.querySelector(".generation-stat .value"),
 		).toHaveTextContent(/^2$/);
 		fireEvent.click(view.getByRole("button", { name: "最新世代に戻る" }));
-		expect(view.getByLabelText(/表示する世代:/)).toHaveValue("3");
-		fireEvent.click(view.getByRole("button", { name: "再開" }));
+		expect(slider).toHaveValue("3");
+		expect(generationInput).toHaveValue(3);
+		fireEvent.input(generationInput, { target: { value: "99" } });
+		expect(generationInput).toHaveValue(3);
+		fireEvent.input(generationInput, { target: { value: "-1" } });
+		expect(generationInput).toHaveValue(0);
+		expect(slider).toHaveValue("0");
+		fireEvent.input(generationInput, { target: { value: "1.6" } });
+		expect(generationInput).toHaveValue(2);
+		expect(slider).toHaveValue("2");
+		fireEvent.input(generationInput, { target: { value: "" } });
+		fireEvent.blur(generationInput);
+		expect(generationInput).toHaveValue(2);
+		vi.stubGlobal("PointerEvent", MouseEvent);
+		const chart = view.getByRole("img", {
+			name: "遺伝的アルゴリズムの評価値推移グラフ",
+		});
+		vi.spyOn(chart, "getBoundingClientRect").mockReturnValue({
+			left: 0,
+			width: 640,
+		} as DOMRect);
+		fireEvent.pointerDown(chart, { clientX: 100 });
+		expect(generationInput).toHaveValue(1);
+		expect(slider).toHaveValue("1");
+		expect(renderer.updatePopulation.mock.lastCall?.[0]).toEqual(generationOne);
+		fireEvent.click(view.getByRole("button", { name: "最新から再開" }));
 		vi.advanceTimersByTime(500);
 		expect(
 			view.container.querySelector(".generation-stat .value"),
 		).toHaveTextContent(/^4$/);
+		expect(generationInput).toHaveValue(4);
+		expect(slider).toHaveValue("4");
+		fireEvent.click(view.getByRole("button", { name: "リセット" }));
+		expect(generationInput).toHaveValue(0);
+		expect(slider).toHaveValue("0");
+		expect(generationInput).toBeDisabled();
 	});
 
 	test("shows completion and offers a new run instead of inactive playback", () => {

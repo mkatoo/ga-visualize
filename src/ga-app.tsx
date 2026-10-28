@@ -74,12 +74,6 @@ export function GAApp() {
 					constraints={constraints}
 				/>
 				<div class="visualization-workspace">
-					<GenerationHistory
-						generation={displayedGeneration()}
-						latestGeneration={statistics().generation}
-						onSelect={selectGeneration}
-						onShowLatest={showLatest}
-					/>
 					<GAVisualization
 						population={displayedSnapshot().population}
 						bounds={ga().getBounds()}
@@ -89,7 +83,14 @@ export function GAApp() {
 						bestEver={displayedSnapshot().bestEver}
 						bestEverGeneration={displayedSnapshot().bestEverGeneration}
 						functionType={functionType()}
-					/>
+					>
+						<GenerationHistory
+							generation={displayedGeneration()}
+							latestGeneration={statistics().generation}
+							onSelect={selectGeneration}
+							onShowLatest={showLatest}
+						/>
+					</GAVisualization>
 					<FitnessChart
 						selectedGeneration={displayedGeneration()}
 						onSelectGeneration={selectGeneration}

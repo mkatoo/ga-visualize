@@ -115,25 +115,8 @@ export function FitnessChart(props: FitnessChartProps) {
 			<figcaption class="chart-header">
 				<h2>評価値の推移</h2>
 			</figcaption>
-			<div class="chart-options">
-				<label>
-					確認する世代
-					<input
-						type="number"
-						min={0}
-						max={latestGeneration()}
-						value={selectedGeneration()}
-						onInput={(event) =>
-							selectGeneration(event.currentTarget.valueAsNumber)
-						}
-						onBlur={(event) => {
-							event.currentTarget.value = String(selectedGeneration());
-						}}
-					/>
-				</label>
-			</div>
 			<p class="chart-help">
-				グラフをタップするか、世代を指定すると評価値を確認できます。
+				グラフをタップするか、上部の表示世代を指定すると評価値を確認できます。
 			</p>
 			<div class="chart-container" ref={container}>
 				<svg
