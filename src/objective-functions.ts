@@ -7,6 +7,7 @@ export type FunctionType =
 
 export interface ObjectiveFunction {
 	name: string;
+	optimum: { x: number; y: number; fitness: number };
 	fn: (x: number, y: number) => number;
 	bounds: { min: number; max: number };
 	contourLevels: number[];
@@ -15,12 +16,14 @@ export interface ObjectiveFunction {
 export const OBJECTIVE_FUNCTIONS: Record<FunctionType, ObjectiveFunction> = {
 	sphere: {
 		name: "Sphere Function",
+		optimum: { x: 0, y: 0, fitness: 0 },
 		fn: (x: number, y: number): number => x * x + y * y,
 		bounds: { min: -10, max: 10 },
 		contourLevels: [0.1, 0.25, 0.5, 1, 2, 4, 6, 9, 12, 16, 20, 25],
 	},
 	rosenbrock: {
 		name: "Rosenbrock Function",
+		optimum: { x: 1, y: 1, fitness: 0 },
 		fn: (x: number, y: number): number => {
 			const a = 1;
 			const b = 100;
@@ -31,6 +34,7 @@ export const OBJECTIVE_FUNCTIONS: Record<FunctionType, ObjectiveFunction> = {
 	},
 	ackley: {
 		name: "Ackley Function",
+		optimum: { x: 0, y: 0, fitness: 0 },
 		fn: (x: number, y: number): number => {
 			const a = 20;
 			const b = 0.2;
@@ -47,6 +51,7 @@ export const OBJECTIVE_FUNCTIONS: Record<FunctionType, ObjectiveFunction> = {
 	},
 	rastrigin: {
 		name: "Rastrigin Function",
+		optimum: { x: 0, y: 0, fitness: 0 },
 		fn: (x: number, y: number): number => {
 			const A = 10;
 			const n = 2;
@@ -61,6 +66,7 @@ export const OBJECTIVE_FUNCTIONS: Record<FunctionType, ObjectiveFunction> = {
 	},
 	beale: {
 		name: "Beale Function",
+		optimum: { x: 3, y: 0.5, fitness: 0 },
 		fn: (x: number, y: number): number => {
 			const term1 = (1.5 - x + x * y) ** 2;
 			const term2 = (2.25 - x + x * y * y) ** 2;

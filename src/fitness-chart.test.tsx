@@ -1,4 +1,4 @@
-import { cleanup, render } from "@solidjs/testing-library";
+import { cleanup, fireEvent, render } from "@solidjs/testing-library";
 import { createSignal } from "solid-js";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { FitnessChart } from "./fitness-chart";
@@ -7,6 +7,81 @@ describe("FitnessChart scale", () => {
 	afterEach(() => {
 		cleanup();
 		vi.unstubAllGlobals();
+	});
+
+	test("uses a linear scale for small values while keeping zero finite", () => {
+		const view = render(() => (
+			<FitnessChart
+				bestFitness={[100, 0.0001, 0]}
+				averageFitness={[200, 0.0002, 0]}
+				totalGenerations={2}
+			/>
+		));
+		const middleY = Number(
+			view.container
+				.querySelector("polyline")
+				?.getAttribute("points")
+				?.split(" ")[1]
+				.split(",")[1],
+		);
+		expect(middleY).toBeCloseTo(212 - (0.0001 / 200) * 190, 10);
+		for (const line of view.container.querySelectorAll("polyline")) {
+			expect(line.getAttribute("points")).not.toMatch(/NaN|Infinity/);
+			expect(line.getAttribute("points")).toMatch(/620,212$/);
+		}
+	});
+
+	test("keeps the full generation interval when selecting a generation", () => {
+		const onSelect = vi.fn();
+		const view = render(() => (
+			<FitnessChart
+				bestFitness={Array.from({ length: 51 }, (_, i) => 50 - i)}
+				averageFitness={Array.from({ length: 51 }, (_, i) => 100 - i)}
+				totalGenerations={100}
+				onSelectGeneration={onSelect}
+			/>
+		));
+		const ticks = view.container.querySelectorAll(".chart-x-ticks text");
+		expect(ticks[0]).toHaveTextContent(/^0$/);
+		expect(ticks[ticks.length - 1]).toHaveTextContent(/^100$/);
+		expect(
+			view.container
+				.querySelector("polyline")
+				?.getAttribute("points")
+				?.split(" "),
+		).toHaveLength(51);
+		fireEvent.input(view.getByLabelText("確認する世代"), {
+			target: { value: "35" },
+		});
+		expect(onSelect).toHaveBeenLastCalledWith(35);
+		expect(
+			view.getByRole("region", { name: "選択した世代の評価値" }),
+		).toHaveTextContent("この世代の最良評価値: 15.000");
+		expect(
+			view.container.querySelector(".chart-x-ticks text"),
+		).toHaveTextContent(/^0$/);
+		expect(ticks[ticks.length - 1]).toHaveTextContent(/^100$/);
+	});
+
+	test("selects the nearest available generation when the chart is tapped", () => {
+		vi.stubGlobal("PointerEvent", MouseEvent);
+		const onSelect = vi.fn();
+		const view = render(() => (
+			<FitnessChart
+				bestFitness={[4, 2, 1]}
+				averageFitness={[8, 6, 4]}
+				totalGenerations={2}
+				onSelectGeneration={onSelect}
+			/>
+		));
+		const chart = view.getByRole("img");
+		vi.spyOn(chart, "getBoundingClientRect").mockReturnValue({
+			left: 100,
+			width: 640,
+		} as DOMRect);
+		fireEvent.pointerDown(chart, { clientX: 446 });
+		expect(onSelect).toHaveBeenLastCalledWith(1);
+		expect(view.getByLabelText("確認する世代")).toHaveValue(1);
 	});
 
 	test("draws both zero-fitness series along the bottom axis", () => {

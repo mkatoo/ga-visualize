@@ -265,9 +265,9 @@ describe("2D / 3D visualization", () => {
 		).toEqual([2, 2]);
 
 		fireEvent.click(view.getByRole("button", { name: "一時停止" }));
-		expect(view.getByRole("button", { name: "開始" })).toBeEnabled();
+		expect(view.getByRole("button", { name: "再開" })).toBeEnabled();
 		expect(stepButton).toBeEnabled();
-		expect(view.getByLabelText("目的関数:")).toBeEnabled();
+		expect(view.getByLabelText("目的関数:")).toBeDisabled();
 		vi.advanceTimersByTime(1500);
 		expect(generation()).toHaveTextContent(/^1$/);
 
@@ -276,7 +276,7 @@ describe("2D / 3D visualization", () => {
 		vi.advanceTimersByTime(1000);
 		expect(generation()).toHaveTextContent(/^2$/);
 
-		fireEvent.click(view.getByRole("button", { name: "開始" }));
+		fireEvent.click(view.getByRole("button", { name: "再開" }));
 		vi.advanceTimersByTime(500);
 		expect(generation()).toHaveTextContent(/^3$/);
 
@@ -292,6 +292,91 @@ describe("2D / 3D visualization", () => {
 		).toHaveLength(2);
 		vi.advanceTimersByTime(1000);
 		expect(generation()).toHaveTextContent(/^0$/);
+	});
+
+	test("synchronizes history with the 3D population, statistics and chart", async () => {
+		const view = render(() => <GAApp />);
+		await open3D(view);
+		vi.useFakeTimers();
+		fireEvent.click(view.getByRole("button", { name: "開始" }));
+		vi.advanceTimersByTime(500);
+		const generationOne = renderer.updatePopulation.mock.lastCall?.[0];
+		vi.advanceTimersByTime(1000);
+		fireEvent.input(view.getByLabelText(/表示する世代:/), {
+			target: { value: "1" },
+		});
+		expect(view.getByRole("button", { name: "最新から再開" })).toBeEnabled();
+		expect(renderer.updatePopulation.mock.lastCall?.[0]).toEqual(generationOne);
+		expect(
+			view.container.querySelector(".generation-stat .value"),
+		).toHaveTextContent(/^1$/);
+		expect(view.getByLabelText("確認する世代")).toHaveValue(1);
+		expect(
+			view.getByRole("region", { name: "選択した世代の評価値" }),
+		).toHaveTextContent("第1世代");
+		fireEvent.input(view.getByLabelText("確認する世代"), {
+			target: { value: "2" },
+		});
+		expect(view.getByLabelText(/表示する世代:/)).toHaveValue("2");
+		expect(
+			view.container.querySelector(".generation-stat .value"),
+		).toHaveTextContent(/^2$/);
+		fireEvent.click(view.getByRole("button", { name: "最新世代に戻る" }));
+		expect(view.getByLabelText(/表示する世代:/)).toHaveValue("3");
+		fireEvent.click(view.getByRole("button", { name: "再開" }));
+		vi.advanceTimersByTime(500);
+		expect(
+			view.container.querySelector(".generation-stat .value"),
+		).toHaveTextContent(/^4$/);
+	});
+
+	test("shows completion and offers a new run instead of inactive playback", () => {
+		vi.useFakeTimers();
+		const view = render(() => <GAApp />);
+		fireEvent.input(view.getByLabelText("世代数 (1-1000):"), {
+			target: { value: "1" },
+		});
+		fireEvent.click(view.getByRole("button", { name: "開始" }));
+		fireEvent.click(view.getByRole("button", { name: "一時停止" }));
+		expect(view.getByRole("status")).toHaveTextContent("一時停止中");
+		fireEvent.click(view.getByRole("button", { name: "再開" }));
+		vi.advanceTimersByTime(500);
+		expect(view.getByRole("status")).toHaveTextContent("実行が完了しました");
+		expect(view.getByRole("button", { name: "1世代進める" })).toBeDisabled();
+		expect(view.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
+		expect(view.queryByText(/1世代の探索が終了しました/)).toBeNull();
+		fireEvent.click(view.getByRole("button", { name: "もう一度実行" }));
+		expect(view.getByRole("status")).toHaveTextContent("実行中");
+		expect(
+			view.container.querySelector(".generation-stat .value"),
+		).toHaveTextContent(/^0$/);
+		vi.advanceTimersByTime(500);
+		expect(view.getByRole("status")).toHaveTextContent("実行が完了しました");
+	});
+
+	test("requires reset to change settings after starting or completing a run", () => {
+		vi.useFakeTimers();
+		const view = render(() => <GAApp />);
+		const generations = view.getByLabelText("世代数 (1-1000):");
+		fireEvent.input(generations, { target: { value: "1" } });
+		expect(view.queryByText(/適用して/)).toBeNull();
+		fireEvent.click(view.getByRole("button", { name: "開始" }));
+		fireEvent.click(view.getByRole("button", { name: "一時停止" }));
+		expect(generations).toBeDisabled();
+		expect(view.getByLabelText("個体数 (1-1000):")).toBeDisabled();
+		expect(view.getByLabelText("目的関数:")).toBeDisabled();
+		expect(
+			view.getByText("設定を変更するにはリセットしてください。"),
+		).toBeTruthy();
+		fireEvent.click(view.getByRole("button", { name: "再開" }));
+		vi.advanceTimersByTime(500);
+		expect(generations).toBeDisabled();
+		fireEvent.click(view.getByRole("button", { name: "リセット" }));
+		expect(generations).toBeEnabled();
+		expect(view.getByLabelText("目的関数:")).toBeEnabled();
+		expect(
+			view.queryByText("設定を変更するにはリセットしてください。"),
+		).toBeNull();
 	});
 
 	test("preserves settings and a running simulation when switching mobile and desktop layouts", () => {

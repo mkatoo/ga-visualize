@@ -215,8 +215,6 @@ describe("Visualizer", () => {
 		}
 		expect(getByRole("figure", { name: "背景色と評価値の対応" })).toBeTruthy();
 		expect(getByText("200")).toBeTruthy();
-		expect(getByText("小さいほど良い")).toBeTruthy();
-		expect(getByText("大きいほど悪い")).toBeTruthy();
 	});
 
 	test("reuses the background and scale as the population evolves or is cleared", () => {

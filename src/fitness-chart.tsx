@@ -13,6 +13,8 @@ interface FitnessChartProps {
 	bestFitness: number[];
 	averageFitness: number[];
 	totalGenerations: number;
+	selectedGeneration?: number;
+	onSelectGeneration?: (generation: number) => void;
 }
 
 const CHART_HEIGHT = 260;
@@ -28,6 +30,29 @@ const fitnessNumberFormat = new Intl.NumberFormat("ja-JP", {
 export function FitnessChart(props: FitnessChartProps) {
 	const id = createUniqueId();
 	const [width, setWidth] = createSignal(640);
+	const [selection, setSelection] = createSignal<number>();
+	const latestGeneration = () =>
+		Math.max(
+			0,
+			Math.min(props.bestFitness.length, props.averageFitness.length) - 1,
+		);
+	const selectedGeneration = () =>
+		Math.max(
+			0,
+			Math.min(
+				latestGeneration(),
+				props.selectedGeneration ?? selection() ?? latestGeneration(),
+			),
+		);
+	const selectGeneration = (value: number) => {
+		if (!Number.isFinite(value)) return;
+		const generation = Math.max(
+			0,
+			Math.min(latestGeneration(), Math.round(value)),
+		);
+		setSelection(generation);
+		props.onSelectGeneration?.(generation);
+	};
 	let container!: HTMLDivElement;
 	let observer: ResizeObserver | undefined;
 	onMount(() => {
@@ -50,14 +75,14 @@ export function FitnessChart(props: FitnessChartProps) {
 	);
 	const formatFitness = (value: number) => {
 		if (value === 0) return "0";
-		return maxFitness() < 0.01 || maxFitness() >= 10_000
+		return Math.abs(value) < 0.01 || Math.abs(value) >= 10_000
 			? value.toExponential(1)
 			: fitnessNumberFormat.format(value);
 	};
 	const x = (generation: number) =>
 		PLOT_LEFT + (generation / maxGeneration()) * plotWidth();
 	const y = (fitness: number) =>
-		PLOT_BOTTOM - (fitness / maxFitness()) * PLOT_HEIGHT;
+		PLOT_BOTTOM - (Math.max(0, fitness) / maxFitness()) * PLOT_HEIGHT;
 	const generationTicks = createMemo(() => {
 		const intervals = Math.min(
 			maxGeneration(),
@@ -72,7 +97,7 @@ export function FitnessChart(props: FitnessChartProps) {
 	);
 	const series = [
 		{
-			label: "最良評価値",
+			label: "この世代の最良評価値",
 			color: VISUALIZATION_COLORS.best,
 			dash: undefined,
 			values: () => props.bestFitness,
@@ -89,8 +114,27 @@ export function FitnessChart(props: FitnessChartProps) {
 		<figure class="fitness-chart">
 			<figcaption class="chart-header">
 				<h2>評価値の推移</h2>
-				<p>小さいほど良い</p>
 			</figcaption>
+			<div class="chart-options">
+				<label>
+					確認する世代
+					<input
+						type="number"
+						min={0}
+						max={latestGeneration()}
+						value={selectedGeneration()}
+						onInput={(event) =>
+							selectGeneration(event.currentTarget.valueAsNumber)
+						}
+						onBlur={(event) => {
+							event.currentTarget.value = String(selectedGeneration());
+						}}
+					/>
+				</label>
+			</div>
+			<p class="chart-help">
+				グラフをタップするか、世代を指定すると評価値を確認できます。
+			</p>
 			<div class="chart-container" ref={container}>
 				<svg
 					width="100%"
@@ -99,6 +143,15 @@ export function FitnessChart(props: FitnessChartProps) {
 					role="img"
 					aria-labelledby={`${id}-title`}
 					aria-describedby={`${id}-description`}
+					onPointerDown={(event) => {
+						const bounds = event.currentTarget.getBoundingClientRect();
+						if (bounds.width <= 0) return;
+						const pointerX =
+							((event.clientX - bounds.left) / bounds.width) * width();
+						selectGeneration(
+							((pointerX - PLOT_LEFT) / plotWidth()) * maxGeneration(),
+						);
+					}}
 				>
 					<title id={`${id}-title`}>遺伝的アルゴリズムの評価値推移グラフ</title>
 					<desc id={`${id}-description`}>
@@ -183,20 +236,29 @@ export function FitnessChart(props: FitnessChartProps) {
 									</Show>
 									<Show when={item.values().length > 0}>
 										<circle
-											cx={x(item.values().length - 1)}
-											cy={y(item.values().at(-1) ?? 0)}
+											cx={x(selectedGeneration())}
+											cy={y(item.values()[selectedGeneration()] ?? 0)}
 											r="3.5"
 											fill={item.color}
 											stroke="white"
 											stroke-width="1.5"
 										>
-											<title>{`${item.label}: ${item.values().at(-1)}`}</title>
+											<title>{`${item.label}: ${item.values()[selectedGeneration()]}`}</title>
 										</circle>
 									</Show>
 								</g>
 							)}
 						</For>
 					</g>
+					<line
+						class="chart-selection"
+						x1={x(selectedGeneration())}
+						x2={x(selectedGeneration())}
+						y1={PLOT_TOP}
+						y2={PLOT_BOTTOM}
+						stroke="#64748b"
+						stroke-dasharray="3 4"
+					/>
 					<g class="chart-labels">
 						<text x={PLOT_LEFT} y="13" class="axis-label">
 							評価値
@@ -212,6 +274,17 @@ export function FitnessChart(props: FitnessChartProps) {
 					</g>
 				</svg>
 			</div>
+			<section class="chart-readout" aria-label="選択した世代の評価値">
+				<strong>第{selectedGeneration()}世代</strong>
+				<span>
+					この世代の最良評価値:{" "}
+					{(props.bestFitness[selectedGeneration()] ?? 0).toPrecision(5)}
+				</span>
+				<span>
+					平均評価値:{" "}
+					{(props.averageFitness[selectedGeneration()] ?? 0).toPrecision(5)}
+				</span>
+			</section>
 			<div class="legend">
 				<For each={series}>
 					{(item) => (

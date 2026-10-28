@@ -11,6 +11,25 @@ export interface Statistics {
 	bestFitness: number[];
 	averageFitness: number[];
 	currentBest: Individual | null;
+	bestEver: Individual | null;
+	bestEverGeneration: number;
+}
+
+export interface GenerationSnapshot {
+	generation: number;
+	population: Individual[];
+	averageFitness: number;
+	currentBest: Individual | null;
+	bestEver: Individual | null;
+	bestEverGeneration: number;
+}
+
+interface PopulationFrame {
+	coordinates: Float64Array;
+	averageFitness: number;
+	bestIndex: number;
+	bestEver: Individual | null;
+	bestEverGeneration: number;
 }
 
 export interface GAConfig {
@@ -39,6 +58,9 @@ export class GeneticAlgorithm {
 	private generation = 0;
 	private bestFitness: number[] = [];
 	private averageFitness: number[] = [];
+	private bestEver: Individual | null = null;
+	private bestEverGeneration = 0;
+	private history: PopulationFrame[] = [];
 
 	constructor(config: GAConfig = DEFAULT_CONFIG) {
 		this.config = config;
@@ -153,6 +175,9 @@ export class GeneticAlgorithm {
 		this.generation = 0;
 		this.bestFitness = [];
 		this.averageFitness = [];
+		this.bestEver = null;
+		this.bestEverGeneration = 0;
+		this.history = [];
 
 		for (let i = 0; i < this.config.populationSize; i++) {
 			this.population.push(this.createRandomIndividual());
@@ -206,6 +231,50 @@ export class GeneticAlgorithm {
 
 		this.bestFitness.push(best);
 		this.averageFitness.push(average);
+		const currentBest = this.getBestIndividual();
+		if (
+			currentBest &&
+			(!this.bestEver || currentBest.fitness < this.bestEver.fitness)
+		) {
+			this.bestEver = { ...currentBest };
+			this.bestEverGeneration = this.generation;
+		}
+		// Store only three numbers per individual, avoiding a full statistics copy per generation.
+		const coordinates = new Float64Array(this.population.length * 3);
+		this.population.forEach((individual, index) => {
+			coordinates.set(
+				[individual.x, individual.y, individual.fitness],
+				index * 3,
+			);
+		});
+		this.history.push({
+			coordinates,
+			averageFitness: average,
+			bestIndex: currentBest ? this.population.indexOf(currentBest) : -1,
+			bestEver: this.bestEver ? { ...this.bestEver } : null,
+			bestEverGeneration: this.bestEverGeneration,
+		});
+	}
+
+	getSnapshot(generation: number): GenerationSnapshot | undefined {
+		const frame = this.history[generation];
+		if (!frame) return undefined;
+		const population: Individual[] = [];
+		for (let i = 0; i < frame.coordinates.length; i += 3) {
+			population.push({
+				x: frame.coordinates[i],
+				y: frame.coordinates[i + 1],
+				fitness: frame.coordinates[i + 2],
+			});
+		}
+		return {
+			generation,
+			population,
+			averageFitness: frame.averageFitness,
+			currentBest: population[frame.bestIndex] ?? null,
+			bestEver: frame.bestEver ? { ...frame.bestEver } : null,
+			bestEverGeneration: frame.bestEverGeneration,
+		};
 	}
 
 	getPopulation(): Individual[] {
@@ -231,6 +300,8 @@ export class GeneticAlgorithm {
 			bestFitness: [...this.bestFitness],
 			averageFitness: [...this.averageFitness],
 			currentBest: this.getBestIndividual(),
+			bestEver: this.bestEver ? { ...this.bestEver } : null,
+			bestEverGeneration: this.bestEverGeneration,
 		};
 	}
 

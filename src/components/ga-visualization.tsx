@@ -14,7 +14,10 @@ import {
 	type HeightScale,
 } from "../landscape";
 import { load3DVisualizer } from "../load-3d-visualizer";
-import type { FunctionType } from "../objective-functions";
+import {
+	type FunctionType,
+	getObjectiveFunction,
+} from "../objective-functions";
 import type { CameraState } from "../three-landscape-renderer";
 import { Visualizer } from "../visualizer";
 import type { Visualizer3DProps } from "../visualizer-3d";
@@ -27,6 +30,8 @@ interface GAVisualizationProps {
 	generation: number;
 	averageFitness: number;
 	bestIndividual: Individual | null;
+	bestEver?: Individual | null;
+	bestEverGeneration?: number;
 	functionType: FunctionType;
 }
 
@@ -57,6 +62,7 @@ export function GAVisualization(props: GAVisualizationProps) {
 		const { functionType, min, max } = settings();
 		return createLandscape(functionType, { min, max });
 	});
+	const optimum = () => getObjectiveFunction(props.functionType).optimum;
 	createEffect(() => {
 		setHeightScale(getDefaultHeightScale(landscape()));
 		camera = undefined;
@@ -116,16 +122,7 @@ export function GAVisualization(props: GAVisualizationProps) {
 				<output class="visualization-error">{error()}</output>
 			</Show>
 			<div class="visualizer">
-				<Show
-					when={mode() === "3d"}
-					fallback={
-						<Visualizer
-							population={props.population}
-							bestIndividual={props.bestIndividual}
-							landscape={landscape()}
-						/>
-					}
-				>
+				<Show when={mode() === "3d"}>
 					<div class="three-settings">
 						<label>
 							高さの尺度
@@ -167,32 +164,53 @@ export function GAVisualization(props: GAVisualizationProps) {
 							: "評価値（log(1 + f)尺度）"}
 						。低いほど良い解です。
 					</p>
+				</Show>
+				<div class="landscape-view">
 					<Show
-						when={threeComponent()}
+						when={mode() === "3d"}
 						fallback={
-							<output class="three-loading">3D表示を読み込んでいます…</output>
-						}
-					>
-						{(component) => (
-							<Dynamic
-								component={component()}
-								landscape={landscape()}
+							<Visualizer
 								population={props.population}
 								bestIndividual={props.bestIndividual}
-								heightScale={heightScale()}
-								wireframe={wireframe()}
-								resolution={resolution()}
-								resetView={resetView()}
-								camera={camera}
-								onCameraChange={(state: CameraState) => {
-									camera = state;
-								}}
-								onError={fail}
+								landscape={landscape()}
 							/>
-						)}
+						}
+					>
+						<Show
+							when={threeComponent()}
+							fallback={
+								<output class="three-loading">3D表示を読み込んでいます…</output>
+							}
+						>
+							{(component) => (
+								<Dynamic
+									component={component()}
+									landscape={landscape()}
+									population={props.population}
+									bestIndividual={props.bestIndividual}
+									heightScale={heightScale()}
+									wireframe={wireframe()}
+									resolution={resolution()}
+									resetView={resetView()}
+									camera={camera}
+									onCameraChange={(state: CameraState) => {
+										camera = state;
+									}}
+									onError={fail}
+								/>
+							)}
+						</Show>
 					</Show>
+					<FitnessScale scale={landscape().colorScale} />
+				</div>
+				<Show when={mode() === "3d"}>
 					<p class="three-help">
-						ドラッグで回転・ホイールでズーム・右ドラッグで移動。タッチは1本指で回転、2本指でズーム・移動。
+						<span class="three-help-mouse">
+							ドラッグで回転・ホイールでズーム・右ドラッグで移動。
+						</span>
+						<span class="three-help-touch">
+							タッチは1本指で回転、2本指でズーム・移動。
+						</span>
 					</p>
 				</Show>
 				<section class="population-legend" aria-label="個体の凡例">
@@ -204,12 +222,14 @@ export function GAVisualization(props: GAVisualizationProps) {
 						<i class="population-dot best" />
 						最良個体
 					</span>
-					<Show when={mode() === "3d"}>
-						<span>赤いリングは地形の裏でも表示</span>
-					</Show>
+					<span>
+						<i class="optimum-symbol" />
+						既知の最適解 ({optimum().x}, {optimum().y})
+					</span>
 				</section>
-				<FitnessScale scale={landscape().colorScale} />
 				<PopulationStats
+					bestEver={props.bestEver}
+					bestEverGeneration={props.bestEverGeneration}
 					generation={props.generation}
 					bestIndividual={props.bestIndividual}
 					averageFitness={props.averageFitness}

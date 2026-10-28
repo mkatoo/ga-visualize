@@ -31,6 +31,7 @@ import {
 	type Landscape,
 	type SurfaceGrid,
 } from "./landscape";
+import { getObjectiveFunction } from "./objective-functions";
 import { VISUALIZATION_COLORS } from "./visualization-colors";
 
 export interface CameraState {
@@ -72,17 +73,29 @@ const disposeGroup = (group: Group | Scene) => {
 	group.clear();
 };
 
-const createMarkerMaterial = (color: string, size: number, ring = false) => {
+const createMarkerMaterial = (
+	color: string,
+	size: number,
+	ring = false,
+	cross = false,
+) => {
 	const canvas = document.createElement("canvas");
 	canvas.width = canvas.height = 64;
 	const ctx = canvas.getContext("2d");
 	if (!ctx) throw new Error("個体マーカーを生成できませんでした。");
 	ctx.beginPath();
-	ctx.arc(32, 32, 23, 0, Math.PI * 2);
+	if (cross) {
+		ctx.moveTo(14, 14);
+		ctx.lineTo(50, 50);
+		ctx.moveTo(50, 14);
+		ctx.lineTo(14, 50);
+	} else {
+		ctx.arc(32, 32, 23, 0, Math.PI * 2);
+	}
 	ctx.strokeStyle = "#ffffff";
 	ctx.lineWidth = ring ? 10 : 9;
 	ctx.stroke();
-	if (ring) {
+	if (ring || cross) {
 		ctx.strokeStyle = color;
 		ctx.lineWidth = 5;
 		ctx.stroke();
@@ -98,8 +111,8 @@ const createMarkerMaterial = (color: string, size: number, ring = false) => {
 		sizeAttenuation: false,
 		transparent: true,
 		alphaTest: 0.1,
-		depthTest: !ring,
-		depthWrite: !ring,
+		depthTest: !ring && !cross,
+		depthWrite: !ring && !cross,
 		toneMapped: false,
 	});
 };
@@ -124,6 +137,7 @@ export class ThreeLandscapeRenderer {
 	private observer?: ResizeObserver;
 	private populationPoints?: Points<BufferGeometry, PointsMaterial>;
 	private bestPoint?: Points<BufferGeometry, PointsMaterial>;
+	private optimumPoint?: Points<BufferGeometry, PointsMaterial>;
 	private surface?: Mesh<BufferGeometry, MeshBasicMaterial>;
 	private gridLines?: LineSegments<BufferGeometry, LineBasicMaterial>;
 	private surfaceGrid?: SurfaceGrid;
@@ -202,6 +216,16 @@ export class ThreeLandscapeRenderer {
 			);
 			ring.renderOrder = 10;
 			this.bestPoint.add(ring);
+			this.optimumPoint = new Points(
+				new BufferGeometry().setAttribute(
+					"position",
+					new BufferAttribute(new Float32Array(3), 3),
+				),
+				createMarkerMaterial("#0f766e", 16, false, true),
+			);
+			this.optimumPoint.renderOrder = 9;
+			this.optimumPoint.visible = false;
+			this.scene.add(this.optimumPoint);
 			this.observer = new ResizeObserver(this.resize);
 			this.observer.observe(host);
 			this.resize();
@@ -335,6 +359,18 @@ export class ThreeLandscapeRenderer {
 		positions.needsUpdate = true;
 		this.surface.geometry.computeBoundingSphere();
 		this.gridLines?.geometry.computeBoundingSphere();
+		if (this.optimumPoint) {
+			const optimum = getObjectiveFunction(landscape.functionType).optimum;
+			this.optimumPoint.visible =
+				optimum.x >= landscape.bounds.min &&
+				optimum.x <= landscape.bounds.max &&
+				optimum.y >= landscape.bounds.min &&
+				optimum.y <= landscape.bounds.max;
+			const position = this.optimumPoint.geometry.getAttribute("position");
+			position.setXYZ(0, ...getIndividualPosition(optimum, landscape, scale));
+			position.needsUpdate = true;
+			this.optimumPoint.geometry.computeBoundingSphere();
+		}
 		this.updateAxes();
 		this.updatePopulation(this.population, this.best);
 		this.setWireframe(this.wireframe);

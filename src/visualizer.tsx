@@ -217,6 +217,27 @@ const createBackground = (landscape: Landscape, size: number) => {
 		drawContourSegments(ctx, segments, bounds, size);
 	}
 	drawAxes(ctx, bounds, size);
+	const { optimum } = objective;
+	if (
+		optimum.x >= bounds.min &&
+		optimum.x <= bounds.max &&
+		optimum.y >= bounds.min &&
+		optimum.y <= bounds.max
+	) {
+		const x = ((optimum.x - bounds.min) / (bounds.max - bounds.min)) * size;
+		const y = ((bounds.max - optimum.y) / (bounds.max - bounds.min)) * size;
+		ctx.beginPath();
+		ctx.moveTo(x - 4, y - 4);
+		ctx.lineTo(x + 4, y + 4);
+		ctx.moveTo(x + 4, y - 4);
+		ctx.lineTo(x - 4, y + 4);
+		ctx.strokeStyle = "white";
+		ctx.lineWidth = 3;
+		ctx.stroke();
+		ctx.strokeStyle = "#0f766e";
+		ctx.lineWidth = 1.5;
+		ctx.stroke();
+	}
 	return canvas;
 };
 

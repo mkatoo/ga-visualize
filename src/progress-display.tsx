@@ -1,6 +1,9 @@
+import type { RunStatus } from "./hooks/use-genetic-algorithm";
+
 interface ProgressDisplayProps {
 	currentGeneration: number;
 	totalGenerations: number;
+	status: RunStatus;
 }
 
 export function ProgressDisplay(props: ProgressDisplayProps) {
@@ -9,10 +12,27 @@ export function ProgressDisplay(props: ProgressDisplayProps) {
 
 	return (
 		<div class="progress">
+			<output class="run-status" aria-live="polite">
+				{
+					{
+						ready: "開始前",
+						running: "実行中",
+						paused: "一時停止中",
+						completed: "実行が完了しました",
+					}[props.status]
+				}
+			</output>
 			<div class="progress-label">
 				進行状況: {props.currentGeneration} / {props.totalGenerations}
 			</div>
-			<div class="progress-bar">
+			<div
+				class="progress-bar"
+				role="progressbar"
+				aria-label="実行の進行状況"
+				aria-valuemin={0}
+				aria-valuemax={props.totalGenerations}
+				aria-valuenow={props.currentGeneration}
+			>
 				<div
 					class="progress-fill"
 					style={{

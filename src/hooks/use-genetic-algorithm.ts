@@ -1,4 +1,4 @@
-import { createSignal, onCleanup } from "solid-js";
+import { batch, createMemo, createSignal, onCleanup } from "solid-js";
 import {
 	DEFAULT_ANIMATION_SPEED,
 	DEFAULT_FUNCTION_TYPE,
@@ -15,6 +15,8 @@ import {
 	getObjectiveFunction,
 } from "../objective-functions";
 
+export type RunStatus = "ready" | "running" | "paused" | "completed";
+
 export function useGeneticAlgorithm() {
 	const [populationSize, setPopulationSize] = createSignal(
 		DEFAULT_POPULATION_SIZE,
@@ -23,7 +25,6 @@ export function useGeneticAlgorithm() {
 	const [functionType, setFunctionType] = createSignal<FunctionType>(
 		DEFAULT_FUNCTION_TYPE,
 	);
-
 	const getBoundsForFunction = (type: FunctionType) => {
 		return getObjectiveFunction(type).bounds;
 	};
@@ -39,7 +40,36 @@ export function useGeneticAlgorithm() {
 	);
 	const [population, setPopulation] = createSignal(ga().getPopulation());
 	const [statistics, setStatistics] = createSignal(ga().getStatistics());
+	const [selectedGeneration, setSelectedGeneration] = createSignal<
+		number | null
+	>(null);
+	const displayedGeneration = () =>
+		selectedGeneration() ?? statistics().generation;
+	const isViewingHistory = () =>
+		displayedGeneration() < statistics().generation;
+	const displayedSnapshot = createMemo(() => {
+		const selected = selectedGeneration();
+		if (selected !== null) {
+			const snapshot = ga().getSnapshot(selected);
+			if (snapshot) return snapshot;
+		}
+		return {
+			generation: statistics().generation,
+			population: population(),
+			averageFitness: statistics().averageFitness.at(-1) ?? 0,
+			currentBest: statistics().currentBest,
+			bestEver: statistics().bestEver,
+			bestEverGeneration: statistics().bestEverGeneration,
+		};
+	});
 	const [isRunning, setIsRunning] = createSignal(false);
+	const [hasStarted, setHasStarted] = createSignal(false);
+	const runStatus = (): RunStatus => {
+		if (statistics().generation >= generations()) return "completed";
+		if (isRunning()) return "running";
+		return hasStarted() ? "paused" : "ready";
+	};
+	const settingsLocked = () => hasStarted();
 	const [animationSpeed, setAnimationSpeed] = createSignal(
 		DEFAULT_ANIMATION_SPEED,
 	);
@@ -47,12 +77,16 @@ export function useGeneticAlgorithm() {
 	let intervalId: number | null = null;
 
 	const initializeGA = () => {
+		setSelectedGeneration(null);
+		setHasStarted(false);
 		ga().initializePopulation();
 		setPopulation(ga().getPopulation());
 		setStatistics(ga().getStatistics());
 	};
 
 	const step = () => {
+		setSelectedGeneration(null);
+		setHasStarted(true);
 		const canContinue = ga().evolve();
 		setPopulation(ga().getPopulation());
 		setStatistics(ga().getStatistics());
@@ -65,7 +99,9 @@ export function useGeneticAlgorithm() {
 	const start = () => {
 		if (isRunning() || ga().getGeneration() >= generations()) return;
 
+		setHasStarted(true);
 		setIsRunning(true);
+		setSelectedGeneration(null);
 		intervalId = window.setInterval(() => {
 			step();
 		}, animationSpeed());
@@ -79,27 +115,48 @@ export function useGeneticAlgorithm() {
 		}
 	};
 
+	const selectGeneration = (generation: number) => {
+		if (!Number.isFinite(generation)) return;
+		stop();
+		const selected = Math.max(
+			0,
+			Math.min(statistics().generation, Math.round(generation)),
+		);
+		setSelectedGeneration(
+			selected === statistics().generation ? null : selected,
+		);
+	};
+	const showLatest = () => setSelectedGeneration(null);
+
 	const reset = () => {
 		stop();
 		initializeGA();
 	};
 
+	const restart = () => {
+		reset();
+		start();
+	};
+
 	const updateGAConfig = () => {
-		const newGA = new GeneticAlgorithm({
-			...DEFAULT_CONFIG,
-			populationSize: populationSize(),
-			generations: generations(),
-			functionType: functionType(),
-			bounds: getBoundsForFunction(functionType()),
+		batch(() => {
+			setGA(
+				new GeneticAlgorithm({
+					...DEFAULT_CONFIG,
+					populationSize: populationSize(),
+					generations: generations(),
+					functionType: functionType(),
+					bounds: getBoundsForFunction(functionType()),
+				}),
+			);
+			initializeGA();
 		});
-		setGA(newGA);
-		newGA.initializePopulation();
-		setPopulation(newGA.getPopulation());
-		setStatistics(newGA.getStatistics());
 	};
 
 	const validateAndSetPopulationSize = (value: string) => {
-		const numValue = parseInt(value) || MIN_POPULATION_SIZE;
+		if (settingsLocked()) return populationSize();
+		const parsed = Number.parseInt(value, 10);
+		const numValue = Number.isFinite(parsed) ? parsed : populationSize();
 		const clampedValue = Math.max(
 			MIN_POPULATION_SIZE,
 			Math.min(MAX_POPULATION_SIZE, numValue),
@@ -107,16 +164,15 @@ export function useGeneticAlgorithm() {
 		if (clampedValue === populationSize()) return clampedValue;
 
 		setPopulationSize(clampedValue);
-
-		if (!isRunning()) {
-			updateGAConfig();
-		}
+		updateGAConfig();
 
 		return clampedValue;
 	};
 
 	const validateAndSetGenerations = (value: string) => {
-		const numValue = parseInt(value) || MIN_GENERATIONS;
+		if (settingsLocked()) return generations();
+		const parsed = Number.parseInt(value, 10);
+		const numValue = Number.isFinite(parsed) ? parsed : generations();
 		const clampedValue = Math.max(
 			MIN_GENERATIONS,
 			Math.min(MAX_GENERATIONS, numValue),
@@ -124,10 +180,7 @@ export function useGeneticAlgorithm() {
 		if (clampedValue === generations()) return clampedValue;
 
 		setGenerations(clampedValue);
-
-		if (!isRunning()) {
-			updateGAConfig();
-		}
+		updateGAConfig();
 
 		return clampedValue;
 	};
@@ -168,13 +221,12 @@ export function useGeneticAlgorithm() {
 	};
 
 	const handleFunctionTypeChange = (event: Event) => {
+		if (settingsLocked()) return;
 		const target = event.target as HTMLSelectElement;
 		const newFunctionType = target.value as FunctionType;
+		if (newFunctionType === functionType()) return;
 		setFunctionType(newFunctionType);
-
-		if (!isRunning()) {
-			updateGAConfig();
-		}
+		updateGAConfig();
 	};
 
 	onCleanup(() => {
@@ -193,7 +245,14 @@ export function useGeneticAlgorithm() {
 		ga,
 		population,
 		statistics,
+		displayedGeneration,
+		displayedSnapshot,
+		isViewingHistory,
+		selectGeneration,
+		showLatest,
 		isRunning,
+		settingsLocked,
+		runStatus,
 		animationSpeed,
 
 		// Actions
@@ -201,6 +260,7 @@ export function useGeneticAlgorithm() {
 		stop,
 		step,
 		reset,
+		restart,
 
 		// Event handlers
 		handleSpeedChange,

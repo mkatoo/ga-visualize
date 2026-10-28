@@ -1,5 +1,6 @@
 import { GAControls } from "./components/ga-controls";
 import { GAVisualization } from "./components/ga-visualization";
+import { GenerationHistory } from "./components/generation-history";
 import { FitnessChart } from "./fitness-chart";
 import { useGeneticAlgorithm } from "./hooks/use-genetic-algorithm";
 import { VISUALIZATION_COLORS } from "./visualization-colors";
@@ -11,9 +12,16 @@ export function GAApp() {
 		generations,
 		functionType,
 		ga,
-		population,
 		statistics,
+		displayedGeneration,
+		displayedSnapshot,
+		isViewingHistory,
+		selectGeneration,
+		showLatest,
 		isRunning,
+		settingsLocked,
+		runStatus,
+		restart,
 		animationSpeed,
 		start,
 		stop,
@@ -44,10 +52,14 @@ export function GAApp() {
 			<div class="main-content">
 				<GAControls
 					isRunning={isRunning()}
+					isViewingHistory={isViewingHistory()}
+					runStatus={runStatus()}
+					onRestart={restart}
 					functionType={functionType()}
 					populationSize={populationSize()}
 					generations={generations()}
 					animationSpeed={animationSpeed()}
+					settingsLocked={settingsLocked()}
 					statistics={statistics()}
 					onStart={start}
 					onStop={stop}
@@ -62,19 +74,25 @@ export function GAApp() {
 					constraints={constraints}
 				/>
 				<div class="visualization-workspace">
+					<GenerationHistory
+						generation={displayedGeneration()}
+						latestGeneration={statistics().generation}
+						onSelect={selectGeneration}
+						onShowLatest={showLatest}
+					/>
 					<GAVisualization
-						population={population()}
+						population={displayedSnapshot().population}
 						bounds={ga().getBounds()}
-						generation={statistics().generation}
-						averageFitness={
-							statistics().averageFitness[
-								statistics().averageFitness.length - 1
-							] ?? 0
-						}
-						bestIndividual={statistics().currentBest}
+						generation={displayedSnapshot().generation}
+						averageFitness={displayedSnapshot().averageFitness}
+						bestIndividual={displayedSnapshot().currentBest}
+						bestEver={displayedSnapshot().bestEver}
+						bestEverGeneration={displayedSnapshot().bestEverGeneration}
 						functionType={functionType()}
 					/>
 					<FitnessChart
+						selectedGeneration={displayedGeneration()}
+						onSelectGeneration={selectGeneration}
 						bestFitness={statistics().bestFitness}
 						averageFitness={statistics().averageFitness}
 						totalGenerations={generations()}

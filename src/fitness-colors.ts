@@ -36,7 +36,7 @@ const PALETTE = Array.from({ length: 256 }, (_, index): RGB => {
 	) as [number, number, number];
 });
 
-export const FITNESS_COLOR_GRADIENT = `linear-gradient(to right, ${COLOR_STOPS.map(
+export const FITNESS_COLOR_GRADIENT = `linear-gradient(to top, ${COLOR_STOPS.map(
 	(color, index) =>
 		`rgb(${color.join(", ")}) ${(index / (COLOR_STOPS.length - 1)) * 100}%`,
 ).join(", ")})`;

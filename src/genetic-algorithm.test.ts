@@ -266,6 +266,54 @@ describe("GeneticAlgorithm", () => {
 	});
 
 	describe("Statistics", () => {
+		test("preserves independent snapshots and clears the previous run on reset", () => {
+			ga.initializePopulation();
+			const initial = ga.getSnapshot(0);
+			ga.evolve();
+			ga.evolve();
+			expect(ga.getSnapshot(0)).toEqual(initial);
+			const first = ga.getSnapshot(1);
+			expect(first?.generation).toBe(1);
+			expect(first?.population).toContain(first?.currentBest);
+			if (first) first.population[0].x = 999;
+			expect(ga.getSnapshot(1)?.population[0].x).not.toBe(999);
+			ga.initializePopulation();
+			expect(ga.getSnapshot(1)).toBeUndefined();
+			expect(ga.getSnapshot(0)?.generation).toBe(0);
+		});
+
+		test("retains the best discovery when a later generation worsens and clears it on reset", () => {
+			const run = new GeneticAlgorithm({
+				...DEFAULT_CONFIG,
+				populationSize: 1,
+				crossoverRate: 0,
+				mutationRate: 0,
+			});
+			const internal = run as unknown as GeneticAlgorithmTestable;
+			vi.spyOn(internal, "createRandomIndividual").mockReturnValue({
+				x: 0,
+				y: 0,
+				fitness: 0,
+			});
+			run.initializePopulation();
+			vi.spyOn(internal, "gaussianMutation").mockReturnValue({
+				x: 2,
+				y: 3,
+				fitness: 13,
+			});
+			run.evolve();
+			expect(run.getStatistics().currentBest?.fitness).toBe(13);
+			expect(run.getStatistics().bestEver).toEqual({ x: 0, y: 0, fitness: 0 });
+			expect(run.getStatistics().bestEverGeneration).toBe(0);
+			vi.mocked(internal.createRandomIndividual).mockReturnValue({
+				x: 1,
+				y: 1,
+				fitness: 2,
+			});
+			run.initializePopulation();
+			expect(run.getStatistics().bestEver?.fitness).toBe(2);
+		});
+
 		test("should track generation statistics correctly", () => {
 			ga.initializePopulation();
 			const initialStats = ga.getStatistics();

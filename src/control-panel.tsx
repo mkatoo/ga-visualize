@@ -1,14 +1,19 @@
-import { onCleanup, onMount } from "solid-js";
+import { onCleanup, onMount, Show } from "solid-js";
+import type { RunStatus } from "./hooks/use-genetic-algorithm";
 import type { FunctionType } from "./objective-functions";
 import { OBJECTIVE_FUNCTIONS } from "./objective-functions";
 
 interface ControlPanelProps {
 	// Control states
 	isRunning: boolean;
+	isViewingHistory: boolean;
+	runStatus: RunStatus;
+	onRestart: () => void;
 	functionType: FunctionType;
 	populationSize: number;
 	generations: number;
 	animationSpeed: number;
+	settingsLocked: boolean;
 
 	// Event handlers
 	onStart: () => void;
@@ -54,18 +59,26 @@ export function ControlPanel(props: ControlPanelProps) {
 					class="btn btn-primary"
 					onClick={() => {
 						if (props.isRunning) props.onStop();
+						else if (props.runStatus === "completed") props.onRestart();
 						else props.onStart();
 					}}
 				>
-					{props.isRunning ? "一時停止" : "開始"}
+					{
+						{
+							ready: "開始",
+							running: "一時停止",
+							paused: props.isViewingHistory ? "最新から再開" : "再開",
+							completed: "もう一度実行",
+						}[props.runStatus]
+					}
 				</button>
 				<button
 					type="button"
 					class="btn btn-secondary"
 					onClick={props.onStep}
-					disabled={props.isRunning}
+					disabled={props.isRunning || props.runStatus === "completed"}
 				>
-					1世代進める
+					{props.isViewingHistory ? "最新から1世代進める" : "1世代進める"}
 				</button>
 				<button type="button" class="btn btn-text" onClick={props.onReset}>
 					リセット
@@ -82,6 +95,11 @@ export function ControlPanel(props: ControlPanelProps) {
 					</span>
 				</summary>
 				<div class="settings-content">
+					<Show when={props.settingsLocked}>
+						<p class="settings-help">
+							設定を変更するにはリセットしてください。
+						</p>
+					</Show>
 					<div class="parameter-controls">
 						<div class="parameter-group function-parameter">
 							<label for="functionType">目的関数:</label>
@@ -89,7 +107,7 @@ export function ControlPanel(props: ControlPanelProps) {
 								id="functionType"
 								value={props.functionType}
 								onChange={props.onFunctionTypeChange}
-								disabled={props.isRunning}
+								disabled={props.settingsLocked}
 							>
 								{Object.entries(OBJECTIVE_FUNCTIONS).map(([key, func]) => (
 									<option value={key}>{func.name}</option>
@@ -110,7 +128,7 @@ export function ControlPanel(props: ControlPanelProps) {
 								value={props.populationSize}
 								onInput={props.onPopulationSizeChange}
 								onBlur={props.onPopulationSizeBlur}
-								disabled={props.isRunning}
+								disabled={props.settingsLocked}
 							/>
 						</div>
 
@@ -127,7 +145,7 @@ export function ControlPanel(props: ControlPanelProps) {
 								value={props.generations}
 								onInput={props.onGenerationsChange}
 								onBlur={props.onGenerationsBlur}
-								disabled={props.isRunning}
+								disabled={props.settingsLocked}
 							/>
 						</div>
 					</div>
