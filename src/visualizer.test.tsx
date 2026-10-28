@@ -260,7 +260,8 @@ describe("Visualizer", () => {
 			/>
 		));
 		expect(getByText("200")).toBeTruthy();
-		expect(getByText("線形目盛")).toBeTruthy();
+		expect(queryByText("線形目盛")).toBeNull();
+		expect(queryByText("対数目盛")).toBeNull();
 
 		setBounds({ min: -1, max: 1 });
 		expect(getByText("2")).toBeTruthy();

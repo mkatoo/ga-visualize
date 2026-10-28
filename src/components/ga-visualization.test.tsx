@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, waitFor } from "@solidjs/testing-library";
+import {
+	cleanup,
+	fireEvent,
+	render,
+	waitFor,
+	within,
+} from "@solidjs/testing-library";
 import { createSignal } from "solid-js";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { GAApp } from "../ga-app";
@@ -100,7 +106,7 @@ describe("2D / 3D visualization", () => {
 			view.population(),
 			view.best,
 		);
-		fireEvent.change(view.getByLabelText("高さの尺度"), {
+		fireEvent.change(view.getByLabelText("高さ・色の尺度"), {
 			target: { value: "logarithmic" },
 		});
 		expect(renderer.updateLandscape).toHaveBeenLastCalledWith(
@@ -108,7 +114,8 @@ describe("2D / 3D visualization", () => {
 			"logarithmic",
 			100,
 		);
-		expect(view.getByText("線形目盛")).toBeTruthy();
+		expect(view.queryByText("線形目盛")).toBeNull();
+		expect(view.getByText("対数目盛")).toBeTruthy();
 		fireEvent.change(view.getByLabelText("曲面の分割数"), {
 			target: { value: "64" },
 		});
@@ -120,6 +127,48 @@ describe("2D / 3D visualization", () => {
 		fireEvent.click(view.getByLabelText("格子線のみ"));
 		expect(renderer.setWireframe).toHaveBeenLastCalledWith(true);
 		expect(renderer.resetCamera).not.toHaveBeenCalled();
+	});
+
+	test("keeps the legend in sync with the selected 3D scale and each view's colors", async () => {
+		const view = renderPanel();
+		const legend = within(
+			view.getByRole("figure", { name: "背景色と評価値の対応" }),
+		);
+		expect(legend.getByText("100")).toBeTruthy();
+		expect(legend.queryByText("対数目盛")).toBeNull();
+		await open3D(view);
+		fireEvent.change(view.getByLabelText(/高さ.*尺度/), {
+			target: { value: "logarithmic" },
+		});
+		expect(legend.getByText("対数目盛")).toBeTruthy();
+		expect(legend.getByText("13.2")).toBeTruthy();
+		expect(legend.queryByText("100")).toBeNull();
+		expect(legend.getByText("200")).toBeTruthy();
+
+		fireEvent.click(view.getByRole("button", { name: "2D" }));
+		expect(legend.queryByText("対数目盛")).toBeNull();
+		expect(legend.getByText("100")).toBeTruthy();
+		await open3D(view);
+		expect(view.getByLabelText("高さ・色の尺度")).toHaveValue("logarithmic");
+		expect(legend.getByText("対数目盛")).toBeTruthy();
+		expect(legend.getByText("13.2")).toBeTruthy();
+
+		fireEvent.change(view.getByLabelText("高さ・色の尺度"), {
+			target: { value: "linear" },
+		});
+		expect(legend.queryByText("対数目盛")).toBeNull();
+		expect(legend.queryByText("線形目盛")).toBeNull();
+		expect(legend.getByText("100")).toBeTruthy();
+
+		view.setFunctionType("beale");
+		expect(view.getByLabelText("高さ・色の尺度")).toHaveValue("logarithmic");
+		expect(legend.getByText("対数目盛")).toBeTruthy();
+		fireEvent.change(view.getByLabelText("高さ・色の尺度"), {
+			target: { value: "linear" },
+		});
+		expect(legend.queryByText("対数目盛")).toBeNull();
+		fireEvent.click(view.getByRole("button", { name: "2D" }));
+		expect(legend.getByText("対数目盛")).toBeTruthy();
 	});
 
 	test("restores the camera across view switches, including after an earlier reset", async () => {
@@ -141,7 +190,7 @@ describe("2D / 3D visualization", () => {
 		expect(renderer.updateLandscape.mock.lastCall?.[0].functionType).toBe(
 			"beale",
 		);
-		expect(view.getByLabelText("高さの尺度")).toHaveValue("logarithmic");
+		expect(view.getByLabelText("高さ・色の尺度")).toHaveValue("logarithmic");
 		fireEvent.click(view.getByRole("button", { name: "2D" }));
 		renderer.restoreCamera.mockClear();
 		await open3D(view);

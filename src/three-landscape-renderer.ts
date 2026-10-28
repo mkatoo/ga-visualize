@@ -301,16 +301,10 @@ export class ThreeLandscapeRenderer {
 				"position",
 				new BufferAttribute(new Float32Array(grid.fitness.length * 3), 3),
 			);
-			const colors = new Float32Array(grid.fitness.length * 3);
-			const color = new Color();
-			for (let i = 0; i < grid.fitness.length; i++) {
-				const rgb = getFitnessColor(
-					getFitnessColorPosition(grid.fitness[i], landscape.colorScale),
-				);
-				color.setRGB(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255, SRGBColorSpace);
-				color.toArray(colors, i * 3);
-			}
-			geometry.setAttribute("color", new BufferAttribute(colors, 3));
+			geometry.setAttribute(
+				"color",
+				new BufferAttribute(new Float32Array(grid.fitness.length * 3), 3),
+			);
 			geometry.setIndex(new BufferAttribute(grid.indices, 1));
 			this.surface = new Mesh(
 				geometry,
@@ -341,22 +335,31 @@ export class ThreeLandscapeRenderer {
 		}
 		if (!this.surface || !this.surfaceGrid) return;
 		const positions = this.surface.geometry.getAttribute("position");
+		const colors = this.surface.geometry.getAttribute("color");
+		const color = new Color();
+		const colorScale = {
+			maximum: landscape.colorScale.maximum,
+			logarithmic: scale === "logarithmic",
+		};
 		for (let x = 0; x <= resolution; x++) {
 			for (let y = 0; y <= resolution; y++) {
 				const i = x * (resolution + 1) + y;
+				const fitness = this.surfaceGrid.fitness[i];
 				positions.setXYZ(
 					i,
 					(2 * x) / resolution - 1,
 					(2 * y) / resolution - 1,
-					getFitnessHeight(
-						this.surfaceGrid.fitness[i],
-						landscape.colorScale.maximum,
-						scale,
-					),
+					getFitnessHeight(fitness, landscape.colorScale.maximum, scale),
 				);
+				const rgb = getFitnessColor(
+					getFitnessColorPosition(fitness, colorScale),
+				);
+				color.setRGB(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255, SRGBColorSpace);
+				colors.setXYZ(i, color.r, color.g, color.b);
 			}
 		}
 		positions.needsUpdate = true;
+		colors.needsUpdate = true;
 		this.surface.geometry.computeBoundingSphere();
 		this.gridLines?.geometry.computeBoundingSphere();
 		if (this.optimumPoint) {

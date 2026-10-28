@@ -62,6 +62,14 @@ export function GAVisualization(props: GAVisualizationProps) {
 		const { functionType, min, max } = settings();
 		return createLandscape(functionType, { min, max });
 	});
+	const colorScale = createMemo(() =>
+		mode() === "3d"
+			? {
+					...landscape().colorScale,
+					logarithmic: heightScale() === "logarithmic",
+				}
+			: landscape().colorScale,
+	);
 	const optimum = () => getObjectiveFunction(props.functionType).optimum;
 	createEffect(() => {
 		setHeightScale(getDefaultHeightScale(landscape()));
@@ -125,7 +133,7 @@ export function GAVisualization(props: GAVisualizationProps) {
 				<Show when={mode() === "3d"}>
 					<div class="three-settings">
 						<label>
-							高さの尺度
+							高さ・色の尺度
 							<select
 								value={heightScale()}
 								onChange={(e) =>
@@ -158,7 +166,7 @@ export function GAVisualization(props: GAVisualizationProps) {
 						</label>
 					</div>
 					<p class="height-scale-description">
-						高さ:{" "}
+						高さ・色:{" "}
 						{heightScale() === "linear"
 							? "評価値（線形尺度）"
 							: "評価値（log(1 + f)尺度）"}
@@ -201,7 +209,7 @@ export function GAVisualization(props: GAVisualizationProps) {
 							)}
 						</Show>
 					</Show>
-					<FitnessScale scale={landscape().colorScale} />
+					<FitnessScale scale={colorScale()} />
 				</div>
 				<Show when={mode() === "3d"}>
 					<p class="three-help">

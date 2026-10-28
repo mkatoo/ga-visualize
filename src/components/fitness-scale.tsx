@@ -1,4 +1,4 @@
-import { createMemo, For } from "solid-js";
+import { createMemo, For, Show } from "solid-js";
 import {
 	FITNESS_COLOR_GRADIENT,
 	type FitnessColorScale,
@@ -20,7 +20,9 @@ export function FitnessScale(props: { scale: FitnessColorScale }) {
 		<figure class="fitness-scale" aria-label="背景色と評価値の対応">
 			<figcaption class="fitness-scale-header">
 				<span>評価値</span>
-				<span>{props.scale.logarithmic ? "対数目盛" : "線形目盛"}</span>
+				<Show when={props.scale.logarithmic}>
+					<span>対数目盛</span>
+				</Show>
 			</figcaption>
 			<div
 				class="fitness-scale-bar"
