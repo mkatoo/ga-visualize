@@ -154,10 +154,10 @@ const drawAxes = (
 	ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
 	ctx.lineWidth = 3;
 	ctx.font = "12px Arial";
-	ctx.textAlign = "center";
 
 	const { min, max } = bounds;
 	const step = (max - min) / 4;
+	const labelPadding = 4;
 
 	for (let i = 0; i <= 4; i++) {
 		const value = min + i * step;
@@ -166,10 +166,19 @@ const drawAxes = (
 		if (Math.abs(value) > AXIS_LABEL_THRESHOLD) {
 			const xLabel = axisNumberFormat.format(value);
 			const yLabel = axisNumberFormat.format(-value);
-			ctx.strokeText(xLabel, pos, size / 2 + 15);
-			ctx.fillText(xLabel, pos, size / 2 + 15);
-			ctx.strokeText(yLabel, size / 2 + 15, pos);
-			ctx.fillText(yLabel, size / 2 + 15, pos);
+			// Keep endpoint labels and their outlines inside the canvas.
+			const labelPos = Math.max(
+				labelPadding,
+				Math.min(size - labelPadding, pos),
+			);
+			ctx.textAlign = i === 0 ? "left" : i === 4 ? "right" : "center";
+			ctx.textBaseline = "alphabetic";
+			ctx.strokeText(xLabel, labelPos, size / 2 + 15);
+			ctx.fillText(xLabel, labelPos, size / 2 + 15);
+			ctx.textAlign = "center";
+			ctx.textBaseline = i === 0 ? "top" : i === 4 ? "bottom" : "alphabetic";
+			ctx.strokeText(yLabel, size / 2 + 15, labelPos);
+			ctx.fillText(yLabel, size / 2 + 15, labelPos);
 		}
 	}
 };

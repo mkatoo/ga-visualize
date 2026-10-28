@@ -181,7 +181,7 @@ describe("Visualizer", () => {
 			);
 			expect(backgroundContext.fillText).toHaveBeenCalledWith(
 				bounds.max.toString(),
-				500,
+				496,
 				265,
 			);
 		},
