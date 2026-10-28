@@ -1,4 +1,4 @@
-import { cleanup, render } from "@solidjs/testing-library";
+import { cleanup, render, within } from "@solidjs/testing-library";
 import { createSignal } from "solid-js";
 import { afterEach, describe, expect, test } from "vitest";
 import { PopulationStats } from "./population-stats";
@@ -41,9 +41,12 @@ describe("Population statistics fitness values", () => {
 				bestEverGeneration={4}
 			/>
 		));
-		expect(view.getByTitle("第8世代までの最良評価値: 0")).toHaveTextContent(
-			"0.0000",
+		const bestEverCard = within(
+			view.getByRole("region", { name: "第8世代までの最良評価値" }),
 		);
+		expect(
+			bestEverCard.getByTitle("第8世代までの最良評価値: 0"),
+		).toHaveTextContent("0.0000");
 		expect(view.getByTitle("評価値: 14.203125")).toHaveTextContent("14.2031");
 		expect(view.getByText(/第4世代で発見/)).toBeTruthy();
 		expect(

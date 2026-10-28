@@ -16,6 +16,7 @@ const formatFitness = (value: number) =>
 
 export function PopulationStats(props: PopulationStatsProps) {
 	const generationHeadingId = createUniqueId();
+	const bestEverHeadingId = createUniqueId();
 	const bestEverLabel = () => `第${props.generation}世代までの最良評価値`;
 	const bestEver = () => props.bestEver ?? props.bestIndividual;
 	const bestEverFitness = () => {
@@ -30,13 +31,15 @@ export function PopulationStats(props: PopulationStatsProps) {
 	};
 	return (
 		<section class="stats" aria-label="集団の統計">
-			<dl class="stat-item best-ever">
-				<dt class="label">{bestEverLabel()}</dt>
-				<dd class="value" title={`${bestEverLabel()}: ${bestEver()?.fitness}`}>
+			<section class="stat-item best-ever" aria-labelledby={bestEverHeadingId}>
+				<h3 id={bestEverHeadingId} class="label">
+					{bestEverLabel()}
+				</h3>
+				<p class="value" title={`${bestEverLabel()}: ${bestEver()?.fitness}`}>
 					{bestEverFitness()}
-				</dd>
-				<dd class="coordinate-display">{bestEverDescription()}</dd>
-			</dl>
+				</p>
+				<p class="coordinate-display">{bestEverDescription()}</p>
+			</section>
 			<section
 				class="stat-item current-generation"
 				aria-labelledby={generationHeadingId}
