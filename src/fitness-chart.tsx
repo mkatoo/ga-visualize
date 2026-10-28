@@ -97,7 +97,7 @@ export function FitnessChart(props: FitnessChartProps) {
 	);
 	const series = [
 		{
-			label: "この世代の最良評価値",
+			label: "最良評価値",
 			color: VISUALIZATION_COLORS.best,
 			dash: undefined,
 			values: () => props.bestFitness,
@@ -114,6 +114,23 @@ export function FitnessChart(props: FitnessChartProps) {
 		<figure class="fitness-chart">
 			<figcaption class="chart-header">
 				<h2>評価値の推移</h2>
+				<div class="legend">
+					<For each={series}>
+						{(item) => (
+							<div class="legend-item">
+								<span
+									class="legend-line"
+									style={{
+										"border-top-color": item.color,
+										"border-top-style": item.dash ? "dashed" : "solid",
+									}}
+									aria-hidden="true"
+								/>
+								{item.label}
+							</div>
+						)}
+					</For>
+				</div>
 			</figcaption>
 			<p class="chart-help">
 				グラフをタップするか、上部の表示世代を指定すると、統計カードで評価値を確認できます。
@@ -256,23 +273,6 @@ export function FitnessChart(props: FitnessChartProps) {
 						</text>
 					</g>
 				</svg>
-			</div>
-			<div class="legend">
-				<For each={series}>
-					{(item) => (
-						<div class="legend-item">
-							<span
-								class="legend-line"
-								style={{
-									"border-top-color": item.color,
-									"border-top-style": item.dash ? "dashed" : "solid",
-								}}
-								aria-hidden="true"
-							/>
-							{item.label}
-						</div>
-					)}
-				</For>
 			</div>
 		</figure>
 	);
