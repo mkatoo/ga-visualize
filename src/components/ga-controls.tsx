@@ -36,6 +36,11 @@ interface GAControlsProps {
 export function GAControls(props: GAControlsProps) {
 	return (
 		<div class="control-panel">
+			<ProgressDisplay
+				status={props.runStatus}
+				currentGeneration={props.statistics.generation}
+				totalGenerations={props.generations}
+			/>
 			<ControlPanel
 				isRunning={props.isRunning}
 				isViewingHistory={props.isViewingHistory}
@@ -60,12 +65,6 @@ export function GAControls(props: GAControlsProps) {
 				maxPopulationSize={props.constraints.maxPopulationSize}
 				minGenerations={props.constraints.minGenerations}
 				maxGenerations={props.constraints.maxGenerations}
-			/>
-
-			<ProgressDisplay
-				status={props.runStatus}
-				currentGeneration={props.statistics.generation}
-				totalGenerations={props.generations}
 			/>
 		</div>
 	);

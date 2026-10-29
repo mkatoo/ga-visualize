@@ -502,10 +502,6 @@
 	padding: 20px;
 }
 
-.controls {
-	margin-bottom: 16px;
-}
-
 .settings-toggle {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) auto;
@@ -762,20 +758,30 @@
 }
 
 .progress {
-	margin-bottom: 0;
+	margin-bottom: 20px;
+}
+
+.progress-header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 4px 12px;
+	margin-bottom: 8px;
 }
 
 .run-status {
 	display: block;
-	margin: 0 0 12px;
+	margin: 0;
 	color: #0369a1;
 	font-weight: 600;
 }
 
 .progress-label {
-	margin-bottom: 8px;
-	font-weight: 500;
-	color: #333;
+	font-size: 0.85rem;
+	font-variant-numeric: tabular-nums;
+	color: #475569;
+	white-space: nowrap;
 }
 
 .progress-bar {

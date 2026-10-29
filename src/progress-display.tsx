@@ -12,18 +12,20 @@ export function ProgressDisplay(props: ProgressDisplayProps) {
 
 	return (
 		<div class="progress">
-			<output class="run-status" aria-live="polite">
-				{
+			<div class="progress-header">
+				<output class="run-status" aria-live="polite">
 					{
-						ready: "開始前",
-						running: "実行中",
-						paused: "一時停止中",
-						completed: "実行が完了しました",
-					}[props.status]
-				}
-			</output>
-			<div class="progress-label">
-				進行状況: {props.currentGeneration} / {props.totalGenerations}
+						{
+							ready: "開始前",
+							running: "実行中",
+							paused: "一時停止中",
+							completed: "実行が完了しました",
+						}[props.status]
+					}
+				</output>
+				<div class="progress-label">
+					{props.currentGeneration} / {props.totalGenerations}世代
+				</div>
 			</div>
 			<div
 				class="progress-bar"
