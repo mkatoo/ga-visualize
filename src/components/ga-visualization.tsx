@@ -132,6 +132,11 @@ export function GAVisualization(props: GAVisualizationProps) {
 				</div>
 				{props.children}
 			</fieldset>
+			<PopulationStats
+				generation={props.generation}
+				bestIndividual={props.bestIndividual}
+				averageFitness={props.averageFitness}
+			/>
 			<Show when={error()}>
 				<output class="visualization-error">{error()}</output>
 			</Show>
@@ -235,11 +240,6 @@ export function GAVisualization(props: GAVisualizationProps) {
 					</span>
 				</section>
 			</div>
-			<PopulationStats
-				generation={props.generation}
-				bestIndividual={props.bestIndividual}
-				averageFitness={props.averageFitness}
-			/>
 			{props.chart}
 			<BestEverStats
 				generation={props.generation}
