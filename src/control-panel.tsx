@@ -1,4 +1,5 @@
 import { onCleanup, onMount, Show } from "solid-js";
+import { MAX_ANIMATION_INTERVAL, MIN_ANIMATION_INTERVAL } from "./constants";
 import type { RunStatus } from "./hooks/use-genetic-algorithm";
 import type { FunctionType } from "./objective-functions";
 import { OBJECTIVE_FUNCTIONS } from "./objective-functions";
@@ -25,7 +26,7 @@ interface ControlPanelProps {
 	onPopulationSizeBlur: (event: Event) => void;
 	onGenerationsChange: (event: Event) => void;
 	onGenerationsBlur: (event: Event) => void;
-	onSpeedChange: (event: Event) => void;
+	onSpeedChange: (interval: number) => void;
 
 	// Constants
 	minPopulationSize: number;
@@ -84,6 +85,31 @@ export function ControlPanel(props: ControlPanelProps) {
 					リセット
 				</button>
 			</fieldset>
+
+			<div class="speed-control">
+				<div class="speed-control-header">
+					<label for="speed">アニメーション速度:</label>
+					<span class="speed-value">{speedLabel()}</span>
+				</div>
+				<input
+					id="speed"
+					type="range"
+					min={0}
+					max={MAX_ANIMATION_INTERVAL - MIN_ANIMATION_INTERVAL}
+					step="50"
+					value={MAX_ANIMATION_INTERVAL - props.animationSpeed}
+					onInput={(event) =>
+						props.onSpeedChange(
+							MAX_ANIMATION_INTERVAL - event.currentTarget.valueAsNumber,
+						)
+					}
+					aria-valuetext={speedLabel()}
+				/>
+				<div class="speed-range-labels" aria-hidden="true">
+					<span>遅い</span>
+					<span>速い</span>
+				</div>
+			</div>
 
 			<details class="settings-details" ref={settings} open>
 				<summary class="settings-toggle">
@@ -148,21 +174,6 @@ export function ControlPanel(props: ControlPanelProps) {
 								disabled={props.settingsLocked}
 							/>
 						</div>
-					</div>
-
-					<div class="speed-control">
-						<label for="speed">アニメーション速度:</label>
-						<input
-							id="speed"
-							type="range"
-							min="50"
-							max="2000"
-							step="50"
-							value={props.animationSpeed}
-							onInput={props.onSpeedChange}
-							aria-valuetext={speedLabel()}
-						/>
-						<span>{speedLabel()}</span>
 					</div>
 				</div>
 			</details>

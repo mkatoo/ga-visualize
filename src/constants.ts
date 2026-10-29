@@ -6,6 +6,8 @@ export const CANVAS_SIZE = 500;
 
 // アニメーション速度の定数
 export const DEFAULT_ANIMATION_SPEED = 500;
+export const MIN_ANIMATION_INTERVAL = 50;
+export const MAX_ANIMATION_INTERVAL = 2000;
 
 // GA設定のデフォルト値
 export const DEFAULT_POPULATION_SIZE = 50;

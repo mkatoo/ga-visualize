@@ -185,10 +185,8 @@ export function useGeneticAlgorithm() {
 		return clampedValue;
 	};
 
-	const handleSpeedChange = (event: Event) => {
-		const target = event.target as HTMLInputElement;
-		const speed = parseInt(target.value);
-		setAnimationSpeed(speed);
+	const handleSpeedChange = (interval: number) => {
+		setAnimationSpeed(interval);
 
 		if (isRunning()) {
 			stop();

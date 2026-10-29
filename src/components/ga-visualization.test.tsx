@@ -509,6 +509,8 @@ describe("2D / 3D visualization", () => {
 		const generation = () =>
 			view.getByRole("heading", { name: /^第\d+世代のデータ$/ });
 		expect(settings).not.toHaveAttribute("open");
+		const speed = view.getByRole("slider", { name: "アニメーション速度:" });
+		expect(speed).toBeVisible();
 		if (!summary) throw new Error("Settings summary is missing");
 		fireEvent.click(summary);
 		expect(settings).toHaveAttribute("open");
@@ -549,11 +551,23 @@ describe("2D / 3D visualization", () => {
 		expect(generation()).toHaveTextContent(/^第1世代のデータ$/);
 		setMobile(true);
 		expect(settings).not.toHaveAttribute("open");
-		vi.advanceTimersByTime(1000);
+		expect(speed).toBeVisible();
+		fireEvent.input(speed, { target: { value: "1950" } });
+		expect(speed).toHaveAttribute("aria-valuetext", "0.05秒／世代");
+		vi.advanceTimersByTime(49);
+		expect(generation()).toHaveTextContent(/^第1世代のデータ$/);
+		vi.advanceTimersByTime(1);
 		expect(generation()).toHaveTextContent(/^第2世代のデータ$/);
 		fireEvent.click(view.getByRole("button", { name: "一時停止" }));
-		vi.advanceTimersByTime(1000);
+		fireEvent.input(speed, { target: { value: "0" } });
+		expect(speed).toHaveAttribute("aria-valuetext", "2秒／世代");
+		vi.advanceTimersByTime(2000);
 		expect(generation()).toHaveTextContent(/^第2世代のデータ$/);
+		fireEvent.click(view.getByRole("button", { name: "再開" }));
+		vi.advanceTimersByTime(1999);
+		expect(generation()).toHaveTextContent(/^第2世代のデータ$/);
+		vi.advanceTimersByTime(1);
+		expect(generation()).toHaveTextContent(/^第3世代のデータ$/);
 
 		view.unmount();
 		expect(listeners.size).toBe(0);

@@ -24,7 +24,7 @@ interface GAControlsProps {
 	onPopulationSizeBlur: (event: Event) => void;
 	onGenerationsChange: (event: Event) => void;
 	onGenerationsBlur: (event: Event) => void;
-	onSpeedChange: (event: Event) => void;
+	onSpeedChange: (interval: number) => void;
 	constraints: {
 		minPopulationSize: number;
 		maxPopulationSize: number;

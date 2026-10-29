@@ -637,7 +637,7 @@
 }
 
 .parameter-controls {
-	margin-bottom: 20px;
+	margin-bottom: 0;
 	display: grid;
 	grid-template-columns: 1fr;
 	gap: 15px;
@@ -700,25 +700,49 @@
 }
 
 .speed-control {
-	margin-bottom: 0;
+	margin-bottom: 20px;
+	padding-bottom: 16px;
+	border-bottom: 1px solid #e2e8f0;
+}
+
+.speed-control-header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 4px 12px;
 }
 
 .speed-control label {
-	display: block;
-	margin-bottom: 8px;
 	font-weight: 500;
 	color: #333;
+	font-size: 0.9rem;
+}
+
+.speed-value {
+	font-size: 0.85rem;
+	font-variant-numeric: tabular-nums;
+	color: #475569;
+	white-space: nowrap;
 }
 
 .speed-control input[type="range"] {
+	box-sizing: border-box;
 	width: 100%;
 	min-height: 44px;
-	margin-bottom: 5px;
+	margin: 0;
 }
 
-.speed-control span {
-	font-size: 0.9rem;
-	color: #666;
+.speed-control input[type="range"]:focus-visible {
+	outline: 2px solid #0284c7;
+	outline-offset: 3px;
+}
+
+.speed-range-labels {
+	display: flex;
+	justify-content: space-between;
+	font-size: 0.8rem;
+	color: #64748b;
 }
 
 .progress {
