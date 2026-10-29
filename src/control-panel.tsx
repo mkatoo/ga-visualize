@@ -131,6 +131,7 @@ export function ControlPanel(props: ControlPanelProps) {
 							<label for="functionType">目的関数:</label>
 							<select
 								id="functionType"
+								aria-describedby="function-description"
 								value={props.functionType}
 								onChange={props.onFunctionTypeChange}
 								disabled={props.settingsLocked}
@@ -139,6 +140,9 @@ export function ControlPanel(props: ControlPanelProps) {
 									<option value={key}>{func.name}</option>
 								))}
 							</select>
+							<p id="function-description" class="function-description">
+								{OBJECTIVE_FUNCTIONS[props.functionType].description}
+							</p>
 						</div>
 
 						<div class="parameter-group">

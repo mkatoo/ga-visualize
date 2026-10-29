@@ -7,6 +7,7 @@ export type FunctionType =
 
 export interface ObjectiveFunction {
 	name: string;
+	description: string;
 	optimum: { x: number; y: number; fitness: number };
 	fn: (x: number, y: number) => number;
 	bounds: { min: number; max: number };
@@ -16,6 +17,8 @@ export interface ObjectiveFunction {
 export const OBJECTIVE_FUNCTIONS: Record<FunctionType, ObjectiveFunction> = {
 	sphere: {
 		name: "Sphere Function",
+		description:
+			"なめらかな1つの谷があり、中心に近づくほど評価値が小さくなります。",
 		optimum: { x: 0, y: 0, fitness: 0 },
 		fn: (x: number, y: number): number => x * x + y * y,
 		bounds: { min: -10, max: 10 },
@@ -23,6 +26,7 @@ export const OBJECTIVE_FUNCTIONS: Record<FunctionType, ObjectiveFunction> = {
 	},
 	rosenbrock: {
 		name: "Rosenbrock Function",
+		description: "細く曲がった谷に沿って、最適解を探す関数です。",
 		optimum: { x: 1, y: 1, fitness: 0 },
 		fn: (x: number, y: number): number => {
 			const a = 1;
@@ -34,6 +38,7 @@ export const OBJECTIVE_FUNCTIONS: Record<FunctionType, ObjectiveFunction> = {
 	},
 	ackley: {
 		name: "Ackley Function",
+		description: "中心に深い谷があり、周囲には細かな起伏が広がっています。",
 		optimum: { x: 0, y: 0, fitness: 0 },
 		fn: (x: number, y: number): number => {
 			const a = 20;
@@ -51,6 +56,8 @@ export const OBJECTIVE_FUNCTIONS: Record<FunctionType, ObjectiveFunction> = {
 	},
 	rastrigin: {
 		name: "Rastrigin Function",
+		description:
+			"小さな山と谷が規則的に並び、最適解以外の谷に留まりやすい関数です。",
 		optimum: { x: 0, y: 0, fitness: 0 },
 		fn: (x: number, y: number): number => {
 			const A = 10;
@@ -66,6 +73,8 @@ export const OBJECTIVE_FUNCTIONS: Record<FunctionType, ObjectiveFunction> = {
 	},
 	beale: {
 		name: "Beale Function",
+		description:
+			"探索範囲の四隅に急な山があり、場所によって評価値が大きく変わります。",
 		optimum: { x: 3, y: 0.5, fitness: 0 },
 		fn: (x: number, y: number): number => {
 			const term1 = (1.5 - x + x * y) ** 2;

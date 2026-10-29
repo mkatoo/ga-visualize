@@ -708,6 +708,13 @@
 	color: #6c757d;
 }
 
+.function-description {
+	margin: 8px 0 0;
+	color: #475569;
+	font-size: 0.85rem;
+	line-height: 1.6;
+}
+
 .speed-control {
 	margin-bottom: 20px;
 	padding-bottom: 16px;
