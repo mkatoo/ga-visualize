@@ -83,6 +83,15 @@ export function GAApp() {
 						bestEver={displayedSnapshot().bestEver}
 						bestEverGeneration={displayedSnapshot().bestEverGeneration}
 						functionType={functionType()}
+						chart={
+							<FitnessChart
+								selectedGeneration={displayedGeneration()}
+								onSelectGeneration={selectGeneration}
+								bestFitness={statistics().bestFitness}
+								averageFitness={statistics().averageFitness}
+								totalGenerations={generations()}
+							/>
+						}
 					>
 						<GenerationHistory
 							generation={displayedGeneration()}
@@ -91,13 +100,6 @@ export function GAApp() {
 							onShowLatest={showLatest}
 						/>
 					</GAVisualization>
-					<FitnessChart
-						selectedGeneration={displayedGeneration()}
-						onSelectGeneration={selectGeneration}
-						bestFitness={statistics().bestFitness}
-						averageFitness={statistics().averageFitness}
-						totalGenerations={generations()}
-					/>
 				</div>
 			</div>
 		</div>

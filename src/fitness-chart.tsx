@@ -73,7 +73,7 @@ export function FitnessChart(props: FitnessChartProps) {
 	const maxFitness = createMemo(
 		() => Math.max(0, ...props.bestFitness, ...props.averageFitness) || 1,
 	);
-	const formatFitness = (value: number) => {
+	const formatTickFitness = (value: number) => {
 		if (value === 0) return "0";
 		return Math.abs(value) < 0.01 || Math.abs(value) >= 10_000
 			? value.toExponential(1)
@@ -114,26 +114,9 @@ export function FitnessChart(props: FitnessChartProps) {
 		<figure class="fitness-chart">
 			<figcaption class="chart-header">
 				<h2>評価値の推移</h2>
-				<div class="legend">
-					<For each={series}>
-						{(item) => (
-							<div class="legend-item">
-								<span
-									class="legend-line"
-									style={{
-										"border-top-color": item.color,
-										"border-top-style": item.dash ? "dashed" : "solid",
-									}}
-									aria-hidden="true"
-								/>
-								{item.label}
-							</div>
-						)}
-					</For>
-				</div>
 			</figcaption>
 			<p class="chart-help">
-				グラフをタップするか、上部の表示世代を指定すると、統計カードで評価値を確認できます。
+				グラフをタップするか、上部の表示世代を指定すると、その世代の評価値を表示します。
 			</p>
 			<div class="chart-container" ref={container}>
 				<svg
@@ -175,7 +158,7 @@ export function FitnessChart(props: FitnessChartProps) {
 										dominant-baseline="middle"
 										class="axis-label"
 									>
-										{formatFitness(fitness)}
+										{formatTickFitness(fitness)}
 									</text>
 								</g>
 							)}
