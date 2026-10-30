@@ -132,11 +132,18 @@ export function GAVisualization(props: GAVisualizationProps) {
 				</div>
 				{props.children}
 			</fieldset>
-			<PopulationStats
-				generation={props.generation}
-				bestIndividual={props.bestIndividual}
-				averageFitness={props.averageFitness}
-			/>
+			<div class="generation-comparison">
+				<PopulationStats
+					generation={props.generation}
+					bestIndividual={props.bestIndividual}
+					averageFitness={props.averageFitness}
+				/>
+				<BestEverStats
+					generation={props.generation}
+					bestIndividual={props.bestEver ?? props.bestIndividual}
+					bestGeneration={props.bestEverGeneration ?? props.generation}
+				/>
+			</div>
 			<Show when={error()}>
 				<output class="visualization-error">{error()}</output>
 			</Show>
@@ -241,11 +248,6 @@ export function GAVisualization(props: GAVisualizationProps) {
 				</section>
 			</div>
 			{props.chart}
-			<BestEverStats
-				generation={props.generation}
-				bestIndividual={props.bestEver ?? props.bestIndividual}
-				bestGeneration={props.bestEverGeneration ?? props.generation}
-			/>
 		</div>
 	);
 }

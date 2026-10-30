@@ -3,6 +3,35 @@ import { formatFitness } from "../format-fitness";
 import type { Individual } from "../genetic-algorithm";
 import { VISUALIZATION_COLORS } from "../visualization-colors";
 
+function IndividualCoordinates(props: { individual: Individual }) {
+	return (
+		<div class="individual-coordinates">
+			<p class="coordinate-display">
+				<span>座標</span>
+				<span
+					class="coord-value"
+					title={`座標: (${props.individual.x}, ${props.individual.y})`}
+				>
+					({props.individual.x.toFixed(3)}, {props.individual.y.toFixed(3)})
+				</span>
+			</p>
+			<details class="coordinate-details">
+				<summary>座標の詳細</summary>
+				<dl>
+					<div>
+						<dt>x</dt>
+						<dd class="coord-value">{props.individual.x}</dd>
+					</div>
+					<div>
+						<dt>y</dt>
+						<dd class="coord-value">{props.individual.y}</dd>
+					</div>
+				</dl>
+			</details>
+		</div>
+	);
+}
+
 interface PopulationStatsProps {
 	generation: number;
 	averageFitness: number;
@@ -34,15 +63,8 @@ export function PopulationStats(props: PopulationStatsProps) {
 							>
 								{formatFitness(props.bestIndividual.fitness)}
 							</dd>
-							<dd class="coordinate-display">
-								<span>座標</span>
-								<span
-									class="coord-value"
-									title={`座標: (${props.bestIndividual.x}, ${props.bestIndividual.y})`}
-								>
-									({props.bestIndividual.x.toFixed(3)},{" "}
-									{props.bestIndividual.y.toFixed(3)})
-								</span>
+							<dd class="coordinate-summary">
+								<IndividualCoordinates individual={props.bestIndividual} />
 							</dd>
 						</>
 					) : (
@@ -81,24 +103,22 @@ export function BestEverStats(props: BestEverStatsProps) {
 	const label = () => `第${props.generation}世代までの最良評価値`;
 	return (
 		<section class="best-ever" aria-labelledby={headingId}>
-			<h3 id={headingId} class="label">
+			<h3 id={headingId} class="generation-heading">
 				{label()}
 			</h3>
-			<p class="value" title={`${label()}: ${props.bestIndividual?.fitness}`}>
-				{props.bestIndividual
-					? formatFitness(props.bestIndividual.fitness)
-					: "データなし"}
-			</p>
-			<Show when={props.bestIndividual}>
-				{(best) => (
-					<p class="coordinate-display">
-						<span>座標</span>
-						<span class="coord-value">x = {best().x}</span>
-						<span class="coord-value">y = {best().y}</span>
-						<span>第{props.bestGeneration}世代で発見</span>
-					</p>
-				)}
-			</Show>
+			<div>
+				<Show when={props.bestIndividual}>
+					<p class="discovery-generation">第{props.bestGeneration}世代で発見</p>
+				</Show>
+				<p class="value" title={`${label()}: ${props.bestIndividual?.fitness}`}>
+					{props.bestIndividual
+						? formatFitness(props.bestIndividual.fitness)
+						: "データなし"}
+				</p>
+				<Show when={props.bestIndividual}>
+					{(best) => <IndividualCoordinates individual={best()} />}
+				</Show>
+			</div>
 		</section>
 	);
 }

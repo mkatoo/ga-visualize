@@ -1,4 +1,4 @@
-import { cleanup, render, within } from "@solidjs/testing-library";
+import { cleanup, fireEvent, render, within } from "@solidjs/testing-library";
 import { createSignal } from "solid-js";
 import { afterEach, describe, expect, test } from "vitest";
 import { BestEverStats, PopulationStats } from "./population-stats";
@@ -24,9 +24,19 @@ describe("Population statistics fitness values", () => {
 		expect(view.container.querySelector(".best-ever .value")).toHaveTextContent(
 			"0.2500",
 		);
-		expect(view.getByText("x = 0.0000123456789")).toBeVisible();
-		expect(view.getByText("y = -0.5000123456789")).toBeVisible();
+		expect(view.getByText("(0.000, -0.500)")).toBeVisible();
+		expect(view.getByText("0.0000123456789")).not.toBeVisible();
+		expect(view.getByText("-0.5000123456789")).not.toBeVisible();
+		fireEvent.click(view.getByText("座標の詳細"));
+		expect(view.getByText("0.0000123456789")).toBeVisible();
+		expect(view.getByText("-0.5000123456789")).toBeVisible();
 		expect(view.getByText("第1世代で発見")).toBeVisible();
+		setBest({ x: 0.000003456789, y: -0.12503456789, fitness: 0.015625 });
+		setGeneration(2);
+		expect(view.getByText("(0.000, -0.125)")).toBeVisible();
+		expect(view.getByText("0.000003456789")).toBeVisible();
+		expect(view.getByText("-0.12503456789")).toBeVisible();
+		expect(view.getByText("第2世代で発見")).toBeVisible();
 	});
 
 	test("distinguishes the current generation from the best discovery", () => {
