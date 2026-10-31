@@ -23,7 +23,11 @@ import type { CameraState } from "../three-landscape-renderer";
 import { Visualizer } from "../visualizer";
 import type { Visualizer3DProps } from "../visualizer-3d";
 import { FitnessScale } from "./fitness-scale";
-import { BestEverStats, PopulationStats } from "./population-stats";
+import {
+	BestEverStats,
+	GenerationSummary,
+	PopulationStats,
+} from "./population-stats";
 
 interface GAVisualizationProps {
 	population: Individual[];
@@ -120,70 +124,19 @@ export function GAVisualization(props: GAVisualizationProps) {
 							3D
 						</button>
 					</fieldset>
-					<Show when={mode() === "3d"}>
-						<button
-							type="button"
-							class="view-reset"
-							onClick={() => setResetView((v) => v + 1)}
-						>
-							視点リセット
-						</button>
-					</Show>
 				</div>
 				{props.children}
 			</fieldset>
-			<div class="generation-comparison">
-				<PopulationStats
-					generation={props.generation}
-					bestIndividual={props.bestIndividual}
-					averageFitness={props.averageFitness}
-				/>
-				<BestEverStats
-					generation={props.generation}
-					bestIndividual={props.bestEver ?? props.bestIndividual}
-					bestGeneration={props.bestEverGeneration ?? props.generation}
-				/>
-			</div>
+			<GenerationSummary
+				generation={props.generation}
+				bestIndividual={props.bestIndividual}
+				averageFitness={props.averageFitness}
+				bestEver={props.bestEver ?? props.bestIndividual}
+			/>
 			<Show when={error()}>
 				<output class="visualization-error">{error()}</output>
 			</Show>
 			<div class="visualizer">
-				<Show when={mode() === "3d"}>
-					<div class="three-settings">
-						<label>
-							高さ・色の尺度
-							<select
-								value={heightScale()}
-								onChange={(e) =>
-									setHeightScale(e.currentTarget.value as HeightScale)
-								}
-							>
-								<option value="linear">線形（評価値に比例）</option>
-								<option value="logarithmic">
-									対数（小さな評価値の違いを強調）
-								</option>
-							</select>
-						</label>
-						<label>
-							曲面の分割数
-							<select
-								value={resolution()}
-								onChange={(e) => setResolution(Number(e.currentTarget.value))}
-							>
-								<option value={100}>100（標準）</option>
-								<option value={64}>64（軽量）</option>
-							</select>
-						</label>
-						<label class="wireframe-toggle">
-							<input
-								type="checkbox"
-								checked={wireframe()}
-								onChange={(e) => setWireframe(e.currentTarget.checked)}
-							/>
-							格子線のみ
-						</label>
-					</div>
-				</Show>
 				<div class="landscape-view">
 					<Show
 						when={mode() === "3d"}
@@ -222,16 +175,19 @@ export function GAVisualization(props: GAVisualizationProps) {
 					</Show>
 					<FitnessScale scale={colorScale()} />
 				</div>
-				<Show when={mode() === "3d"}>
-					<p class="three-help">
+				<p class="three-help">
+					<Show
+						when={mode() === "3d"}
+						fallback="地形の色は評価値を示します。小さいほど良い解です。"
+					>
 						<span class="three-help-mouse">
 							ドラッグで回転・ホイールでズーム・右ドラッグで移動。
 						</span>
 						<span class="three-help-touch">
 							タッチは1本指で回転、2本指でズーム・移動。
 						</span>
-					</p>
-				</Show>
+					</Show>
+				</p>
 				<section class="population-legend" aria-label="個体の凡例">
 					<span>
 						<i class="population-dot" />
@@ -247,7 +203,67 @@ export function GAVisualization(props: GAVisualizationProps) {
 					</span>
 				</section>
 			</div>
+			<details class="view-settings">
+				<summary class="settings-toggle">
+					<span class="settings-title">3D表示設定</span>
+				</summary>
+				<p class="settings-help">3D表示の高さ・色・格子線を調整できます。</p>
+				<div class="three-settings">
+					<label>
+						高さ・色の尺度
+						<select
+							value={heightScale()}
+							onChange={(e) =>
+								setHeightScale(e.currentTarget.value as HeightScale)
+							}
+						>
+							<option value="linear">線形（評価値に比例）</option>
+							<option value="logarithmic">
+								対数（小さな評価値の違いを強調）
+							</option>
+						</select>
+					</label>
+					<label>
+						曲面の分割数
+						<select
+							value={resolution()}
+							onChange={(e) => setResolution(Number(e.currentTarget.value))}
+						>
+							<option value={100}>100（標準）</option>
+							<option value={64}>64（軽量）</option>
+						</select>
+					</label>
+					<label class="wireframe-toggle">
+						<input
+							type="checkbox"
+							checked={wireframe()}
+							onChange={(e) => setWireframe(e.currentTarget.checked)}
+						/>
+						格子線のみ
+					</label>
+					<button
+						type="button"
+						class="view-reset"
+						disabled={mode() !== "3d"}
+						onClick={() => setResetView((v) => v + 1)}
+					>
+						視点リセット
+					</button>
+				</div>
+			</details>
 			{props.chart}
+			<div class="generation-comparison">
+				<PopulationStats
+					generation={props.generation}
+					bestIndividual={props.bestIndividual}
+					averageFitness={props.averageFitness}
+				/>
+				<BestEverStats
+					generation={props.generation}
+					bestIndividual={props.bestEver ?? props.bestIndividual}
+					bestGeneration={props.bestEverGeneration ?? props.generation}
+				/>
+			</div>
 		</div>
 	);
 }

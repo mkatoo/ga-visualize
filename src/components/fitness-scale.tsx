@@ -17,23 +17,29 @@ export function FitnessScale(props: { scale: FitnessColorScale }) {
 		})),
 	);
 	return (
-		<figure class="fitness-scale" aria-label="背景色と評価値の対応">
+		<figure
+			class="fitness-scale"
+			aria-label="背景色と評価値の対応"
+			style={{
+				"--scale-gradient": FITNESS_COLOR_GRADIENT,
+				"--scale-gradient-horizontal": FITNESS_COLOR_GRADIENT.replace(
+					"to top",
+					"to right",
+				),
+			}}
+		>
 			<figcaption class="fitness-scale-header">
 				<span>評価値</span>
 				<Show when={props.scale.logarithmic}>
 					<span>対数目盛</span>
 				</Show>
 			</figcaption>
-			<div
-				class="fitness-scale-bar"
-				style={{ background: FITNESS_COLOR_GRADIENT }}
-				aria-hidden="true"
-			/>
+			<div class="fitness-scale-bar" aria-hidden="true" />
 			<div class="fitness-scale-ticks">
 				<For each={ticks()}>
 					{(tick) => (
 						<span
-							style={{ bottom: `${tick.position * 100}%` }}
+							style={{ "--tick-position": `${tick.position * 100}%` }}
 							title={tick.value.toString()}
 						>
 							{tick.value >= 10_000

@@ -42,6 +42,7 @@ describe("2D / 3D visualization", () => {
 		vi.spyOn(loader, "load3DVisualizer").mockResolvedValue({ Visualizer3D });
 		const context = {
 			clearRect: vi.fn(),
+			setTransform: vi.fn(),
 			beginPath: vi.fn(),
 			moveTo: vi.fn(),
 			lineTo: vi.fn(),
@@ -88,6 +89,9 @@ describe("2D / 3D visualization", () => {
 	const open3D = async (view: ReturnType<typeof render>) => {
 		fireEvent.click(view.getByRole("button", { name: "3D" }));
 		await waitFor(() => expect(ThreeLandscapeRenderer).toHaveBeenCalled());
+		const settings = view.container.querySelector(".view-settings");
+		if (!settings?.hasAttribute("open"))
+			fireEvent.click(view.getByText("3D表示設定"));
 	};
 
 	test("loads 3D only on selection and shares a fixed landscape across generations and settings", async () => {
@@ -349,8 +353,16 @@ describe("2D / 3D visualization", () => {
 		expect(panel).toContainElement(
 			view.container.querySelector(".fitness-chart"),
 		);
-		expect(view.getAllByText("最良評価値", { selector: "dt" })).toHaveLength(1);
-		expect(view.getAllByText("平均評価値", { selector: "dt" })).toHaveLength(1);
+		expect(
+			within(
+				view.container.querySelector(".fitness-chart") as HTMLElement,
+			).getByText("最良評価値", { selector: "dt" }),
+		).toBeVisible();
+		expect(
+			within(
+				view.container.querySelector(".fitness-chart") as HTMLElement,
+			).getByText("平均評価値", { selector: "dt" }),
+		).toBeVisible();
 		const toolbar = within(view.getByRole("group", { name: "表示ツールバー" }));
 		const slider = toolbar.getByRole("slider", {
 			name: "表示世代のスライダー",
@@ -416,9 +428,12 @@ describe("2D / 3D visualization", () => {
 		});
 		vi.spyOn(chart, "getBoundingClientRect").mockReturnValue({
 			left: 0,
+			top: 0,
 			width: 640,
+			height: 260,
 		} as DOMRect);
-		fireEvent.pointerDown(chart, { clientX: 100 });
+		fireEvent.pointerDown(chart, { clientX: 100, clientY: 100 });
+		fireEvent.pointerUp(chart, { clientX: 100, clientY: 100 });
 		expect(generationInput).toHaveValue(1);
 		expect(slider).toHaveValue("1");
 		expect(
@@ -446,6 +461,7 @@ describe("2D / 3D visualization", () => {
 		fireEvent.input(view.getByLabelText("世代数 (1-1000):"), {
 			target: { value: "1" },
 		});
+		fireEvent.blur(view.getByLabelText("世代数 (1-1000):"));
 		fireEvent.click(view.getByRole("button", { name: "開始" }));
 		fireEvent.click(view.getByRole("button", { name: "一時停止" }));
 		expect(view.getByRole("status")).toHaveTextContent("一時停止中");
@@ -464,11 +480,73 @@ describe("2D / 3D visualization", () => {
 		expect(view.getByRole("status")).toHaveTextContent("実行が完了しました");
 	});
 
+	test("commits numeric settings on blur or Enter and explains invalid drafts", () => {
+		const view = render(() => <GAApp />);
+		const population = view.getByLabelText("個体数 (1-1000):");
+		const generations = view.getByLabelText("世代数 (1-1000):");
+		const results = view.getByRole("region", { name: "第0世代の結果" });
+		const initialResults = results.textContent;
+		const overview = view.container.querySelector(".settings-overview");
+		fireEvent.input(population, { target: { value: "1" } });
+		fireEvent.input(population, { target: { value: "150" } });
+		expect(results.textContent).toBe(initialResults);
+		expect(overview).toHaveTextContent("50個体");
+		fireEvent.blur(population);
+		expect(overview).toHaveTextContent("150個体");
+		fireEvent.input(generations, { target: { value: "1001" } });
+		fireEvent.blur(generations);
+		expect(generations).toHaveValue(1001);
+		expect(generations).toHaveAttribute("aria-invalid", "true");
+		expect(view.getByText("1〜1000の整数を入力してください。")).toBeVisible();
+		expect(view.getByRole("button", { name: "開始" })).toBeDisabled();
+		fireEvent.keyDown(generations, { key: "Escape" });
+		expect(generations).toHaveValue(20);
+		expect(view.getByRole("button", { name: "開始" })).toBeEnabled();
+		fireEvent.input(generations, { target: { value: "1e2" } });
+		fireEvent.keyDown(generations, { key: "Enter" });
+		expect(generations).toHaveValue(100);
+		expect(overview).toHaveTextContent("100世代");
+		fireEvent.input(population, { target: { value: "" } });
+		fireEvent.click(view.getByRole("button", { name: "リセット" }));
+		expect(population).toHaveValue(150);
+		expect(view.getByRole("button", { name: "開始" })).toBeEnabled();
+	});
+
+	test("updates progress immediately for manual steps, fast playback, completion and reset", () => {
+		vi.useFakeTimers();
+		const view = render(() => <GAApp />);
+		const fill = view.container.querySelector(".progress-fill");
+		fireEvent.click(view.getByRole("button", { name: "1世代進める" }));
+		expect(fill).toHaveStyle({ transform: "scaleX(0.05)" });
+		expect(fill).toHaveAttribute("data-smooth", "false");
+		fireEvent.click(view.getByRole("button", { name: "再開" }));
+		vi.advanceTimersByTime(500);
+		expect(fill).toHaveStyle({ transform: "scaleX(0.1)" });
+		expect(fill).toHaveAttribute("data-smooth", "true");
+		fireEvent.input(view.getByLabelText("アニメーション速度:"), {
+			target: { value: "1950" },
+		});
+		vi.advanceTimersByTime(50);
+		expect(fill).toHaveStyle({ transform: "scaleX(0.15)" });
+		expect(fill).toHaveAttribute("data-smooth", "false");
+		fireEvent.click(view.getByRole("button", { name: "リセット" }));
+		expect(fill).toHaveStyle({ transform: "scaleX(0)" });
+		expect(fill).toHaveAttribute("data-smooth", "false");
+		const generations = view.getByLabelText("世代数 (1-1000):");
+		fireEvent.input(generations, { target: { value: "1" } });
+		fireEvent.blur(generations);
+		fireEvent.click(view.getByRole("button", { name: "開始" }));
+		vi.advanceTimersByTime(50);
+		expect(fill).toHaveStyle({ transform: "scaleX(1)" });
+		expect(fill).toHaveAttribute("data-smooth", "false");
+	});
+
 	test("requires reset to change settings after starting or completing a run", () => {
 		vi.useFakeTimers();
 		const view = render(() => <GAApp />);
 		const generations = view.getByLabelText("世代数 (1-1000):");
 		fireEvent.input(generations, { target: { value: "1" } });
+		fireEvent.keyDown(generations, { key: "Enter" });
 		expect(view.queryByText(/適用して/)).toBeNull();
 		fireEvent.click(view.getByRole("button", { name: "開始" }));
 		fireEvent.click(view.getByRole("button", { name: "一時停止" }));
@@ -528,9 +606,11 @@ describe("2D / 3D visualization", () => {
 		fireEvent.input(view.getByLabelText("個体数 (1-1000):"), {
 			target: { value: "150" },
 		});
+		fireEvent.blur(view.getByLabelText("個体数 (1-1000):"));
 		fireEvent.input(view.getByLabelText("世代数 (1-1000):"), {
 			target: { value: "75" },
 		});
+		fireEvent.blur(view.getByLabelText("世代数 (1-1000):"));
 		fireEvent.change(view.getByLabelText("目的関数:"), {
 			target: { value: "ackley" },
 		});

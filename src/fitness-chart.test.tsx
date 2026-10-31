@@ -73,12 +73,54 @@ describe("FitnessChart scale", () => {
 		const chart = view.getByRole("img");
 		vi.spyOn(chart, "getBoundingClientRect").mockReturnValue({
 			left: 100,
+			top: 0,
 			width: 640,
+			height: 260,
 		} as DOMRect);
-		fireEvent.pointerDown(chart, { clientX: 446 });
+		fireEvent.pointerDown(chart, { clientX: 446, clientY: 100 });
+		expect(onSelect).not.toHaveBeenCalled();
+		fireEvent.pointerUp(chart, { clientX: 446, clientY: 100 });
 		expect(onSelect).toHaveBeenLastCalledWith(1);
 		expect(view.getByText("最良評価値: 2")).toBeInTheDocument();
 		expect(view.getByText("平均評価値: 6")).toBeInTheDocument();
+	});
+
+	test("ignores scrolling, canceled touches, secondary clicks and taps outside the plot", () => {
+		vi.stubGlobal("PointerEvent", MouseEvent);
+		const onSelect = vi.fn();
+		const view = render(() => (
+			<FitnessChart
+				bestFitness={[4, 2, 1]}
+				averageFitness={[8, 6, 4]}
+				totalGenerations={2}
+				onSelectGeneration={onSelect}
+			/>
+		));
+		const chart = view.getByRole("img");
+		vi.spyOn(chart, "getBoundingClientRect").mockReturnValue({
+			left: 0,
+			top: 0,
+			width: 640,
+			height: 260,
+		} as DOMRect);
+		fireEvent.pointerDown(chart, { clientX: 346, clientY: 100 });
+		fireEvent.pointerMove(chart, { clientX: 346, clientY: 130 });
+		fireEvent.pointerUp(chart, { clientX: 346, clientY: 100 });
+		fireEvent.pointerDown(chart, { clientX: 346, clientY: 100 });
+		fireEvent.pointerCancel(chart);
+		fireEvent.pointerUp(chart, { clientX: 346, clientY: 100 });
+		fireEvent.pointerDown(chart, { clientX: 346, clientY: 100, button: 2 });
+		fireEvent.pointerUp(chart, { clientX: 346, clientY: 100, button: 2 });
+		for (const [clientX, clientY] of [
+			[30, 100],
+			[630, 100],
+			[346, 10],
+			[346, 240],
+		]) {
+			fireEvent.pointerDown(chart, { clientX, clientY });
+			fireEvent.pointerUp(chart, { clientX, clientY });
+		}
+		expect(onSelect).not.toHaveBeenCalled();
 	});
 
 	test("draws both zero-fitness series along the bottom axis", () => {

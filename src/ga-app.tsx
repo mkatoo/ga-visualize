@@ -1,3 +1,4 @@
+import { createSignal, onCleanup, onMount } from "solid-js";
 import { GAControls } from "./components/ga-controls";
 import { GAVisualization } from "./components/ga-visualization";
 import { GenerationHistory } from "./components/generation-history";
@@ -7,6 +8,20 @@ import { VISUALIZATION_COLORS } from "./visualization-colors";
 import "./ga-app.css";
 
 export function GAApp() {
+	let root!: HTMLDivElement;
+	const [inputMethod, setInputMethod] = createSignal<"pointer" | "keyboard">(
+		"keyboard",
+	);
+	const handlePointer = () => setInputMethod("pointer");
+	const handleKey = () => setInputMethod("keyboard");
+	onMount(() => {
+		root.addEventListener("pointerdown", handlePointer, true);
+		root.addEventListener("keydown", handleKey, true);
+	});
+	onCleanup(() => {
+		root.removeEventListener("pointerdown", handlePointer, true);
+		root.removeEventListener("keydown", handleKey, true);
+	});
 	const {
 		populationSize,
 		generations,
@@ -28,9 +43,7 @@ export function GAApp() {
 		step,
 		reset,
 		handleSpeedChange,
-		handlePopulationSizeChange,
 		handlePopulationSizeBlur,
-		handleGenerationsChange,
 		handleGenerationsBlur,
 		handleFunctionTypeChange,
 		constraints,
@@ -38,7 +51,9 @@ export function GAApp() {
 
 	return (
 		<div
+			ref={root}
 			class="ga-app"
+			data-input-method={inputMethod()}
 			style={{
 				"--color-best": VISUALIZATION_COLORS.best,
 				"--color-population": VISUALIZATION_COLORS.population,
@@ -66,9 +81,7 @@ export function GAApp() {
 					onStep={step}
 					onReset={reset}
 					onFunctionTypeChange={handleFunctionTypeChange}
-					onPopulationSizeChange={handlePopulationSizeChange}
 					onPopulationSizeBlur={handlePopulationSizeBlur}
-					onGenerationsChange={handleGenerationsChange}
 					onGenerationsBlur={handleGenerationsBlur}
 					onSpeedChange={handleSpeedChange}
 					constraints={constraints}

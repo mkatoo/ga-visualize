@@ -20,9 +20,7 @@ interface GAControlsProps {
 	onStep: () => void;
 	onReset: () => void;
 	onFunctionTypeChange: (event: Event) => void;
-	onPopulationSizeChange: (event: Event) => void;
 	onPopulationSizeBlur: (event: Event) => void;
-	onGenerationsChange: (event: Event) => void;
 	onGenerationsBlur: (event: Event) => void;
 	onSpeedChange: (interval: number) => void;
 	constraints: {
@@ -38,6 +36,7 @@ export function GAControls(props: GAControlsProps) {
 		<div class="control-panel">
 			<ProgressDisplay
 				status={props.runStatus}
+				animationSpeed={props.animationSpeed}
 				currentGeneration={props.statistics.generation}
 				totalGenerations={props.generations}
 			/>
@@ -56,9 +55,7 @@ export function GAControls(props: GAControlsProps) {
 				onStep={props.onStep}
 				onReset={props.onReset}
 				onFunctionTypeChange={props.onFunctionTypeChange}
-				onPopulationSizeChange={props.onPopulationSizeChange}
 				onPopulationSizeBlur={props.onPopulationSizeBlur}
-				onGenerationsChange={props.onGenerationsChange}
 				onGenerationsBlur={props.onGenerationsBlur}
 				onSpeedChange={props.onSpeedChange}
 				minPopulationSize={props.constraints.minPopulationSize}

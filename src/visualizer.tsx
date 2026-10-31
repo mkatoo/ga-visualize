@@ -1,4 +1,10 @@
-import { createEffect, createMemo } from "solid-js";
+import {
+	createEffect,
+	createMemo,
+	createSignal,
+	onCleanup,
+	onMount,
+} from "solid-js";
 import {
 	AXIS_LABEL_THRESHOLD,
 	CANVAS_SIZE,
@@ -183,10 +189,9 @@ const drawAxes = (
 	}
 };
 
-const createBackground = (landscape: Landscape, size: number) => {
-	const { grid, bounds, colorScale: scale } = landscape;
-	const objective = getObjectiveFunction(landscape.functionType);
-
+const createHeatmap = (landscape: Landscape) => {
+	const { grid, colorScale: scale } = landscape;
+	const size = CANVAS_SIZE;
 	const canvas = document.createElement("canvas");
 	canvas.width = size;
 	canvas.height = size;
@@ -208,6 +213,24 @@ const createBackground = (landscape: Landscape, size: number) => {
 		}
 	}
 	ctx.putImageData(image, 0, 0);
+	return canvas;
+};
+
+const createBackground = (
+	landscape: Landscape,
+	heatmap: HTMLCanvasElement,
+	size: number,
+	pixelRatio: number,
+) => {
+	const { bounds } = landscape;
+	const objective = getObjectiveFunction(landscape.functionType);
+	const canvas = document.createElement("canvas");
+	canvas.width = Math.round(size * pixelRatio);
+	canvas.height = Math.round(size * pixelRatio);
+	const ctx = canvas.getContext("2d");
+	if (!ctx) return canvas;
+	ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+	ctx.drawImage(heatmap, 0, 0, size, size);
 
 	ctx.strokeStyle = "rgba(30, 41, 59, 0.24)";
 	ctx.lineWidth = 0.8;
@@ -251,14 +274,50 @@ const createBackground = (landscape: Landscape, size: number) => {
 };
 
 export function Visualizer(props: VisualizerProps) {
+	let host!: HTMLDivElement;
 	let canvasRef: HTMLCanvasElement | undefined;
+	const [viewport, setViewport] = createSignal({
+		size: CANVAS_SIZE,
+		pixelRatio: 1,
+	});
+	const heatmap = createMemo(() => createHeatmap(props.landscape));
 	const background = createMemo(() =>
-		createBackground(props.landscape, CANVAS_SIZE),
+		createBackground(
+			props.landscape,
+			heatmap(),
+			viewport().size,
+			viewport().pixelRatio,
+		),
 	);
+	let observer: ResizeObserver | undefined;
+	const updateSize = (width: number) => {
+		if (width <= 0) return;
+		const size = Math.round(width);
+		const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+		setViewport((previous) =>
+			previous.size === size && previous.pixelRatio === pixelRatio
+				? previous
+				: { size, pixelRatio },
+		);
+	};
+	const measure = () => updateSize(host.clientWidth);
+	onMount(() => {
+		measure();
+		window.addEventListener("resize", measure);
+		if (typeof ResizeObserver === "undefined") return;
+		observer = new ResizeObserver(([entry]) => {
+			if (entry) updateSize(entry.contentRect.width);
+		});
+		observer.observe(host);
+	});
+	onCleanup(() => {
+		observer?.disconnect();
+		window.removeEventListener("resize", measure);
+	});
 
 	const drawPopulation = (ctx: CanvasRenderingContext2D) => {
 		const { min, max } = props.landscape.bounds;
-		const size = CANVAS_SIZE;
+		const size = viewport().size;
 		const range = max - min;
 
 		if (props.population.length === 0) return;
@@ -290,28 +349,32 @@ export function Visualizer(props: VisualizerProps) {
 	const draw = () => {
 		const canvas = canvasRef;
 		if (!canvas) return;
+		const { size, pixelRatio } = viewport();
+		const pixels = Math.round(size * pixelRatio);
+		// Resizing clears a canvas. Set the backing size before drawing so a JSX
+		// attribute update cannot erase the first frame after ResizeObserver runs.
+		if (canvas.width !== pixels) canvas.width = pixels;
+		if (canvas.height !== pixels) canvas.height = pixels;
 
 		const ctx = canvas.getContext("2d");
 		if (!ctx) return;
 
-		ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+		ctx.setTransform(1, 0, 0, 1, 0, 0);
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
 		ctx.drawImage(background(), 0, 0);
+		ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
 		drawPopulation(ctx);
 	};
 
 	createEffect(draw);
 
 	return (
-		<div class="canvas-container">
+		<div class="canvas-container" ref={host}>
 			<canvas
 				ref={canvasRef}
 				width={CANVAS_SIZE}
 				height={CANVAS_SIZE}
 				aria-label="目的関数の地形と個体分布"
-				style={{
-					border: "1px solid #ccc",
-					"border-radius": "4px",
-				}}
 			/>
 		</div>
 	);

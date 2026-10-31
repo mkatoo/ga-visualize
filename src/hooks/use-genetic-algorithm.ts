@@ -155,8 +155,8 @@ export function useGeneticAlgorithm() {
 
 	const validateAndSetPopulationSize = (value: string) => {
 		if (settingsLocked()) return populationSize();
-		const parsed = Number.parseInt(value, 10);
-		const numValue = Number.isFinite(parsed) ? parsed : populationSize();
+		const parsed = value.trim() === "" ? Number.NaN : Number(value);
+		const numValue = Number.isInteger(parsed) ? parsed : populationSize();
 		const clampedValue = Math.max(
 			MIN_POPULATION_SIZE,
 			Math.min(MAX_POPULATION_SIZE, numValue),
@@ -171,8 +171,8 @@ export function useGeneticAlgorithm() {
 
 	const validateAndSetGenerations = (value: string) => {
 		if (settingsLocked()) return generations();
-		const parsed = Number.parseInt(value, 10);
-		const numValue = Number.isFinite(parsed) ? parsed : generations();
+		const parsed = value.trim() === "" ? Number.NaN : Number(value);
+		const numValue = Number.isInteger(parsed) ? parsed : generations();
 		const clampedValue = Math.max(
 			MIN_GENERATIONS,
 			Math.min(MAX_GENERATIONS, numValue),

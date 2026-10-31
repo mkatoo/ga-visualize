@@ -7,6 +7,7 @@ import { type FunctionType, OBJECTIVE_FUNCTIONS } from "./objective-functions";
 
 const createContext = () => ({
 	clearRect: vi.fn(),
+	setTransform: vi.fn(),
 	fillRect: vi.fn(),
 	beginPath: vi.fn(),
 	moveTo: vi.fn(),
@@ -26,6 +27,7 @@ const createContext = () => ({
 	fillStyle: "",
 	strokeStyle: "",
 	lineWidth: 1,
+	font: "",
 });
 
 describe("Visualizer", () => {
@@ -46,6 +48,7 @@ describe("Visualizer", () => {
 		cleanup();
 		vi.restoreAllMocks();
 		vi.clearAllMocks();
+		vi.unstubAllGlobals();
 	});
 
 	const renderRosenbrock = () => {
@@ -82,6 +85,37 @@ describe("Visualizer", () => {
 		}
 		expect(backgroundContext.fillText).toHaveBeenCalledWith("1", 265, 125);
 		expect(backgroundContext.fillText).toHaveBeenCalledWith("-1", 265, 375);
+	});
+
+	test("keeps labels and markers at their CSS size when resized on a high density display", () => {
+		let resize!: ResizeObserverCallback;
+		const disconnect = vi.fn();
+		vi.stubGlobal(
+			"ResizeObserver",
+			class {
+				constructor(callback: ResizeObserverCallback) {
+					resize = callback;
+				}
+				observe = vi.fn();
+				disconnect = disconnect;
+			},
+		);
+		vi.stubGlobal("devicePixelRatio", 2);
+		renderRosenbrock();
+		const canvas = document.querySelector("canvas[aria-label]");
+		resize(
+			[{ contentRect: { width: 240 } }] as ResizeObserverEntry[],
+			{} as ResizeObserver,
+		);
+		expect(canvas).toHaveAttribute("width", "480");
+		expect(canvas).toHaveAttribute("height", "480");
+		expect(backgroundContext.font).toBe("12px Arial");
+		expect(backgroundContext.fillText).toHaveBeenCalledWith("1", 135, 60);
+		expect(context.arc).toHaveBeenLastCalledWith(180, 60, 4, 0, 2 * Math.PI);
+		expect(context.setTransform).toHaveBeenLastCalledWith(2, 0, 0, 2, 0, 0);
+		expect(backgroundContext.putImageData).toHaveBeenCalledTimes(1);
+		cleanup();
+		expect(disconnect).toHaveBeenCalledOnce();
 	});
 
 	test("draws contours in the same Y direction as individuals and labels", () => {

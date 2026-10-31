@@ -1,4 +1,4 @@
-import { onCleanup, onMount, Show } from "solid-js";
+import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
 import { MAX_ANIMATION_INTERVAL, MIN_ANIMATION_INTERVAL } from "./constants";
 import type { RunStatus } from "./hooks/use-genetic-algorithm";
 import type { FunctionType } from "./objective-functions";
@@ -22,9 +22,7 @@ interface ControlPanelProps {
 	onStep: () => void;
 	onReset: () => void;
 	onFunctionTypeChange: (event: Event) => void;
-	onPopulationSizeChange: (event: Event) => void;
 	onPopulationSizeBlur: (event: Event) => void;
-	onGenerationsChange: (event: Event) => void;
 	onGenerationsBlur: (event: Event) => void;
 	onSpeedChange: (interval: number) => void;
 
@@ -37,6 +35,44 @@ interface ControlPanelProps {
 
 export function ControlPanel(props: ControlPanelProps) {
 	const speedLabel = () => `${props.animationSpeed / 1000}秒／世代`;
+	const [populationDraft, setPopulationDraft] = createSignal(
+		String(props.populationSize),
+	);
+	const [generationsDraft, setGenerationsDraft] = createSignal(
+		String(props.generations),
+	);
+	createEffect(() => setPopulationDraft(String(props.populationSize)));
+	createEffect(() => setGenerationsDraft(String(props.generations)));
+	const validNumber = (value: string, min: number, max: number) =>
+		value.trim() !== "" &&
+		Number.isInteger(Number(value)) &&
+		Number(value) >= min &&
+		Number(value) <= max;
+	const invalidPopulation = () =>
+		!validNumber(
+			populationDraft(),
+			props.minPopulationSize,
+			props.maxPopulationSize,
+		);
+	const invalidGenerations = () =>
+		!validNumber(
+			generationsDraft(),
+			props.minGenerations,
+			props.maxGenerations,
+		);
+	const invalidSettings = () => invalidPopulation() || invalidGenerations();
+	const commitPopulation = (event: Event) => {
+		if (!invalidPopulation()) {
+			props.onPopulationSizeBlur(event);
+			setPopulationDraft(String(props.populationSize));
+		}
+	};
+	const commitGenerations = (event: Event) => {
+		if (!invalidGenerations()) {
+			props.onGenerationsBlur(event);
+			setGenerationsDraft(String(props.generations));
+		}
+	};
 	let settings!: HTMLDetailsElement;
 	let mobileQuery: MediaQueryList | undefined;
 	const handleLayoutChange = (event: MediaQueryListEvent) => {
@@ -58,6 +94,7 @@ export function ControlPanel(props: ControlPanelProps) {
 				<button
 					type="button"
 					class="btn btn-primary"
+					disabled={!props.isRunning && invalidSettings()}
 					onClick={() => {
 						if (props.isRunning) props.onStop();
 						else if (props.runStatus === "completed") props.onRestart();
@@ -77,11 +114,23 @@ export function ControlPanel(props: ControlPanelProps) {
 					type="button"
 					class="btn btn-secondary"
 					onClick={props.onStep}
-					disabled={props.isRunning || props.runStatus === "completed"}
+					disabled={
+						props.isRunning ||
+						props.runStatus === "completed" ||
+						invalidSettings()
+					}
 				>
 					{props.isViewingHistory ? "最新から1世代進める" : "1世代進める"}
 				</button>
-				<button type="button" class="btn btn-text" onClick={props.onReset}>
+				<button
+					type="button"
+					class="btn btn-text"
+					onClick={() => {
+						setPopulationDraft(String(props.populationSize));
+						setGenerationsDraft(String(props.generations));
+						props.onReset();
+					}}
+				>
 					リセット
 				</button>
 			</fieldset>
@@ -155,11 +204,31 @@ export function ControlPanel(props: ControlPanelProps) {
 								inputmode="numeric"
 								min={props.minPopulationSize}
 								max={props.maxPopulationSize}
-								value={props.populationSize}
-								onInput={props.onPopulationSizeChange}
-								onBlur={props.onPopulationSizeBlur}
+								value={populationDraft()}
+								onInput={(event) =>
+									setPopulationDraft(event.currentTarget.value)
+								}
+								onBlur={commitPopulation}
+								onKeyDown={(event) => {
+									if (event.key === "Enter") {
+										event.preventDefault();
+										commitPopulation(event);
+									}
+									if (event.key === "Escape")
+										setPopulationDraft(String(props.populationSize));
+								}}
+								aria-invalid={invalidPopulation()}
+								aria-describedby={
+									invalidPopulation() ? "population-error" : undefined
+								}
 								disabled={props.settingsLocked}
 							/>
+							<Show when={invalidPopulation()}>
+								<p id="population-error" class="field-error">
+									{props.minPopulationSize}〜{props.maxPopulationSize}
+									の整数を入力してください。
+								</p>
+							</Show>
 						</div>
 
 						<div class="parameter-group">
@@ -172,11 +241,31 @@ export function ControlPanel(props: ControlPanelProps) {
 								inputmode="numeric"
 								min={props.minGenerations}
 								max={props.maxGenerations}
-								value={props.generations}
-								onInput={props.onGenerationsChange}
-								onBlur={props.onGenerationsBlur}
+								value={generationsDraft()}
+								onInput={(event) =>
+									setGenerationsDraft(event.currentTarget.value)
+								}
+								onBlur={commitGenerations}
+								onKeyDown={(event) => {
+									if (event.key === "Enter") {
+										event.preventDefault();
+										commitGenerations(event);
+									}
+									if (event.key === "Escape")
+										setGenerationsDraft(String(props.generations));
+								}}
+								aria-invalid={invalidGenerations()}
+								aria-describedby={
+									invalidGenerations() ? "generations-error" : undefined
+								}
 								disabled={props.settingsLocked}
 							/>
+							<Show when={invalidGenerations()}>
+								<p id="generations-error" class="field-error">
+									{props.minGenerations}〜{props.maxGenerations}
+									の整数を入力してください。
+								</p>
+							</Show>
 						</div>
 					</div>
 				</div>

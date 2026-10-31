@@ -7,6 +7,7 @@ import {
 	onMount,
 	Show,
 } from "solid-js";
+import { formatFitness } from "./format-fitness";
 import { VISUALIZATION_COLORS } from "./visualization-colors";
 
 interface FitnessChartProps {
@@ -83,6 +84,29 @@ export function FitnessChart(props: FitnessChartProps) {
 		PLOT_LEFT + (generation / maxGeneration()) * plotWidth();
 	const y = (fitness: number) =>
 		PLOT_BOTTOM - (Math.max(0, fitness) / maxFitness()) * PLOT_HEIGHT;
+	let tap: { pointerId: number; x: number; y: number } | undefined;
+	const cancelTap = () => {
+		tap = undefined;
+	};
+	const moved = (event: PointerEvent) =>
+		tap && Math.hypot(event.clientX - tap.x, event.clientY - tap.y) > 8;
+	const plotGeneration = (
+		event: PointerEvent & { currentTarget: SVGSVGElement },
+	) => {
+		const bounds = event.currentTarget.getBoundingClientRect();
+		if (bounds.width <= 0 || bounds.height <= 0) return;
+		const pointerX = ((event.clientX - bounds.left) / bounds.width) * width();
+		const pointerY =
+			((event.clientY - bounds.top) / bounds.height) * CHART_HEIGHT;
+		if (
+			pointerX < PLOT_LEFT ||
+			pointerX > width() - PLOT_RIGHT_MARGIN ||
+			pointerY < PLOT_TOP ||
+			pointerY > PLOT_BOTTOM
+		)
+			return;
+		return ((pointerX - PLOT_LEFT) / plotWidth()) * maxGeneration();
+	};
 	const generationTicks = createMemo(() => {
 		const intervals = Math.min(
 			maxGeneration(),
@@ -114,7 +138,32 @@ export function FitnessChart(props: FitnessChartProps) {
 		<figure class="fitness-chart">
 			<figcaption class="chart-header">
 				<h2>評価値の推移</h2>
+				<span class="chart-generation">第{selectedGeneration()}世代</span>
 			</figcaption>
+			<dl class="chart-readout" aria-label="選択した世代の評価値">
+				<For each={series}>
+					{(item) => (
+						<div>
+							<dt class="legend-item">
+								<span
+									class="legend-line"
+									style={{
+										"border-top-color": item.color,
+										"border-top-style": item.dash ? "dashed" : "solid",
+									}}
+									aria-hidden="true"
+								/>
+								{item.label}
+							</dt>
+							<dd style={{ color: item.color }}>
+								{item.values().length
+									? formatFitness(item.values()[selectedGeneration()] ?? 0)
+									: "—"}
+							</dd>
+						</div>
+					)}
+				</For>
+			</dl>
 			<p class="chart-help">
 				グラフをタップするか、上部の表示世代を指定すると、その世代の評価値を表示します。
 			</p>
@@ -127,14 +176,30 @@ export function FitnessChart(props: FitnessChartProps) {
 					aria-labelledby={`${id}-title`}
 					aria-describedby={`${id}-description`}
 					onPointerDown={(event) => {
-						const bounds = event.currentTarget.getBoundingClientRect();
-						if (bounds.width <= 0) return;
-						const pointerX =
-							((event.clientX - bounds.left) / bounds.width) * width();
-						selectGeneration(
-							((pointerX - PLOT_LEFT) / plotWidth()) * maxGeneration(),
-						);
+						cancelTap();
+						if (
+							event.isPrimary === false ||
+							event.button !== 0 ||
+							plotGeneration(event) === undefined
+						)
+							return;
+						tap = {
+							pointerId: event.pointerId,
+							x: event.clientX,
+							y: event.clientY,
+						};
 					}}
+					onPointerMove={(event) => {
+						if (tap?.pointerId === event.pointerId && moved(event)) cancelTap();
+					}}
+					onPointerUp={(event) => {
+						if (!tap || tap.pointerId !== event.pointerId) return;
+						const generation = moved(event) ? undefined : plotGeneration(event);
+						cancelTap();
+						if (generation !== undefined) selectGeneration(generation);
+					}}
+					onPointerCancel={cancelTap}
+					onPointerLeave={cancelTap}
 				>
 					<title id={`${id}-title`}>遺伝的アルゴリズムの評価値推移グラフ</title>
 					<desc id={`${id}-description`}>

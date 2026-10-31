@@ -38,6 +38,36 @@ interface PopulationStatsProps {
 	bestIndividual: Individual | null;
 }
 
+export function GenerationSummary(
+	props: PopulationStatsProps & { bestEver: Individual | null },
+) {
+	return (
+		<section class="generation-summary" aria-label="表示中の世代の要約">
+			<p class="summary-generation">第{props.generation}世代</p>
+			<dl class="summary-metrics">
+				<div class="best-individual">
+					<dt>最良評価値</dt>
+					<dd>
+						{props.bestIndividual
+							? formatFitness(props.bestIndividual.fitness)
+							: "—"}
+					</dd>
+				</div>
+				<div class="average-fitness">
+					<dt>平均評価値</dt>
+					<dd>{formatFitness(props.averageFitness)}</dd>
+				</div>
+				<div class="summary-best-ever">
+					<dt>これまでの最良</dt>
+					<dd>
+						{props.bestEver ? formatFitness(props.bestEver.fitness) : "—"}
+					</dd>
+				</div>
+			</dl>
+		</section>
+	);
+}
+
 export function PopulationStats(props: PopulationStatsProps) {
 	const generationHeadingId = createUniqueId();
 	return (

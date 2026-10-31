@@ -4,6 +4,7 @@ interface ProgressDisplayProps {
 	currentGeneration: number;
 	totalGenerations: number;
 	status: RunStatus;
+	animationSpeed: number;
 }
 
 export function ProgressDisplay(props: ProgressDisplayProps) {
@@ -37,8 +38,13 @@ export function ProgressDisplay(props: ProgressDisplayProps) {
 			>
 				<div
 					class="progress-fill"
+					data-smooth={
+						props.status === "running" &&
+						props.animationSpeed >= 300 &&
+						props.currentGeneration > 0
+					}
 					style={{
-						width: `${progressPercentage()}%`,
+						transform: `scaleX(${progressPercentage() / 100})`,
 					}}
 				/>
 			</div>
