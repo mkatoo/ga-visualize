@@ -74,6 +74,12 @@ export function ControlPanel(props: ControlPanelProps) {
 		}
 	};
 	let settings!: HTMLDetailsElement;
+	const focusInvalidSetting = () => {
+		settings.open = true;
+		settings
+			.querySelector<HTMLInputElement>('input[aria-invalid="true"]')
+			?.focus();
+	};
 	let mobileQuery: MediaQueryList | undefined;
 	const handleLayoutChange = (event: MediaQueryListEvent) => {
 		settings.open = !event.matches;
@@ -94,6 +100,9 @@ export function ControlPanel(props: ControlPanelProps) {
 				<button
 					type="button"
 					class="btn btn-primary"
+					aria-describedby={
+						invalidSettings() ? "run-settings-error" : undefined
+					}
 					disabled={!props.isRunning && invalidSettings()}
 					onClick={() => {
 						if (props.isRunning) props.onStop();
@@ -113,6 +122,9 @@ export function ControlPanel(props: ControlPanelProps) {
 				<button
 					type="button"
 					class="btn btn-secondary"
+					aria-describedby={
+						invalidSettings() ? "run-settings-error" : undefined
+					}
 					onClick={props.onStep}
 					disabled={
 						props.isRunning ||
@@ -133,6 +145,18 @@ export function ControlPanel(props: ControlPanelProps) {
 				>
 					リセット
 				</button>
+				<Show when={invalidSettings()}>
+					<div class="run-settings-error">
+						<output id="run-settings-error">入力エラーがあります。</output>
+						<button
+							type="button"
+							class="btn btn-text"
+							onClick={focusInvalidSetting}
+						>
+							設定を確認
+						</button>
+					</div>
+				</Show>
 			</fieldset>
 
 			<div class="speed-control">
@@ -162,7 +186,12 @@ export function ControlPanel(props: ControlPanelProps) {
 
 			<details class="settings-details" ref={settings} open>
 				<summary class="settings-toggle">
-					<span class="settings-title">実験設定</span>
+					<span class="settings-title">
+						実験設定
+						<Show when={invalidSettings()}>
+							<span class="settings-error-badge">入力エラー</span>
+						</Show>
+					</span>
 					<span class="settings-overview">
 						{OBJECTIVE_FUNCTIONS[props.functionType].name}・
 						{props.populationSize}

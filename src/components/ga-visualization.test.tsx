@@ -512,6 +512,30 @@ describe("2D / 3D visualization", () => {
 		expect(view.getByRole("button", { name: "開始" })).toBeEnabled();
 	});
 
+	test("keeps validation visible when settings close and returns focus to the invalid field", () => {
+		const view = render(() => <GAApp />);
+		const settings =
+			view.container.querySelector<HTMLDetailsElement>(".settings-details");
+		const population = view.getByLabelText("個体数 (1-1000):");
+		const generations = view.getByLabelText("世代数 (1-1000):");
+		fireEvent.input(population, { target: { value: "" } });
+		fireEvent.input(generations, { target: { value: "1001" } });
+		if (!settings) throw new Error("Settings are missing");
+		settings.open = false;
+		expect(view.getByText("入力エラーがあります。")).toBeVisible();
+		expect(view.getByText("入力エラー")).toBeVisible();
+		expect(view.getByRole("button", { name: "開始" })).toBeDisabled();
+		fireEvent.click(view.getByRole("button", { name: "設定を確認" }));
+		expect(settings.open).toBe(true);
+		expect(population).toHaveFocus();
+		fireEvent.keyDown(population, { key: "Escape" });
+		fireEvent.click(view.getByRole("button", { name: "設定を確認" }));
+		expect(generations).toHaveFocus();
+		fireEvent.keyDown(generations, { key: "Escape" });
+		expect(view.queryByText("入力エラーがあります。")).toBeNull();
+		expect(view.getByRole("button", { name: "開始" })).toBeEnabled();
+	});
+
 	test("updates progress immediately for manual steps, fast playback, completion and reset", () => {
 		vi.useFakeTimers();
 		const view = render(() => <GAApp />);
