@@ -3,6 +3,7 @@ import {
 	type Mesh,
 	type Scene,
 	SRGBColorSpace,
+	WebGLRenderer,
 	type WebGLRendererParameters,
 } from "three";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
@@ -15,22 +16,38 @@ const draw = vi.hoisted(() => vi.fn());
 vi.unmock("./three-landscape-renderer");
 vi.mock("three", async (importOriginal) => ({
 	...(await importOriginal<typeof import("three")>()),
-	WebGLRenderer: vi
-		.fn()
-		.mockImplementation((options: WebGLRendererParameters) => ({
-			domElement: options.canvas,
-			setPixelRatio: vi.fn(),
-			setSize: vi.fn(),
-			render: draw,
-			dispose: vi.fn(),
-			forceContextLoss: vi.fn(),
-		})),
+	WebGLRenderer: vi.fn(),
 }));
 
 let renderer: ThreeLandscapeRenderer | undefined;
 let frame: FrameRequestCallback | undefined;
 
+const tick = (time: number) => {
+	const callback = frame;
+	frame = undefined;
+	callback?.(time);
+};
+
+function createView() {
+	const host = document.createElement("div");
+	renderer = new ThreeLandscapeRenderer(host, vi.fn(), vi.fn());
+	renderer.restoreCamera({ position: [5, -4, 3.3], target: [0, 0, 0.35] });
+	tick(0);
+	return host;
+}
+
 beforeEach(() => {
+	vi.mocked(WebGLRenderer).mockImplementation(
+		(options?: WebGLRendererParameters) =>
+			({
+				domElement: options?.canvas,
+				setPixelRatio: vi.fn(),
+				setSize: vi.fn(),
+				render: draw,
+				dispose: vi.fn(),
+				forceContextLoss: vi.fn(),
+			}) as unknown as WebGLRenderer,
+	);
 	vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
 		beginPath: vi.fn(),
 		moveTo: vi.fn(),
@@ -128,4 +145,110 @@ test("updates surface colors, heights, markers and axis ticks when the scale cha
 	expect(Array.from(colors.array)).toEqual(linearColors);
 	expect(markerHeights()).toEqual([25 / 200, 25 / 200, 0]);
 	expect(axes()).toEqual(["0", "50", "100", "150", "200"]);
+});
+
+test("resets the camera over 200ms and stops requesting frames when settled", () => {
+	vi.spyOn(performance, "now").mockReturnValue(0);
+	createView();
+	renderer?.resetCamera(true);
+	tick(100);
+	const position = draw.mock.lastCall?.[1].position.clone();
+	expect(position.x).toBeGreaterThan(3);
+	expect(position.x).toBeLessThan(5);
+	tick(200);
+	expect(draw.mock.lastCall?.[1].position.x).toBeCloseTo(3);
+	expect(draw.mock.lastCall?.[1].position.y).toBeCloseTo(-4);
+	expect(frame).toBeUndefined();
+});
+
+test.each([false, true])(
+	"uses pointer inertia only when reduced motion is %s",
+	(reduced) => {
+		vi.stubGlobal(
+			"matchMedia",
+			vi.fn(() => ({
+				matches: reduced,
+				addEventListener: vi.fn(),
+				removeEventListener: vi.fn(),
+			})),
+		);
+		const host = createView();
+		const canvas = host.querySelector("canvas");
+		if (!canvas) throw new Error("Canvas is missing");
+		Object.defineProperty(canvas, "clientHeight", { value: 300 });
+		canvas.setPointerCapture = vi.fn();
+		canvas.releasePointerCapture = vi.fn();
+		canvas.dispatchEvent(
+			new MouseEvent("pointerdown", { button: 0, clientX: 100, clientY: 100 }),
+		);
+		document.dispatchEvent(
+			new MouseEvent("pointermove", { clientX: 120, clientY: 110 }),
+		);
+		document.dispatchEvent(new MouseEvent("pointerup"));
+		tick(16);
+		const position = draw.mock.lastCall?.[1].position.clone();
+		tick(32);
+		const distance = draw.mock.lastCall?.[1].position.distanceTo(position);
+		if (reduced) expect(distance).toBe(0);
+		else expect(distance).toBeGreaterThan(0);
+		for (let i = 3; frame && i < 120; i++) tick(i * 16);
+		expect(frame).toBeUndefined();
+	},
+);
+
+test("interrupts a reset on keyboard input and keeps keyboard camera changes immediate", () => {
+	vi.spyOn(performance, "now").mockReturnValue(0);
+	const host = createView();
+	const canvas = host.querySelector("canvas");
+	if (!canvas) throw new Error("Canvas is missing");
+	Object.defineProperty(canvas, "clientHeight", { value: 300 });
+	renderer?.resetCamera(true);
+	tick(100);
+	const position = draw.mock.lastCall?.[1].position.clone();
+	canvas.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+	tick(200);
+	expect(draw.mock.lastCall?.[1].position.distanceTo(position)).toBeLessThan(
+		1e-10,
+	);
+	canvas.dispatchEvent(new KeyboardEvent("keydown", { code: "ArrowRight" }));
+	tick(216);
+	expect(draw.mock.lastCall?.[1].position.distanceTo(position)).toBeGreaterThan(
+		0,
+	);
+	expect(frame).toBeUndefined();
+	renderer?.resetCamera();
+	tick(232);
+	expect(draw.mock.lastCall?.[1].position.x).toBeCloseTo(3);
+	expect(frame).toBeUndefined();
+});
+
+test("honors reduced motion changes during a reset and removes its listener on disposal", () => {
+	const listeners = new Set<() => void>();
+	const query = {
+		matches: false,
+		addEventListener: (_type: string, listener: () => void) =>
+			listeners.add(listener),
+		removeEventListener: (_type: string, listener: () => void) =>
+			listeners.delete(listener),
+	};
+	vi.stubGlobal(
+		"matchMedia",
+		vi.fn(() => query),
+	);
+	vi.spyOn(performance, "now").mockReturnValue(0);
+	createView();
+	renderer?.resetCamera(true);
+	tick(100);
+	query.matches = true;
+	for (const listener of listeners) listener();
+	tick(116);
+	expect(draw.mock.lastCall?.[1].position.x).toBeCloseTo(3);
+	expect(frame).toBeUndefined();
+	renderer?.restoreCamera({ position: [5, -4, 3.3], target: [0, 0, 0.35] });
+	renderer?.resetCamera(true);
+	tick(132);
+	expect(draw.mock.lastCall?.[1].position.x).toBeCloseTo(3);
+	expect(frame).toBeUndefined();
+	renderer?.dispose();
+	expect(listeners.size).toBe(0);
 });

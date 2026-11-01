@@ -14,6 +14,7 @@ export interface Visualizer3DProps {
 	wireframe: boolean;
 	resolution: number;
 	resetView: number;
+	animateReset?: boolean;
 	camera?: CameraState;
 	onCameraChange: (state: CameraState) => void;
 	onError: (reason: string) => void;
@@ -62,7 +63,7 @@ export function Visualizer3D(props: Visualizer3DProps) {
 	createEffect(
 		on(
 			() => props.resetView,
-			() => renderer?.resetCamera(),
+			() => renderer?.resetCamera(props.animateReset),
 			{ defer: true },
 		),
 	);

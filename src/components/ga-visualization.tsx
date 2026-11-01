@@ -51,6 +51,7 @@ export function GAVisualization(props: GAVisualizationProps) {
 	const [wireframe, setWireframe] = createSignal(false);
 	const [resolution, setResolution] = createSignal(100);
 	const [resetView, setResetView] = createSignal(0);
+	const [animateReset, setAnimateReset] = createSignal(false);
 	let camera: CameraState | undefined;
 	let request = 0;
 	const settings = createMemo(
@@ -164,6 +165,7 @@ export function GAVisualization(props: GAVisualizationProps) {
 									wireframe={wireframe()}
 									resolution={resolution()}
 									resetView={resetView()}
+									animateReset={animateReset()}
 									camera={camera}
 									onCameraChange={(state: CameraState) => {
 										camera = state;
@@ -245,7 +247,10 @@ export function GAVisualization(props: GAVisualizationProps) {
 						type="button"
 						class="view-reset"
 						disabled={mode() !== "3d"}
-						onClick={() => setResetView((v) => v + 1)}
+						onClick={(event) => {
+							setAnimateReset(event.detail > 0);
+							setResetView((v) => v + 1);
+						}}
 					>
 						視点リセット
 					</button>

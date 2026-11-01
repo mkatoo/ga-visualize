@@ -31,6 +31,7 @@ import {
 	type Landscape,
 	type SurfaceGrid,
 } from "./landscape";
+import { CAMERA_RESET_DURATION, easeOut } from "./motion";
 import { getObjectiveFunction } from "./objective-functions";
 import { VISUALIZATION_COLORS } from "./visualization-colors";
 
@@ -148,6 +149,14 @@ export class ThreeLandscapeRenderer {
 	private best: Individual | null = null;
 	private frame: number | null = null;
 	private disposed = false;
+	private motionQuery?: MediaQueryList;
+	private pointerInput = false;
+	private suppressCameraChange = false;
+	private cameraTransition?: {
+		position: Vector3;
+		target: Vector3;
+		startedAt: number;
+	};
 
 	constructor(
 		private readonly host: HTMLElement,
@@ -180,12 +189,28 @@ export class ThreeLandscapeRenderer {
 			this.camera.position.set(3, -4, 3.3);
 			this.controls = new OrbitControls(this.camera, canvas);
 			this.controls.enableDamping = false;
+			this.controls.dampingFactor = 0.2;
 			this.controls.autoRotate = false;
 			this.controls.minDistance = 1.2;
 			this.controls.maxDistance = 12;
 			this.controls.maxPolarAngle = Math.PI / 2 - 0.02;
 			this.controls.listenToKeyEvents(canvas);
 			this.controls.addEventListener("change", this.cameraChanged);
+			canvas.addEventListener("pointerdown", this.pointerStarted, true);
+			canvas.addEventListener("wheel", this.pointerStarted, {
+				capture: true,
+				passive: true,
+			});
+			canvas.addEventListener("keydown", this.keyboardStarted, true);
+			if (typeof window.matchMedia === "function") {
+				this.motionQuery = window.matchMedia(
+					"(prefers-reduced-motion: reduce)",
+				);
+				this.motionQuery.addEventListener(
+					"change",
+					this.motionPreferenceChanged,
+				);
+			}
 			this.populationPoints = new Points(
 				new BufferGeometry().setAttribute(
 					"position",
@@ -241,13 +266,49 @@ export class ThreeLandscapeRenderer {
 	};
 
 	private readonly cameraChanged = () => {
-		if (!this.controls || this.disposed) return;
+		if (!this.controls || this.disposed || this.suppressCameraChange) return;
 		this.onCameraChange({
 			position: this.camera.position.toArray(),
 			target: this.controls.target.toArray(),
 		});
 		this.requestRender();
 	};
+
+	private readonly pointerStarted = () => {
+		this.pointerInput = true;
+		this.cameraTransition = undefined;
+		if (this.controls) this.controls.enableDamping = !this.motionQuery?.matches;
+	};
+
+	private readonly keyboardStarted = () => {
+		this.pointerInput = false;
+		this.stopCameraMotion();
+	};
+
+	private readonly motionPreferenceChanged = () => {
+		if (this.motionQuery?.matches) {
+			const wasResetting = !!this.cameraTransition;
+			this.stopCameraMotion();
+			if (wasResetting) this.resetCamera();
+		} else if (this.controls) {
+			this.controls.enableDamping = this.pointerInput;
+		}
+	};
+
+	private stopCameraMotion() {
+		this.cameraTransition = undefined;
+		if (!this.controls) return;
+		// Clear OrbitControls' residual deltas without moving the visible camera.
+		const position = this.camera.position.clone();
+		const target = this.controls.target.clone();
+		this.suppressCameraChange = true;
+		this.controls.enableDamping = false;
+		this.controls.update();
+		this.camera.position.copy(position);
+		this.controls.target.copy(target);
+		this.controls.update();
+		this.suppressCameraChange = false;
+	}
 
 	private readonly resize = () => {
 		if (this.disposed) return;
@@ -260,10 +321,32 @@ export class ThreeLandscapeRenderer {
 
 	private requestRender() {
 		if (this.frame !== null || this.disposed) return;
-		this.frame = requestAnimationFrame(() => {
-			this.frame = null;
+		this.frame = requestAnimationFrame((time) => {
 			if (this.disposed) return;
 			try {
+				const transition = this.cameraTransition;
+				if (transition && this.controls) {
+					const progress = Math.min(
+						1,
+						(time - transition.startedAt) / CAMERA_RESET_DURATION,
+					);
+					const eased = easeOut(progress);
+					this.camera.position.lerpVectors(
+						transition.position,
+						new Vector3(3, -4, 3.3),
+						eased,
+					);
+					this.controls.target.lerpVectors(
+						transition.target,
+						new Vector3(0, 0, 0.35),
+						eased,
+					);
+					if (progress >= 1) this.cameraTransition = undefined;
+				}
+				const moving =
+					this.controls?.enableDamping || transition
+						? this.controls?.update()
+						: false;
 				this.renderer.render(this.scene, this.camera);
 				const { width, height } = this.host.getBoundingClientRect();
 				for (const label of this.labels) {
@@ -275,7 +358,11 @@ export class ThreeLandscapeRenderer {
 					label.element.style.left = `${((point.x + 1) * width) / 2}px`;
 					label.element.style.top = `${((1 - point.y) * height) / 2}px`;
 				}
+				this.frame = null;
+				if (this.cameraTransition || (moving && this.controls?.enableDamping))
+					this.requestRender();
 			} catch {
+				this.frame = null;
 				this.onError("3Dの描画に失敗しました。");
 			}
 		});
@@ -435,12 +522,24 @@ export class ThreeLandscapeRenderer {
 		this.requestRender();
 	}
 
-	resetCamera() {
-		this.restoreCamera({ position: [3, -4, 3.3], target: [0, 0, 0.35] });
+	resetCamera(animate = false) {
+		if (!this.controls || this.disposed) return;
+		this.stopCameraMotion();
+		if (animate && !this.motionQuery?.matches) {
+			this.cameraTransition = {
+				position: this.camera.position.clone(),
+				target: this.controls.target.clone(),
+				startedAt: performance.now(),
+			};
+			this.requestRender();
+		} else {
+			this.restoreCamera({ position: [3, -4, 3.3], target: [0, 0, 0.35] });
+		}
 	}
 
 	restoreCamera(state: CameraState) {
 		if (!this.controls || this.disposed) return;
+		this.stopCameraMotion();
 		this.camera.position.fromArray(state.position);
 		this.controls.target.fromArray(state.target);
 		this.controls.update();
@@ -516,10 +615,30 @@ export class ThreeLandscapeRenderer {
 	dispose() {
 		if (this.disposed) return;
 		this.disposed = true;
+		this.cameraTransition = undefined;
 		if (this.frame !== null) cancelAnimationFrame(this.frame);
+		this.motionQuery?.removeEventListener(
+			"change",
+			this.motionPreferenceChanged,
+		);
 		this.observer?.disconnect();
 		this.controls?.removeEventListener("change", this.cameraChanged);
 		this.controls?.dispose();
+		this.renderer.domElement.removeEventListener(
+			"pointerdown",
+			this.pointerStarted,
+			true,
+		);
+		this.renderer.domElement.removeEventListener(
+			"wheel",
+			this.pointerStarted,
+			true,
+		);
+		this.renderer.domElement.removeEventListener(
+			"keydown",
+			this.keyboardStarted,
+			true,
+		);
 		this.renderer.domElement.removeEventListener(
 			"webglcontextlost",
 			this.contextLost,

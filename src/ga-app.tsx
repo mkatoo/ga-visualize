@@ -4,6 +4,7 @@ import { GAVisualization } from "./components/ga-visualization";
 import { GenerationHistory } from "./components/generation-history";
 import { FitnessChart } from "./fitness-chart";
 import { useGeneticAlgorithm } from "./hooks/use-genetic-algorithm";
+import { EASE_OUT_CSS } from "./motion";
 import { VISUALIZATION_COLORS } from "./visualization-colors";
 import "./ga-app.css";
 
@@ -55,6 +56,7 @@ export function GAApp() {
 			class="ga-app"
 			data-input-method={inputMethod()}
 			style={{
+				"--ease-out": EASE_OUT_CSS,
 				"--color-best": VISUALIZATION_COLORS.best,
 				"--color-population": VISUALIZATION_COLORS.population,
 			}}

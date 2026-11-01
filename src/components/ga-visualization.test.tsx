@@ -183,6 +183,7 @@ describe("2D / 3D visualization", () => {
 		await open3D(view);
 		fireEvent.click(view.getByRole("button", { name: "視点リセット" }));
 		expect(renderer.resetCamera).toHaveBeenCalledTimes(1);
+		expect(renderer.resetCamera).toHaveBeenLastCalledWith(false);
 		const camera: CameraState = {
 			position: [2, -3, 4],
 			target: [0.2, 0.1, 0.5],
@@ -202,6 +203,16 @@ describe("2D / 3D visualization", () => {
 		renderer.restoreCamera.mockClear();
 		await open3D(view);
 		expect(renderer.restoreCamera).not.toHaveBeenCalled();
+	});
+
+	test("animates camera reset only for a pointer click", async () => {
+		const view = renderPanel();
+		await open3D(view);
+		const reset = view.getByRole("button", { name: "視点リセット" });
+		fireEvent.click(reset, { detail: 1 });
+		expect(renderer.resetCamera).toHaveBeenLastCalledWith(true);
+		fireEvent.click(reset, { detail: 0 });
+		expect(renderer.resetCamera).toHaveBeenLastCalledWith(false);
 	});
 
 	test("does not create a renderer after returning to 2D during loading", async () => {
