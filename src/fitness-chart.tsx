@@ -32,6 +32,7 @@ export function FitnessChart(props: FitnessChartProps) {
 	const id = createUniqueId();
 	const [width, setWidth] = createSignal(640);
 	const [selection, setSelection] = createSignal<number>();
+	const [scale, setScale] = createSignal<"linear" | "logarithmic">("linear");
 	const latestGeneration = () =>
 		Math.max(
 			0,
@@ -74,6 +75,15 @@ export function FitnessChart(props: FitnessChartProps) {
 	const maxFitness = createMemo(
 		() => Math.max(0, ...props.bestFitness, ...props.averageFitness) || 1,
 	);
+	const logBounds = createMemo(() => {
+		const positive = [...props.bestFitness, ...props.averageFitness].filter(
+			(value) => value > 0,
+		);
+		return {
+			min: Math.log10(Math.min(...positive, maxFitness())) - 1,
+			max: Math.log10(maxFitness()),
+		};
+	});
 	const formatTickFitness = (value: number) => {
 		if (value === 0) return "0";
 		return Math.abs(value) < 0.01 || Math.abs(value) >= 10_000
@@ -82,8 +92,16 @@ export function FitnessChart(props: FitnessChartProps) {
 	};
 	const x = (generation: number) =>
 		PLOT_LEFT + (generation / maxGeneration()) * plotWidth();
-	const y = (fitness: number) =>
-		PLOT_BOTTOM - (Math.max(0, fitness) / maxFitness()) * PLOT_HEIGHT;
+	const y = (fitness: number) => {
+		const bounds = logBounds();
+		const position =
+			scale() === "linear"
+				? Math.max(0, fitness) / maxFitness()
+				: fitness > 0
+					? (Math.log10(fitness) - bounds.min) / (bounds.max - bounds.min)
+					: 0;
+		return PLOT_BOTTOM - position * PLOT_HEIGHT;
+	};
 	let tap: { pointerId: number; x: number; y: number } | undefined;
 	const cancelTap = () => {
 		tap = undefined;
@@ -116,9 +134,16 @@ export function FitnessChart(props: FitnessChartProps) {
 			Math.round((i / intervals) * maxGeneration()),
 		);
 	});
-	const fitnessTicks = createMemo(() =>
-		[0, 0.25, 0.5, 0.75, 1].map((position) => position * maxFitness()),
-	);
+	const fitnessTicks = createMemo(() => {
+		const bounds = logBounds();
+		return [0, 0.25, 0.5, 0.75, 1].map((position) =>
+			scale() === "linear"
+				? position * maxFitness()
+				: position === 0
+					? 0
+					: 10 ** (bounds.min + position * (bounds.max - bounds.min)),
+		);
+	});
 	const series = [
 		{
 			label: "最良評価値",
@@ -139,7 +164,28 @@ export function FitnessChart(props: FitnessChartProps) {
 			<figcaption class="chart-header">
 				<h2>評価値の推移</h2>
 				<span class="chart-generation">第{selectedGeneration()}世代</span>
+				<label class="chart-scale" for={`${id}-scale`}>
+					縦軸
+					<select
+						id={`${id}-scale`}
+						value={scale()}
+						aria-describedby={
+							scale() === "logarithmic" ? `${id}-scale-help` : undefined
+						}
+						onChange={(event) =>
+							setScale(event.currentTarget.value as "linear" | "logarithmic")
+						}
+					>
+						<option value="linear">線形</option>
+						<option value="logarithmic">対数</option>
+					</select>
+				</label>
 			</figcaption>
+			<Show when={scale() === "logarithmic"}>
+				<p class="chart-help" id={`${id}-scale-help`}>
+					縦軸は対数目盛です。0は対数で表せないため、グラフの下端に表示します。
+				</p>
+			</Show>
 			<dl class="chart-readout" aria-label="選択した世代の評価値">
 				<For each={series}>
 					{(item) => (
@@ -203,7 +249,8 @@ export function FitnessChart(props: FitnessChartProps) {
 				>
 					<title id={`${id}-title`}>遺伝的アルゴリズムの評価値推移グラフ</title>
 					<desc id={`${id}-description`}>
-						横軸は世代、縦軸は評価値です。評価値は小さいほど良い解です。実線は最良評価値、破線は平均評価値を示します。
+						横軸は世代、縦軸は評価値の{scale() === "linear" ? "線形" : "対数"}
+						目盛です。評価値は小さいほど良い解です。実線は最良評価値、破線は平均評価値を示します。
 					</desc>
 					<g class="chart-y-ticks">
 						<For each={fitnessTicks()}>
@@ -309,7 +356,7 @@ export function FitnessChart(props: FitnessChartProps) {
 					/>
 					<g class="chart-labels">
 						<text x={PLOT_LEFT} y="13" class="axis-label">
-							評価値
+							評価値{scale() === "logarithmic" ? "（対数）" : ""}
 						</text>
 						<text
 							x={PLOT_LEFT + plotWidth() / 2}

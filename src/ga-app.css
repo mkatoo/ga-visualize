@@ -984,6 +984,18 @@ body {
 	font-variant-numeric: tabular-nums;
 }
 
+.chart-scale {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--color-text-secondary);
+	font-size: 0.85rem;
+}
+
+.chart-scale select {
+	font-size: inherit;
+}
+
 .chart-readout {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));

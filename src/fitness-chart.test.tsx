@@ -31,6 +31,70 @@ describe("FitnessChart scale", () => {
 		}
 	});
 
+	test("separates orders of magnitude in log mode without selecting a generation", () => {
+		const onSelect = vi.fn();
+		const view = render(() => (
+			<FitnessChart
+				bestFitness={[100, 1, 0.01, 0]}
+				averageFitness={[200, 2, 0.02, 0]}
+				totalGenerations={3}
+				selectedGeneration={2}
+				onSelectGeneration={onSelect}
+			/>
+		));
+		const original = view.container
+			.querySelector("polyline")
+			?.getAttribute("points");
+		fireEvent.change(view.getByLabelText("縦軸"), {
+			target: { value: "logarithmic" },
+		});
+		const points =
+			view.container
+				.querySelector("polyline")
+				?.getAttribute("points")
+				?.split(" ")
+				.map((point) => Number(point.split(",")[1])) ?? [];
+		expect(points).toHaveLength(4);
+		expect(points[1] - points[0]).toBeCloseTo(points[2] - points[1]);
+		expect(points[3]).toBe(212);
+		expect(points[2]).toBeLessThan(200);
+		expect(view.getByText("最良評価値: 0.01")).toBeInTheDocument();
+		expect(onSelect).not.toHaveBeenCalled();
+		const ticks = Array.from(
+			view.container.querySelectorAll(".chart-y-ticks text"),
+			(tick) => Number(tick.textContent),
+		);
+		expect(ticks[0]).toBe(0);
+		expect(ticks.every(Number.isFinite)).toBe(true);
+		fireEvent.change(view.getByLabelText("縦軸"), {
+			target: { value: "linear" },
+		});
+		expect(view.container.querySelector("polyline")).toHaveAttribute(
+			"points",
+			original,
+		);
+	});
+
+	test.each([0, Number.MIN_VALUE, 1e-200])(
+		"keeps log coordinates finite for values near zero (%s)",
+		(value) => {
+			const view = render(() => (
+				<FitnessChart
+					bestFitness={[value, 0]}
+					averageFitness={[value, 0]}
+					totalGenerations={1}
+				/>
+			));
+			fireEvent.change(view.getByLabelText("縦軸"), {
+				target: { value: "logarithmic" },
+			});
+			for (const line of view.container.querySelectorAll("polyline")) {
+				expect(line.getAttribute("points")).not.toMatch(/NaN|Infinity/);
+				expect(line.getAttribute("points")).toMatch(/620,212$/);
+			}
+		},
+	);
+
 	test("keeps the full generation interval when selecting a generation", () => {
 		const [selectedGeneration, setSelectedGeneration] = createSignal(50);
 		const view = render(() => (
