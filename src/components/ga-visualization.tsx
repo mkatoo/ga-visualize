@@ -203,7 +203,7 @@ export function GAVisualization(props: GAVisualizationProps) {
 					</span>
 				</section>
 			</div>
-			<details class="view-settings">
+			<details class="view-settings" hidden={mode() !== "3d"}>
 				<summary class="settings-toggle">
 					<span class="settings-title">3D表示設定</span>
 				</summary>

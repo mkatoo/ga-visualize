@@ -98,7 +98,9 @@ describe("2D / 3D visualization", () => {
 		const view = renderPanel();
 		expect(loader.load3DVisualizer).not.toHaveBeenCalled();
 		expect(ThreeLandscapeRenderer).not.toHaveBeenCalled();
+		expect(view.getByText("3D表示設定")).not.toBeVisible();
 		await open3D(view);
+		expect(view.getByText("3D表示設定")).toBeVisible();
 		const model: Landscape = renderer.updateLandscape.mock.calls[0][0];
 		expect(model.colorScale.maximum).toBe(200);
 		expect(renderer.updatePopulation).toHaveBeenLastCalledWith(
@@ -150,6 +152,7 @@ describe("2D / 3D visualization", () => {
 		expect(legend.getByText("200")).toBeTruthy();
 
 		fireEvent.click(view.getByRole("button", { name: "2D" }));
+		expect(view.getByText("3D表示設定")).not.toBeVisible();
 		expect(legend.queryByText("対数目盛")).toBeNull();
 		expect(legend.getByText("100")).toBeTruthy();
 		await open3D(view);
