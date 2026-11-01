@@ -1,4 +1,4 @@
-import { createUniqueId, Show } from "solid-js";
+import { createEffect, createSignal, createUniqueId, on, Show } from "solid-js";
 
 interface GenerationHistoryProps {
 	generation: number;
@@ -9,6 +9,31 @@ interface GenerationHistoryProps {
 
 export function GenerationHistory(props: GenerationHistoryProps) {
 	const id = createUniqueId();
+	const [draft, setDraft] = createSignal(String(props.generation));
+	const [isEditing, setIsEditing] = createSignal(false);
+	const invalidDraft = () =>
+		draft().trim() === "" ||
+		!Number.isInteger(Number(draft())) ||
+		Number(draft()) < 0 ||
+		Number(draft()) > props.latestGeneration;
+	const cancelDraft = () => {
+		setIsEditing(false);
+		setDraft(String(props.generation));
+	};
+	createEffect(
+		on(
+			() => [props.generation, props.latestGeneration],
+			() => {
+				if (!isEditing() || props.latestGeneration === 0) cancelDraft();
+			},
+		),
+	);
+	const commitDraft = () => {
+		setIsEditing(false);
+		if (invalidDraft()) return;
+		props.onSelect(Number(draft()));
+		setDraft(String(props.generation));
+	};
 	const selectGeneration = (input: HTMLInputElement) => {
 		const value = input.valueAsNumber;
 		if (!Number.isFinite(value)) return;
@@ -16,7 +41,9 @@ export function GenerationHistory(props: GenerationHistoryProps) {
 			0,
 			Math.min(props.latestGeneration, Math.round(value)),
 		);
+		setIsEditing(false);
 		props.onSelect(generation);
+		setDraft(String(generation));
 		input.value = String(generation);
 	};
 	return (
@@ -27,15 +54,28 @@ export function GenerationHistory(props: GenerationHistoryProps) {
 					<input
 						id={`${id}-generation`}
 						type="number"
+						inputmode="numeric"
 						min={0}
 						max={props.latestGeneration}
 						step={1}
-						value={props.generation}
+						value={draft()}
 						disabled={props.latestGeneration === 0}
-						aria-describedby={`${id}-help`}
-						onInput={(event) => selectGeneration(event.currentTarget)}
-						onBlur={(event) => {
-							event.currentTarget.value = String(props.generation);
+						aria-invalid={invalidDraft()}
+						aria-describedby={
+							invalidDraft() ? `${id}-help ${id}-error` : `${id}-help`
+						}
+						onFocus={() => setIsEditing(true)}
+						onInput={(event) => {
+							setIsEditing(true);
+							setDraft(event.currentTarget.value);
+						}}
+						onBlur={commitDraft}
+						onKeyDown={(event) => {
+							if (event.key === "Enter") {
+								event.preventDefault();
+								commitDraft();
+							}
+							if (event.key === "Escape") cancelDraft();
 						}}
 					/>
 					<span class="generation-latest" aria-hidden="true">
@@ -59,11 +99,19 @@ export function GenerationHistory(props: GenerationHistoryProps) {
 					type="button"
 					class="btn btn-secondary"
 					disabled={props.generation === props.latestGeneration}
-					onClick={props.onShowLatest}
+					onClick={() => {
+						cancelDraft();
+						props.onShowLatest();
+					}}
 				>
 					最新世代に戻る
 				</button>
 			</div>
+			<Show when={invalidDraft()}>
+				<p class="field-error" id={`${id}-error`}>
+					0〜{props.latestGeneration}の整数を入力してください。
+				</p>
+			</Show>
 			<p id={`${id}-help`}>
 				<Show
 					when={props.generation < props.latestGeneration}

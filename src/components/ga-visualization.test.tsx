@@ -406,6 +406,8 @@ describe("2D / 3D visualization", () => {
 		fireEvent.input(generationInput, {
 			target: { value: "2" },
 		});
+		expect(slider).toHaveValue("1");
+		fireEvent.keyDown(generationInput, { key: "Enter" });
 		expect(slider).toHaveValue("2");
 		expect(
 			view.getByRole("heading", { name: /^第\d+世代の結果$/ }),
@@ -415,15 +417,26 @@ describe("2D / 3D visualization", () => {
 		expect(generationInput).toHaveValue(3);
 		expect(readout).toHaveTextContent("第3世代");
 		fireEvent.input(generationInput, { target: { value: "99" } });
-		expect(generationInput).toHaveValue(3);
+		fireEvent.blur(generationInput);
+		expect(generationInput).toHaveValue(99);
+		expect(generationInput).toHaveAttribute("aria-invalid", "true");
+		expect(view.getByText("0〜3の整数を入力してください。")).toBeVisible();
 		fireEvent.input(generationInput, { target: { value: "-1" } });
-		expect(generationInput).toHaveValue(0);
-		expect(slider).toHaveValue("0");
+		fireEvent.keyDown(generationInput, { key: "Enter" });
+		expect(generationInput).toHaveValue(-1);
+		expect(slider).toHaveValue("3");
 		fireEvent.input(generationInput, { target: { value: "1.6" } });
+		fireEvent.blur(generationInput);
+		expect(generationInput).toHaveAttribute("aria-invalid", "true");
+		expect(slider).toHaveValue("3");
+		fireEvent.input(generationInput, { target: { value: "2" } });
+		fireEvent.blur(generationInput);
 		expect(generationInput).toHaveValue(2);
 		expect(slider).toHaveValue("2");
 		fireEvent.input(generationInput, { target: { value: "" } });
 		fireEvent.blur(generationInput);
+		expect(generationInput).toHaveAttribute("aria-invalid", "true");
+		fireEvent.keyDown(generationInput, { key: "Escape" });
 		expect(generationInput).toHaveValue(2);
 		vi.stubGlobal("PointerEvent", MouseEvent);
 		const chart = view.getByRole("img", {
@@ -456,6 +469,28 @@ describe("2D / 3D visualization", () => {
 		expect(slider).toHaveValue("0");
 		expect(generationInput).toBeDisabled();
 		expect(readout).toHaveTextContent("第0世代");
+	});
+
+	test("keeps a generation draft while playback advances and pauses only on commit", () => {
+		vi.useFakeTimers();
+		const view = render(() => <GAApp />);
+		const input = view.getByRole("spinbutton", { name: "表示世代" });
+		const slider = view.getByRole("slider", { name: "表示世代のスライダー" });
+		fireEvent.click(view.getByRole("button", { name: "開始" }));
+		vi.advanceTimersByTime(1500);
+		fireEvent.input(input, { target: { value: "1" } });
+		vi.advanceTimersByTime(500);
+		expect(input).toHaveValue(1);
+		expect(slider).toHaveValue("4");
+		expect(view.getByRole("status")).toHaveTextContent("実行中");
+		fireEvent.keyDown(input, { key: "Enter" });
+		expect(slider).toHaveValue("1");
+		expect(view.getByRole("status")).toHaveTextContent("一時停止中");
+		fireEvent.input(input, { target: { value: "99" } });
+		fireEvent.click(view.getByRole("button", { name: "リセット" }));
+		expect(input).toHaveValue(0);
+		expect(input).toBeDisabled();
+		expect(input).toHaveAttribute("aria-invalid", "false");
 	});
 
 	test("shows completion and offers a new run instead of inactive playback", () => {

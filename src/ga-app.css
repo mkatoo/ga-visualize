@@ -846,8 +846,13 @@ body {
 	color: var(--color-error);
 }
 
-.parameter-group input[aria-invalid="true"] {
+.parameter-group input[aria-invalid="true"],
+.generation-selection input[aria-invalid="true"] {
 	border-color: var(--color-error);
+}
+
+.generation-history .field-error {
+	color: var(--color-error);
 }
 
 .speed-control {
