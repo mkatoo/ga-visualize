@@ -102,6 +102,41 @@ describe("Genetic algorithm settings", () => {
 		expect(result.ga().getBounds()).toEqual({ min: -10, max: 10 });
 	});
 
+	test("continues evolving while speed changes repeatedly", () => {
+		const { result, cleanup: unmount } = renderHook(useGeneticAlgorithm);
+		result.start();
+		for (let i = 0; i < 15; i++) {
+			vi.advanceTimersByTime(100);
+			result.handleSpeedChange(i % 2 === 0 ? 500 : 550);
+		}
+		expect(result.statistics().generation).toBeGreaterThanOrEqual(2);
+		expect(result.runStatus()).toBe("running");
+		unmount();
+		expect(vi.getTimerCount()).toBe(0);
+	});
+
+	test("applies speed changes to elapsed time without evolving while paused", () => {
+		const { result } = renderHook(useGeneticAlgorithm);
+		result.start();
+		vi.advanceTimersByTime(400);
+		result.handleSpeedChange(200);
+		vi.advanceTimersByTime(0);
+		expect(result.statistics().generation).toBe(1);
+		vi.advanceTimersByTime(100);
+		result.handleSpeedChange(1000);
+		vi.advanceTimersByTime(899);
+		expect(result.statistics().generation).toBe(1);
+		vi.advanceTimersByTime(1);
+		expect(result.statistics().generation).toBe(2);
+		result.stop();
+		result.handleSpeedChange(50);
+		vi.advanceTimersByTime(1000);
+		expect(result.statistics().generation).toBe(2);
+		result.start();
+		vi.advanceTimersByTime(50);
+		expect(result.statistics().generation).toBe(3);
+	});
+
 	test("pauses to inspect history and resumes from the latest population", () => {
 		const { result } = renderHook(useGeneticAlgorithm);
 		result.start();

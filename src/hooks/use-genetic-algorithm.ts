@@ -74,7 +74,8 @@ export function useGeneticAlgorithm() {
 		DEFAULT_ANIMATION_SPEED,
 	);
 
-	let intervalId: number | null = null;
+	let timerId: number | null = null;
+	let lastGenerationAt = 0;
 
 	const initializeGA = () => {
 		setSelectedGeneration(null);
@@ -96,22 +97,36 @@ export function useGeneticAlgorithm() {
 		}
 	};
 
+	const scheduleNextGeneration = () => {
+		if (timerId !== null) clearTimeout(timerId);
+		const elapsed = Date.now() - lastGenerationAt;
+		timerId = window.setTimeout(
+			() => {
+				timerId = null;
+				if (!isRunning()) return;
+				step();
+				lastGenerationAt = Date.now();
+				if (isRunning()) scheduleNextGeneration();
+			},
+			Math.max(0, animationSpeed() - elapsed),
+		);
+	};
+
 	const start = () => {
 		if (isRunning() || ga().getGeneration() >= generations()) return;
 
 		setHasStarted(true);
 		setIsRunning(true);
 		setSelectedGeneration(null);
-		intervalId = window.setInterval(() => {
-			step();
-		}, animationSpeed());
+		lastGenerationAt = Date.now();
+		scheduleNextGeneration();
 	};
 
 	const stop = () => {
 		setIsRunning(false);
-		if (intervalId) {
-			clearInterval(intervalId);
-			intervalId = null;
+		if (timerId !== null) {
+			clearTimeout(timerId);
+			timerId = null;
 		}
 	};
 
@@ -188,10 +203,7 @@ export function useGeneticAlgorithm() {
 	const handleSpeedChange = (interval: number) => {
 		setAnimationSpeed(interval);
 
-		if (isRunning()) {
-			stop();
-			start();
-		}
+		if (isRunning()) scheduleNextGeneration();
 	};
 
 	const handlePopulationSizeChange = (event: Event) => {
@@ -228,9 +240,7 @@ export function useGeneticAlgorithm() {
 	};
 
 	onCleanup(() => {
-		if (intervalId) {
-			clearInterval(intervalId);
-		}
+		if (timerId !== null) clearTimeout(timerId);
 	});
 
 	initializeGA();
