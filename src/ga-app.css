@@ -61,7 +61,7 @@ body {
 	cursor: not-allowed;
 }
 
-.ga-app button {
+.ga-app :is(button, summary) {
 	touch-action: manipulation;
 	-webkit-user-select: none;
 	user-select: none;
@@ -73,12 +73,17 @@ body {
 		color var(--press-duration) ease;
 }
 
-.ga-app[data-input-method="pointer"] button:active:not(:disabled) {
+.ga-app[data-input-method="pointer"]
+	:is(button, summary):active:not(:disabled) {
 	transform: scale(0.97);
 }
 
-.ga-app[data-input-method="keyboard"] button {
+.ga-app[data-input-method="keyboard"] :is(button, summary) {
 	transition: none;
+}
+
+.ga-app summary {
+	border-radius: var(--control-radius);
 }
 
 .ga-app input[type="range"] {
@@ -666,6 +671,7 @@ body {
 	border-right: 2px solid var(--color-text-muted);
 	border-bottom: 2px solid var(--color-text-muted);
 	transform: rotate(45deg);
+	transition: transform var(--press-duration) var(--ease-out);
 }
 
 .settings-details[open] .settings-toggle::after {
@@ -809,6 +815,29 @@ body {
 		background-color: var(--color-surface-hover);
 		color: var(--color-text);
 	}
+
+	.view-toggle button:not([aria-pressed="true"]):hover,
+	.view-reset:hover:not(:disabled),
+	.ga-app summary:hover {
+		background-color: var(--color-surface-hover);
+		color: var(--color-text);
+	}
+
+	.view-reset:hover:not(:disabled) {
+		border-color: var(--color-border-strong);
+	}
+}
+
+.btn-primary:active:not(:disabled) {
+	background-color: var(--color-accent-hover);
+}
+
+.btn-secondary:active:not(:disabled),
+.btn-text:active:not(:disabled),
+.view-toggle button:active,
+.view-reset:active:not(:disabled),
+.ga-app summary:active {
+	background-color: var(--color-surface-hover);
 }
 
 .parameter-controls {
@@ -945,13 +974,19 @@ body {
 	transition: transform 120ms linear;
 }
 
+:where(.ga-app[data-input-method="keyboard"]) .settings-toggle::after {
+	transition: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
-	.ga-app button,
+	.ga-app :is(button, summary),
+	:where(.ga-app) .settings-toggle::after,
 	.progress-fill[data-smooth="true"] {
 		transition: none;
 	}
 
-	.ga-app[data-input-method="pointer"] button:active:not(:disabled) {
+	.ga-app[data-input-method="pointer"]
+		:is(button, summary):active:not(:disabled) {
 		transform: none;
 	}
 }
