@@ -37,17 +37,19 @@ function createView() {
 }
 
 beforeEach(() => {
-	vi.mocked(WebGLRenderer).mockImplementation(
-		(options?: WebGLRendererParameters) =>
-			({
-				domElement: options?.canvas,
-				setPixelRatio: vi.fn(),
-				setSize: vi.fn(),
-				render: draw,
-				dispose: vi.fn(),
-				forceContextLoss: vi.fn(),
-			}) as unknown as WebGLRenderer,
-	);
+	// biome-ignore lint/complexity/useArrowFunction: Vitest 4 invokes this constructor mock with new.
+	vi.mocked(WebGLRenderer).mockImplementation(function (
+		options?: WebGLRendererParameters,
+	) {
+		return {
+			domElement: options?.canvas,
+			setPixelRatio: vi.fn(),
+			setSize: vi.fn(),
+			render: draw,
+			dispose: vi.fn(),
+			forceContextLoss: vi.fn(),
+		} as unknown as WebGLRenderer;
+	});
 	vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
 		beginPath: vi.fn(),
 		moveTo: vi.fn(),

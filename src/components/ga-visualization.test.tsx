@@ -36,9 +36,10 @@ describe("2D / 3D visualization", () => {
 	let renderer = createRenderer();
 	beforeEach(() => {
 		renderer = createRenderer();
-		vi.mocked(ThreeLandscapeRenderer).mockImplementation(
-			() => renderer as unknown as ThreeLandscapeRenderer,
-		);
+		// biome-ignore lint/complexity/useArrowFunction: Vitest 4 invokes this constructor mock with new.
+		vi.mocked(ThreeLandscapeRenderer).mockImplementation(function () {
+			return renderer as unknown as ThreeLandscapeRenderer;
+		});
 		vi.spyOn(loader, "load3DVisualizer").mockResolvedValue({ Visualizer3D });
 		const context = {
 			clearRect: vi.fn(),
@@ -255,7 +256,8 @@ describe("2D / 3D visualization", () => {
 	});
 
 	test("returns to 2D when initialization fails", async () => {
-		vi.mocked(ThreeLandscapeRenderer).mockImplementationOnce(() => {
+		// biome-ignore lint/complexity/useArrowFunction: Vitest 4 invokes this constructor mock with new.
+		vi.mocked(ThreeLandscapeRenderer).mockImplementationOnce(function () {
 			throw new Error("WebGL 2を利用できません。");
 		});
 		const view = renderPanel();
