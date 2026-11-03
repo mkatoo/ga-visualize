@@ -12,7 +12,7 @@ export function ProgressDisplay(props: ProgressDisplayProps) {
 		(props.currentGeneration / props.totalGenerations) * 100;
 
 	return (
-		<div class="progress">
+		<div class="progress" data-status={props.status}>
 			<div class="progress-header">
 				<output class="run-status" aria-live="polite">
 					{

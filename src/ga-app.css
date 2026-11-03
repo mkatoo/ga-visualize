@@ -933,6 +933,12 @@ body {
 	margin-bottom: 20px;
 }
 
+.button-group .progress {
+	grid-column: 1 / -1;
+	min-width: 0;
+	margin-bottom: 10px;
+}
+
 .progress-header {
 	display: flex;
 	flex-wrap: wrap;
@@ -947,6 +953,18 @@ body {
 	margin: 0;
 	color: var(--color-accent);
 	font-weight: 600;
+}
+
+.progress[data-status="ready"] .run-status {
+	color: var(--color-text-muted);
+}
+
+.progress[data-status="paused"] .run-status {
+	color: var(--color-text-secondary);
+}
+
+.progress[data-status="completed"] .run-status {
+	color: var(--color-success);
 }
 
 .progress-label {
@@ -1094,19 +1112,28 @@ body {
 
 @media (max-width: 1024px) {
 	html {
-		scroll-padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+		--run-controls-fallback-height: calc(
+			128px +
+			env(safe-area-inset-bottom, 0px)
+		);
+		scroll-padding-bottom: calc(
+			var(--run-controls-height, var(--run-controls-fallback-height)) +
+			16px
+		);
 	}
 
 	body {
-		padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+		padding-bottom: calc(
+			var(--run-controls-height, var(--run-controls-fallback-height)) +
+			16px
+		);
 	}
 
 	html:has(.run-settings-error) {
-		scroll-padding-bottom: calc(144px + env(safe-area-inset-bottom, 0px));
-	}
-
-	body:has(.run-settings-error) {
-		padding-bottom: calc(144px + env(safe-area-inset-bottom, 0px));
+		--run-controls-fallback-height: calc(
+			184px +
+			env(safe-area-inset-bottom, 0px)
+		);
 	}
 
 	.main-content {
@@ -1136,6 +1163,20 @@ body {
 
 	.button-group .btn-primary {
 		grid-column: auto;
+	}
+
+	.button-group .progress {
+		margin-bottom: 0;
+	}
+
+	.button-group .progress-header {
+		margin-bottom: 6px;
+		font-size: 0.85rem;
+		line-height: 1.5;
+	}
+
+	.button-group .progress-bar {
+		height: 4px;
 	}
 }
 

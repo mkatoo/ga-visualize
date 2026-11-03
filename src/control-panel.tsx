@@ -3,12 +3,14 @@ import { MAX_ANIMATION_INTERVAL, MIN_ANIMATION_INTERVAL } from "./constants";
 import type { RunStatus } from "./hooks/use-genetic-algorithm";
 import type { FunctionType } from "./objective-functions";
 import { OBJECTIVE_FUNCTIONS } from "./objective-functions";
+import { ProgressDisplay } from "./progress-display";
 
 interface ControlPanelProps {
 	// Control states
 	isRunning: boolean;
 	isViewingHistory: boolean;
 	runStatus: RunStatus;
+	currentGeneration: number;
 	onRestart: () => void;
 	functionType: FunctionType;
 	populationSize: number;
@@ -74,6 +76,7 @@ export function ControlPanel(props: ControlPanelProps) {
 		}
 	};
 	let settings!: HTMLDetailsElement;
+	let runControls!: HTMLFieldSetElement;
 	const focusInvalidSetting = () => {
 		settings.open = true;
 		settings
@@ -81,22 +84,49 @@ export function ControlPanel(props: ControlPanelProps) {
 			?.focus();
 	};
 	let mobileQuery: MediaQueryList | undefined;
+	let controlsObserver: ResizeObserver | undefined;
+	const updateControlsHeight = () => {
+		if (!mobileQuery?.matches) {
+			document.documentElement.style.removeProperty("--run-controls-height");
+			return;
+		}
+		const height = runControls.getBoundingClientRect().height;
+		if (height > 0) {
+			document.documentElement.style.setProperty(
+				"--run-controls-height",
+				`${Math.ceil(height)}px`,
+			);
+		}
+	};
 	const handleLayoutChange = (event: MediaQueryListEvent) => {
 		settings.open = !event.matches;
+		updateControlsHeight();
 	};
 	onMount(() => {
 		if (typeof window.matchMedia !== "function") return;
 		mobileQuery = window.matchMedia("(max-width: 1024px)");
 		settings.open = !mobileQuery.matches;
 		mobileQuery.addEventListener("change", handleLayoutChange);
+		updateControlsHeight();
+		if (typeof ResizeObserver === "undefined") return;
+		controlsObserver = new ResizeObserver(updateControlsHeight);
+		controlsObserver.observe(runControls, { box: "border-box" });
 	});
 	onCleanup(() => {
 		mobileQuery?.removeEventListener("change", handleLayoutChange);
+		controlsObserver?.disconnect();
+		document.documentElement.style.removeProperty("--run-controls-height");
 	});
 
 	return (
 		<div class="controls">
-			<fieldset class="button-group" aria-label="実行操作">
+			<fieldset class="button-group" aria-label="実行操作" ref={runControls}>
+				<ProgressDisplay
+					status={props.runStatus}
+					animationSpeed={props.animationSpeed}
+					currentGeneration={props.currentGeneration}
+					totalGenerations={props.generations}
+				/>
 				<button
 					type="button"
 					class="btn btn-primary"

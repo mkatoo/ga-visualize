@@ -2,7 +2,6 @@ import { ControlPanel } from "../control-panel";
 import type { Statistics } from "../genetic-algorithm";
 import type { RunStatus } from "../hooks/use-genetic-algorithm";
 import type { FunctionType } from "../objective-functions";
-import { ProgressDisplay } from "../progress-display";
 
 interface GAControlsProps {
 	isRunning: boolean;
@@ -34,16 +33,11 @@ interface GAControlsProps {
 export function GAControls(props: GAControlsProps) {
 	return (
 		<div class="control-panel">
-			<ProgressDisplay
-				status={props.runStatus}
-				animationSpeed={props.animationSpeed}
-				currentGeneration={props.statistics.generation}
-				totalGenerations={props.generations}
-			/>
 			<ControlPanel
 				isRunning={props.isRunning}
 				isViewingHistory={props.isViewingHistory}
 				runStatus={props.runStatus}
+				currentGeneration={props.statistics.generation}
 				onRestart={props.onRestart}
 				functionType={props.functionType}
 				populationSize={props.populationSize}
