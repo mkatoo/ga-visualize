@@ -7,7 +7,6 @@ import {
 	onMount,
 	Show,
 } from "solid-js";
-import { formatFitness } from "./format-fitness";
 import { VISUALIZATION_COLORS } from "./visualization-colors";
 
 interface FitnessChartProps {
@@ -164,52 +163,54 @@ export function FitnessChart(props: FitnessChartProps) {
 			<figcaption class="chart-header">
 				<h2>評価値の推移</h2>
 				<span class="chart-generation">第{selectedGeneration()}世代</span>
-				<label class="chart-scale" for={`${id}-scale`}>
-					縦軸
-					<select
-						id={`${id}-scale`}
-						value={scale()}
+				<div class="chart-scale">
+					<span>縦軸</span>
+					<fieldset
+						class="view-toggle"
+						aria-label="縦軸"
 						aria-describedby={
 							scale() === "logarithmic" ? `${id}-scale-help` : undefined
 						}
-						onChange={(event) =>
-							setScale(event.currentTarget.value as "linear" | "logarithmic")
-						}
 					>
-						<option value="linear">線形</option>
-						<option value="logarithmic">対数</option>
-					</select>
-				</label>
+						<button
+							type="button"
+							aria-pressed={scale() === "linear"}
+							onClick={() => setScale("linear")}
+						>
+							線形
+						</button>
+						<button
+							type="button"
+							aria-pressed={scale() === "logarithmic"}
+							onClick={() => setScale("logarithmic")}
+						>
+							対数
+						</button>
+					</fieldset>
+				</div>
 			</figcaption>
 			<Show when={scale() === "logarithmic"}>
 				<p class="chart-help" id={`${id}-scale-help`}>
 					縦軸は対数目盛です。0は対数で表せないため、グラフの下端に表示します。
 				</p>
 			</Show>
-			<dl class="chart-readout" aria-label="選択した世代の評価値">
+			<ul class="chart-legend" aria-label="推移グラフの凡例">
 				<For each={series}>
 					{(item) => (
-						<div>
-							<dt class="legend-item">
-								<span
-									class="legend-line"
-									style={{
-										"border-top-color": item.color,
-										"border-top-style": item.dash ? "dashed" : "solid",
-									}}
-									aria-hidden="true"
-								/>
-								{item.label}
-							</dt>
-							<dd style={{ color: item.color }}>
-								{item.values().length
-									? formatFitness(item.values()[selectedGeneration()] ?? 0)
-									: "—"}
-							</dd>
-						</div>
+						<li class="legend-item">
+							<span
+								class="legend-line"
+								style={{
+									"border-top-color": item.color,
+									"border-top-style": item.dash ? "dashed" : "solid",
+								}}
+								aria-hidden="true"
+							/>
+							{item.label}
+						</li>
 					)}
 				</For>
-			</dl>
+			</ul>
 			<p class="chart-help">
 				グラフをタップするか、上部の表示世代を指定すると、その世代の評価値を表示します。
 			</p>

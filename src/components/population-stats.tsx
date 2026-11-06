@@ -1,7 +1,6 @@
 import { createUniqueId, Show } from "solid-js";
 import { formatFitness } from "../format-fitness";
 import type { Individual } from "../genetic-algorithm";
-import { VISUALIZATION_COLORS } from "../visualization-colors";
 
 function IndividualCoordinates(props: { individual: Individual }) {
 	return (
@@ -32,22 +31,27 @@ function IndividualCoordinates(props: { individual: Individual }) {
 	);
 }
 
-interface PopulationStatsProps {
+interface GenerationSummaryProps {
 	generation: number;
 	averageFitness: number;
 	bestIndividual: Individual | null;
+	bestEver: Individual | null;
 }
 
-export function GenerationSummary(
-	props: PopulationStatsProps & { bestEver: Individual | null },
-) {
+export function GenerationSummary(props: GenerationSummaryProps) {
 	return (
 		<section class="generation-summary" aria-label="表示中の世代の要約">
 			<p class="summary-generation">第{props.generation}世代</p>
 			<dl class="summary-metrics">
 				<div class="best-individual">
 					<dt>最良評価値</dt>
-					<dd>
+					<dd
+						title={
+							props.bestIndividual
+								? `評価値: ${props.bestIndividual.fitness}`
+								: undefined
+						}
+					>
 						{props.bestIndividual
 							? formatFitness(props.bestIndividual.fitness)
 							: "—"}
@@ -55,11 +59,19 @@ export function GenerationSummary(
 				</div>
 				<div class="average-fitness">
 					<dt>平均評価値</dt>
-					<dd>{formatFitness(props.averageFitness)}</dd>
+					<dd title={`平均評価値: ${props.averageFitness}`}>
+						{formatFitness(props.averageFitness)}
+					</dd>
 				</div>
 				<div class="summary-best-ever">
 					<dt>これまでの最良</dt>
-					<dd>
+					<dd
+						title={
+							props.bestEver
+								? `これまでの最良評価値: ${props.bestEver.fitness}`
+								: undefined
+						}
+					>
 						{props.bestEver ? formatFitness(props.bestEver.fitness) : "—"}
 					</dd>
 				</div>
@@ -68,87 +80,56 @@ export function GenerationSummary(
 	);
 }
 
-export function PopulationStats(props: PopulationStatsProps) {
-	const generationHeadingId = createUniqueId();
-	return (
-		<section class="current-generation" aria-labelledby={generationHeadingId}>
-			<h3 id={generationHeadingId} class="generation-heading">
-				第{props.generation}世代の結果
-			</h3>
-			<dl class="generation-data">
-				<div class="best-individual">
-					<dt class="legend-item">
-						<span
-							class="legend-line"
-							style={{ "border-top-color": VISUALIZATION_COLORS.best }}
-							aria-hidden="true"
-						/>
-						最良評価値
-					</dt>
-					{props.bestIndividual ? (
-						<>
-							<dd
-								class="value fitness-value"
-								title={`評価値: ${props.bestIndividual.fitness}`}
-							>
-								{formatFitness(props.bestIndividual.fitness)}
-							</dd>
-							<dd class="coordinate-summary">
-								<IndividualCoordinates individual={props.bestIndividual} />
-							</dd>
-						</>
-					) : (
-						<dd class="value no-data">データなし</dd>
-					)}
-				</div>
-				<div class="average-fitness">
-					<dt class="legend-item">
-						<span
-							class="legend-line"
-							style={{
-								"border-top-color": VISUALIZATION_COLORS.population,
-								"border-top-style": "dashed",
-							}}
-							aria-hidden="true"
-						/>
-						平均評価値
-					</dt>
-					<dd class="value" title={`平均評価値: ${props.averageFitness}`}>
-						{formatFitness(props.averageFitness)}
-					</dd>
-				</div>
-			</dl>
-		</section>
-	);
-}
-
-interface BestEverStatsProps {
+interface ResultDetailsProps {
 	generation: number;
 	bestIndividual: Individual | null;
-	bestGeneration: number;
+	bestEver: Individual | null;
+	bestEverGeneration: number;
 }
 
-export function BestEverStats(props: BestEverStatsProps) {
-	const headingId = createUniqueId();
-	const label = () => `第${props.generation}世代までの最良評価値`;
+export function ResultDetails(props: ResultDetailsProps) {
+	const generationHeadingId = createUniqueId();
+	const bestEverHeadingId = createUniqueId();
 	return (
-		<section class="best-ever" aria-labelledby={headingId}>
-			<h3 id={headingId} class="generation-heading">
-				{label()}
-			</h3>
-			<div>
-				<Show when={props.bestIndividual}>
-					<p class="discovery-generation">第{props.bestGeneration}世代で発見</p>
-				</Show>
-				<p class="value" title={`${label()}: ${props.bestIndividual?.fitness}`}>
-					{props.bestIndividual
-						? formatFitness(props.bestIndividual.fitness)
-						: "データなし"}
-				</p>
-				<Show when={props.bestIndividual}>
-					{(best) => <IndividualCoordinates individual={best()} />}
-				</Show>
+		<details class="result-details">
+			<summary class="settings-toggle">
+				<span class="settings-title">結果の詳細</span>
+				<span class="settings-overview">座標・最良個体の発見世代</span>
+			</summary>
+			<div class="generation-comparison">
+				<section
+					class="current-generation"
+					aria-labelledby={generationHeadingId}
+				>
+					<h3 id={generationHeadingId} class="generation-heading">
+						第{props.generation}世代の最良個体
+					</h3>
+					<Show
+						when={props.bestIndividual}
+						fallback={<p class="no-data">データなし</p>}
+					>
+						{(best) => <IndividualCoordinates individual={best()} />}
+					</Show>
+				</section>
+				<section class="best-ever" aria-labelledby={bestEverHeadingId}>
+					<h3 id={bestEverHeadingId} class="generation-heading">
+						第{props.generation}世代までの最良個体
+					</h3>
+					<Show
+						when={props.bestEver}
+						fallback={<p class="no-data">データなし</p>}
+					>
+						{(best) => (
+							<div>
+								<p class="discovery-generation">
+									第{props.bestEverGeneration}世代で発見
+								</p>
+								<IndividualCoordinates individual={best()} />
+							</div>
+						)}
+					</Show>
+				</section>
 			</div>
-		</section>
+		</details>
 	);
 }

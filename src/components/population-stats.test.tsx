@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, within } from "@solidjs/testing-library";
 import { createSignal } from "solid-js";
 import { afterEach, describe, expect, test } from "vitest";
-import { BestEverStats, PopulationStats } from "./population-stats";
+import { GenerationSummary, ResultDetails } from "./population-stats";
 
 describe("Population statistics fitness values", () => {
 	afterEach(cleanup);
@@ -10,20 +10,18 @@ describe("Population statistics fitness values", () => {
 		const [best, setBest] = createSignal({ x: 1, y: 2, fitness: 5 });
 		const [generation, setGeneration] = createSignal(0);
 		const view = render(() => (
-			<BestEverStats
+			<ResultDetails
 				generation={generation()}
-				bestIndividual={best()}
-				bestGeneration={generation()}
+				bestIndividual={null}
+				bestEver={best()}
+				bestEverGeneration={generation()}
 			/>
 		));
-		expect(view.container.querySelector(".best-ever .value")).toHaveTextContent(
-			"5.0000",
-		);
+		expect(view.getByText("(1.000, 2.000)")).not.toBeVisible();
 		setBest({ x: 0.0000123456789, y: -0.5000123456789, fitness: 0.25 });
 		setGeneration(1);
-		expect(view.container.querySelector(".best-ever .value")).toHaveTextContent(
-			"0.2500",
-		);
+		expect(view.getByText("(0.000, -0.500)")).not.toBeVisible();
+		fireEvent.click(view.getByText("結果の詳細"));
 		expect(view.getByText("(0.000, -0.500)")).toBeVisible();
 		expect(view.getByText("0.0000123456789")).not.toBeVisible();
 		expect(view.getByText("-0.5000123456789")).not.toBeVisible();
@@ -41,30 +39,27 @@ describe("Population statistics fitness values", () => {
 
 	test("distinguishes the current generation from the best discovery", () => {
 		const view = render(() => (
-			<>
-				<PopulationStats
-					generation={8}
-					averageFitness={20}
-					bestIndividual={{ x: 0, y: 0, fitness: 14.203125 }}
-				/>
-				<BestEverStats
-					generation={8}
-					bestIndividual={{ x: 3, y: 0.5, fitness: 0 }}
-					bestGeneration={4}
-				/>
-			</>
+			<ResultDetails
+				generation={8}
+				bestIndividual={{ x: 0, y: 0, fitness: 14.203125 }}
+				bestEver={{ x: 3, y: 0.5, fitness: 0 }}
+				bestEverGeneration={4}
+			/>
 		));
+		fireEvent.click(view.getByText("結果の詳細"));
 		const bestEverCard = within(
-			view.getByRole("region", { name: "第8世代までの最良評価値" }),
+			view.getByRole("region", { name: "第8世代までの最良個体" }),
 		);
+		expect(bestEverCard.getByText("(3.000, 0.500)")).toBeVisible();
+		expect(bestEverCard.getByText("第4世代で発見")).toBeVisible();
 		expect(
-			bestEverCard.getByTitle("第8世代までの最良評価値: 0"),
-		).toHaveTextContent("0.0000");
-		expect(view.getByTitle("評価値: 14.203125")).toHaveTextContent("14.2031");
-		expect(view.getByText(/第4世代で発見/)).toBeTruthy();
-		expect(
-			view.getByRole("region", { name: "第8世代の結果" }),
-		).toHaveTextContent("最良評価値");
+			within(view.getByRole("region", { name: "第8世代の最良個体" })).getByText(
+				"(0.000, 0.000)",
+			),
+		).toBeVisible();
+		expect(view.queryByText("14.2031")).toBeNull();
+		fireEvent.click(view.getByText("結果の詳細"));
+		expect(bestEverCard.getByText("(3.000, 0.500)")).not.toBeVisible();
 	});
 
 	test.each([
@@ -76,10 +71,11 @@ describe("Population statistics fitness values", () => {
 		"displays %s without hiding small values or expanding large values",
 		(fitness, displayedValue) => {
 			const { getByTitle } = render(() => (
-				<PopulationStats
+				<GenerationSummary
 					generation={7}
 					bestIndividual={{ x: 1.23456, y: -2.34567, fitness }}
 					averageFitness={fitness}
+					bestEver={{ x: 1.23456, y: -2.34567, fitness }}
 				/>
 			));
 
@@ -89,8 +85,8 @@ describe("Population statistics fitness values", () => {
 			expect(getByTitle(`平均評価値: ${fitness}`)).toHaveTextContent(
 				displayedValue,
 			);
-			expect(getByTitle("座標: (1.23456, -2.34567)")).toHaveTextContent(
-				"(1.235, -2.346)",
+			expect(getByTitle(`これまでの最良評価値: ${fitness}`)).toHaveTextContent(
+				displayedValue,
 			);
 		},
 	);

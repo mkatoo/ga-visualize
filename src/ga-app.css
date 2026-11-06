@@ -485,11 +485,17 @@ body {
 	transform: translateY(100%);
 }
 
+.result-details {
+	margin-top: 20px;
+	padding-top: 12px;
+	border-top: 1px solid var(--color-border-subtle);
+}
+
 .generation-comparison {
 	display: grid;
-	grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: 12px;
-	margin: 20px 0 0;
+	margin: 12px 0 0;
 }
 
 .generation-summary {
@@ -569,43 +575,6 @@ body {
 	color: var(--color-text-muted);
 }
 
-.current-generation .value,
-.best-ever .value {
-	display: block;
-	margin: 0;
-	font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-	font-size: 1.25rem;
-	font-weight: 600;
-	font-variant-numeric: tabular-nums;
-	color: var(--color-text);
-	overflow-wrap: anywhere;
-}
-
-.generation-data {
-	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: 12px 16px;
-	min-width: 0;
-	margin: 0;
-}
-
-.generation-data > div {
-	min-width: 0;
-}
-
-.generation-data .value,
-.best-ever .value {
-	margin-top: 6px;
-}
-
-.best-individual .value {
-	color: var(--color-best);
-}
-
-.best-ever .value {
-	color: var(--color-success);
-}
-
 .optimum-symbol {
 	position: relative;
 	width: 10px;
@@ -629,14 +598,9 @@ body {
 	transform: rotate(-45deg);
 }
 
-.average-fitness .value {
-	color: var(--color-population);
-}
-
-.current-generation .no-data {
-	font-family: inherit;
-	font-size: 1rem;
-	font-weight: 400;
+.result-details .no-data {
+	margin: 0;
+	font-size: 0.85rem;
 	color: var(--color-text-muted);
 }
 
@@ -674,7 +638,8 @@ body {
 	transition: transform var(--press-duration) var(--ease-out);
 }
 
-.settings-details[open] .settings-toggle::after {
+.settings-details[open] .settings-toggle::after,
+.result-details[open] > .settings-toggle::after {
 	transform: rotate(225deg);
 }
 
@@ -1044,23 +1009,13 @@ body {
 	font-size: 0.85rem;
 }
 
-.chart-scale select {
-	font-size: inherit;
-}
-
-.chart-readout {
-	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: 12px;
+.chart-legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 20px;
 	margin: 0 0 12px;
-}
-
-.chart-readout dd {
-	margin: 6px 0 0;
-	font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-	font-size: 1.1rem;
-	font-variant-numeric: tabular-nums;
-	overflow-wrap: anywhere;
+	padding: 0;
+	list-style: none;
 }
 
 .chart-container svg {
@@ -1263,10 +1218,6 @@ body {
 	.best-ever {
 		padding: 12px;
 	}
-}
-
-.coordinate-summary {
-	margin: 0;
 }
 
 .coordinate-display {

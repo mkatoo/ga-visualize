@@ -23,11 +23,7 @@ import type { CameraState } from "../three-landscape-renderer";
 import { Visualizer } from "../visualizer";
 import type { Visualizer3DProps } from "../visualizer-3d";
 import { FitnessScale } from "./fitness-scale";
-import {
-	BestEverStats,
-	GenerationSummary,
-	PopulationStats,
-} from "./population-stats";
+import { GenerationSummary, ResultDetails } from "./population-stats";
 
 interface GAVisualizationProps {
 	population: Individual[];
@@ -257,18 +253,12 @@ export function GAVisualization(props: GAVisualizationProps) {
 				</div>
 			</details>
 			{props.chart}
-			<div class="generation-comparison">
-				<PopulationStats
-					generation={props.generation}
-					bestIndividual={props.bestIndividual}
-					averageFitness={props.averageFitness}
-				/>
-				<BestEverStats
-					generation={props.generation}
-					bestIndividual={props.bestEver ?? props.bestIndividual}
-					bestGeneration={props.bestEverGeneration ?? props.generation}
-				/>
-			</div>
+			<ResultDetails
+				generation={props.generation}
+				bestIndividual={props.bestIndividual}
+				bestEver={props.bestEver ?? props.bestIndividual}
+				bestEverGeneration={props.bestEverGeneration ?? props.generation}
+			/>
 		</div>
 	);
 }

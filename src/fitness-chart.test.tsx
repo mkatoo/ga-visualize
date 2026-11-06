@@ -45,9 +45,16 @@ describe("FitnessChart scale", () => {
 		const original = view.container
 			.querySelector("polyline")
 			?.getAttribute("points");
-		fireEvent.change(view.getByLabelText("縦軸"), {
-			target: { value: "logarithmic" },
-		});
+		const linear = view.getByRole("button", { name: "線形" });
+		const logarithmic = view.getByRole("button", { name: "対数" });
+		expect(linear).toHaveAttribute("aria-pressed", "true");
+		expect(logarithmic).toHaveAttribute("aria-pressed", "false");
+		fireEvent.click(logarithmic);
+		expect(linear).toHaveAttribute("aria-pressed", "false");
+		expect(logarithmic).toHaveAttribute("aria-pressed", "true");
+		expect(
+			view.getByRole("group", { name: "縦軸" }),
+		).toHaveAccessibleDescription(/縦軸は対数目盛です/);
 		const points =
 			view.container
 				.querySelector("polyline")
@@ -66,9 +73,12 @@ describe("FitnessChart scale", () => {
 		);
 		expect(ticks[0]).toBe(0);
 		expect(ticks.every(Number.isFinite)).toBe(true);
-		fireEvent.change(view.getByLabelText("縦軸"), {
-			target: { value: "linear" },
-		});
+		fireEvent.click(linear);
+		expect(linear).toHaveAttribute("aria-pressed", "true");
+		expect(logarithmic).toHaveAttribute("aria-pressed", "false");
+		expect(view.getByRole("group", { name: "縦軸" })).not.toHaveAttribute(
+			"aria-describedby",
+		);
 		expect(view.container.querySelector("polyline")).toHaveAttribute(
 			"points",
 			original,
@@ -85,9 +95,7 @@ describe("FitnessChart scale", () => {
 					totalGenerations={1}
 				/>
 			));
-			fireEvent.change(view.getByLabelText("縦軸"), {
-				target: { value: "logarithmic" },
-			});
+			fireEvent.click(view.getByRole("button", { name: "対数" }));
 			for (const line of view.container.querySelectorAll("polyline")) {
 				expect(line.getAttribute("points")).not.toMatch(/NaN|Infinity/);
 				expect(line.getAttribute("points")).toMatch(/620,212$/);
