@@ -1,4 +1,5 @@
 import { ControlPanel } from "../control-panel";
+import type { GAParameterName, GAParameters } from "../ga-parameters";
 import type { Statistics } from "../genetic-algorithm";
 import type { RunStatus } from "../hooks/use-genetic-algorithm";
 import type { FunctionType } from "../objective-functions";
@@ -11,6 +12,7 @@ interface GAControlsProps {
 	functionType: FunctionType;
 	populationSize: number;
 	generations: number;
+	parameters: GAParameters;
 	animationSpeed: number;
 	settingsLocked: boolean;
 	statistics: Statistics;
@@ -18,6 +20,8 @@ interface GAControlsProps {
 	onStop: () => void;
 	onStep: () => void;
 	onReset: () => void;
+	onResetParameters: () => void;
+	onParameterChange: (name: GAParameterName, value: number) => void;
 	onFunctionTypeChange: (event: Event) => void;
 	onPopulationSizeBlur: (event: Event) => void;
 	onGenerationsBlur: (event: Event) => void;
@@ -42,12 +46,15 @@ export function GAControls(props: GAControlsProps) {
 				functionType={props.functionType}
 				populationSize={props.populationSize}
 				generations={props.generations}
+				parameters={props.parameters}
 				animationSpeed={props.animationSpeed}
 				settingsLocked={props.settingsLocked}
 				onStart={props.onStart}
 				onStop={props.onStop}
 				onStep={props.onStep}
 				onReset={props.onReset}
+				onResetParameters={props.onResetParameters}
+				onParameterChange={props.onParameterChange}
 				onFunctionTypeChange={props.onFunctionTypeChange}
 				onPopulationSizeBlur={props.onPopulationSizeBlur}
 				onGenerationsBlur={props.onGenerationsBlur}

@@ -1,5 +1,19 @@
-import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
+import {
+	createEffect,
+	createMemo,
+	createSignal,
+	onCleanup,
+	onMount,
+	Show,
+} from "solid-js";
 import { MAX_ANIMATION_INTERVAL, MIN_ANIMATION_INTERVAL } from "./constants";
+import {
+	DEFAULT_GA_PARAMETERS,
+	GA_PARAMETER_FIELDS,
+	type GAParameterName,
+	type GAParameters,
+	isValidGAParameter,
+} from "./ga-parameters";
 import type { RunStatus } from "./hooks/use-genetic-algorithm";
 import type { FunctionType } from "./objective-functions";
 import { OBJECTIVE_FUNCTIONS } from "./objective-functions";
@@ -15,6 +29,7 @@ interface ControlPanelProps {
 	functionType: FunctionType;
 	populationSize: number;
 	generations: number;
+	parameters: GAParameters;
 	animationSpeed: number;
 	settingsLocked: boolean;
 
@@ -23,6 +38,8 @@ interface ControlPanelProps {
 	onStop: () => void;
 	onStep: () => void;
 	onReset: () => void;
+	onResetParameters: () => void;
+	onParameterChange: (name: GAParameterName, value: number) => void;
 	onFunctionTypeChange: (event: Event) => void;
 	onPopulationSizeBlur: (event: Event) => void;
 	onGenerationsBlur: (event: Event) => void;
@@ -45,6 +62,22 @@ export function ControlPanel(props: ControlPanelProps) {
 	);
 	createEffect(() => setPopulationDraft(String(props.populationSize)));
 	createEffect(() => setGenerationsDraft(String(props.generations)));
+	const parameterFields = GA_PARAMETER_FIELDS.map((field) => {
+		const value = createMemo(() => props.parameters[field.key]);
+		const [draft, setDraft] = createSignal(String(value()));
+		createEffect(() => setDraft(String(value())));
+		const invalid = () =>
+			draft().trim() === "" || !isValidGAParameter(field.key, Number(draft()));
+		const cancel = () => setDraft(String(value()));
+		const commit = () => {
+			if (props.settingsLocked || invalid()) return;
+			props.onParameterChange(field.key, Number(draft()));
+			cancel();
+		};
+		return { ...field, draft, setDraft, invalid, cancel, commit };
+	});
+	const invalidParameters = () =>
+		parameterFields.some((field) => field.invalid());
 	const validNumber = (value: string, min: number, max: number) =>
 		value.trim() !== "" &&
 		Number.isInteger(Number(value)) &&
@@ -62,7 +95,8 @@ export function ControlPanel(props: ControlPanelProps) {
 			props.minGenerations,
 			props.maxGenerations,
 		);
-	const invalidSettings = () => invalidPopulation() || invalidGenerations();
+	const invalidSettings = () =>
+		invalidPopulation() || invalidGenerations() || invalidParameters();
 	const commitPopulation = (event: Event) => {
 		if (!invalidPopulation()) {
 			props.onPopulationSizeBlur(event);
@@ -79,9 +113,12 @@ export function ControlPanel(props: ControlPanelProps) {
 	let runControls!: HTMLFieldSetElement;
 	const focusInvalidSetting = () => {
 		settings.open = true;
-		settings
-			.querySelector<HTMLInputElement>('input[aria-invalid="true"]')
-			?.focus();
+		const input = settings.querySelector<HTMLInputElement>(
+			'input[aria-invalid="true"]',
+		);
+		const details = input?.closest("details");
+		if (details) details.open = true;
+		input?.focus();
 	};
 	let mobileQuery: MediaQueryList | undefined;
 	let controlsObserver: ResizeObserver | undefined;
@@ -171,6 +208,7 @@ export function ControlPanel(props: ControlPanelProps) {
 						setPopulationDraft(String(props.populationSize));
 						setGenerationsDraft(String(props.generations));
 						props.onReset();
+						for (const field of parameterFields) field.cancel();
 					}}
 				>
 					リセット
@@ -327,6 +365,73 @@ export function ControlPanel(props: ControlPanelProps) {
 							</Show>
 						</div>
 					</div>
+					<details class="advanced-settings">
+						<summary class="settings-toggle">
+							<span class="settings-title">
+								詳細設定
+								<Show when={invalidParameters()}>
+									<span class="settings-error-badge">入力エラー</span>
+								</Show>
+							</span>
+						</summary>
+						<div class="parameter-controls advanced-settings-content">
+							{parameterFields.map((field) => (
+								<div class="parameter-group">
+									<label for={`ga-${field.key}`}>
+										{field.label} ({field.min}〜{field.max})
+									</label>
+									<input
+										id={`ga-${field.key}`}
+										type="number"
+										inputmode={field.integer ? "numeric" : "decimal"}
+										min={field.min}
+										max={field.max}
+										step={field.integer ? 1 : "any"}
+										value={field.draft()}
+										onInput={(event) =>
+											field.setDraft(event.currentTarget.value)
+										}
+										onBlur={field.commit}
+										onKeyDown={(event) => {
+											if (event.key === "Enter") {
+												event.preventDefault();
+												field.commit();
+											}
+											if (event.key === "Escape") field.cancel();
+										}}
+										disabled={props.settingsLocked}
+										aria-invalid={field.invalid()}
+										aria-describedby={
+											field.invalid()
+												? `ga-${field.key}-help ga-${field.key}-error`
+												: `ga-${field.key}-help`
+										}
+									/>
+									<p id={`ga-${field.key}-help`} class="parameter-description">
+										{field.description} 初期値:{" "}
+										{DEFAULT_GA_PARAMETERS[field.key]}
+									</p>
+									<Show when={field.invalid()}>
+										<p id={`ga-${field.key}-error`} class="field-error">
+											{field.min}〜{field.max}の
+											{field.integer ? "整数" : "数値"}を入力してください。
+										</p>
+									</Show>
+								</div>
+							))}
+							<button
+								type="button"
+								class="btn btn-secondary"
+								disabled={props.settingsLocked}
+								onClick={() => {
+									props.onResetParameters();
+									for (const field of parameterFields) field.cancel();
+								}}
+							>
+								詳細設定を初期値に戻す
+							</button>
+						</div>
+					</details>
 				</div>
 			</details>
 		</div>

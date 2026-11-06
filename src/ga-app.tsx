@@ -26,6 +26,7 @@ export function GAApp() {
 	const {
 		populationSize,
 		generations,
+		parameters,
 		functionType,
 		ga,
 		statistics,
@@ -43,6 +44,8 @@ export function GAApp() {
 		stop,
 		step,
 		reset,
+		resetParameters,
+		handleParameterChange,
 		handleSpeedChange,
 		handlePopulationSizeBlur,
 		handleGenerationsBlur,
@@ -75,6 +78,7 @@ export function GAApp() {
 					functionType={functionType()}
 					populationSize={populationSize()}
 					generations={generations()}
+					parameters={parameters()}
 					animationSpeed={animationSpeed()}
 					settingsLocked={settingsLocked()}
 					statistics={statistics()}
@@ -82,6 +86,8 @@ export function GAApp() {
 					onStop={stop}
 					onStep={step}
 					onReset={reset}
+					onResetParameters={resetParameters}
+					onParameterChange={handleParameterChange}
 					onFunctionTypeChange={handleFunctionTypeChange}
 					onPopulationSizeBlur={handlePopulationSizeBlur}
 					onGenerationsBlur={handleGenerationsBlur}

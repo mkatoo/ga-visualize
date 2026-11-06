@@ -9,6 +9,12 @@ import {
 	MIN_GENERATIONS,
 	MIN_POPULATION_SIZE,
 } from "../constants";
+import {
+	DEFAULT_GA_PARAMETERS,
+	GA_PARAMETER_FIELDS,
+	type GAParameterName,
+	isValidGAParameter,
+} from "../ga-parameters";
 import { DEFAULT_CONFIG, GeneticAlgorithm } from "../genetic-algorithm";
 import {
 	type FunctionType,
@@ -22,6 +28,9 @@ export function useGeneticAlgorithm() {
 		DEFAULT_POPULATION_SIZE,
 	);
 	const [generations, setGenerations] = createSignal(DEFAULT_GENERATIONS);
+	const [parameters, setParameters] = createSignal({
+		...DEFAULT_GA_PARAMETERS,
+	});
 	const [functionType, setFunctionType] = createSignal<FunctionType>(
 		DEFAULT_FUNCTION_TYPE,
 	);
@@ -32,6 +41,7 @@ export function useGeneticAlgorithm() {
 	const [ga, setGA] = createSignal(
 		new GeneticAlgorithm({
 			...DEFAULT_CONFIG,
+			...parameters(),
 			populationSize: populationSize(),
 			generations: generations(),
 			functionType: functionType(),
@@ -158,6 +168,7 @@ export function useGeneticAlgorithm() {
 			setGA(
 				new GeneticAlgorithm({
 					...DEFAULT_CONFIG,
+					...parameters(),
 					populationSize: populationSize(),
 					generations: generations(),
 					functionType: functionType(),
@@ -206,6 +217,29 @@ export function useGeneticAlgorithm() {
 		if (isRunning()) scheduleNextGeneration();
 	};
 
+	const handleParameterChange = (name: GAParameterName, value: number) => {
+		if (
+			settingsLocked() ||
+			!isValidGAParameter(name, value) ||
+			parameters()[name] === value
+		)
+			return;
+		setParameters((current) => ({ ...current, [name]: value }));
+		updateGAConfig();
+	};
+
+	const resetParameters = () => {
+		if (settingsLocked()) return;
+		if (
+			GA_PARAMETER_FIELDS.every(
+				({ key }) => parameters()[key] === DEFAULT_GA_PARAMETERS[key],
+			)
+		)
+			return;
+		setParameters({ ...DEFAULT_GA_PARAMETERS });
+		updateGAConfig();
+	};
+
 	const handlePopulationSizeChange = (event: Event) => {
 		const target = event.target as HTMLInputElement;
 		if (target.value === "") return;
@@ -249,6 +283,7 @@ export function useGeneticAlgorithm() {
 		// State
 		populationSize,
 		generations,
+		parameters,
 		functionType,
 		ga,
 		population,
@@ -269,9 +304,11 @@ export function useGeneticAlgorithm() {
 		step,
 		reset,
 		restart,
+		resetParameters,
 
 		// Event handlers
 		handleSpeedChange,
+		handleParameterChange,
 		handlePopulationSizeChange,
 		handlePopulationSizeBlur,
 		handleGenerationsChange,

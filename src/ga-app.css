@@ -638,8 +638,9 @@ body {
 	transition: transform var(--press-duration) var(--ease-out);
 }
 
-.settings-details[open] .settings-toggle::after,
-.result-details[open] > .settings-toggle::after {
+.settings-details[open] > .settings-toggle::after,
+.result-details[open] > .settings-toggle::after,
+.advanced-settings[open] > .settings-toggle::after {
 	transform: rotate(225deg);
 }
 
@@ -675,6 +676,20 @@ body {
 
 .settings-content {
 	padding-top: 16px;
+}
+
+.advanced-settings {
+	margin-top: 20px;
+	padding-top: 12px;
+	border-top: 1px solid var(--color-border-subtle);
+}
+
+.advanced-settings .settings-toggle {
+	font-size: 0.9rem;
+}
+
+.advanced-settings-content {
+	padding-top: 12px;
 }
 
 .settings-help {
@@ -825,7 +840,8 @@ body {
 	font-size: 0.9rem;
 }
 
-.function-description {
+.function-description,
+.parameter-description {
 	margin: 8px 0 0;
 	color: var(--color-text-secondary);
 	font-size: 0.85rem;

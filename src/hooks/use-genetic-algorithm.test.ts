@@ -1,5 +1,7 @@
 import { cleanup, renderHook } from "@solidjs/testing-library";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { DEFAULT_GA_PARAMETERS } from "../ga-parameters";
+import { DEFAULT_CONFIG, GeneticAlgorithm } from "../genetic-algorithm";
 import { useGeneticAlgorithm } from "./use-genetic-algorithm";
 
 const fields = [
@@ -29,6 +31,7 @@ describe("Genetic algorithm settings", () => {
 	beforeEach(() => vi.useFakeTimers());
 	afterEach(() => {
 		cleanup();
+		vi.restoreAllMocks();
 		vi.useRealTimers();
 	});
 
@@ -100,6 +103,106 @@ describe("Genetic algorithm settings", () => {
 		input(result.handleFunctionTypeChange, "sphere");
 		expect(result.functionType()).toBe("sphere");
 		expect(result.ga().getBounds()).toEqual({ min: -10, max: 10 });
+	});
+
+	test("applies advanced parameters to evolution and retains them when other settings change or a run restarts", () => {
+		const { result } = renderHook(useGeneticAlgorithm);
+		result.handleParameterChange("mutationRate", 0);
+		result.handleParameterChange("crossoverRate", 0);
+		result.handleParameterChange("tournamentSize", 1);
+		input(result.handlePopulationSizeBlur, "10");
+		input(result.handleGenerationsBlur, "1");
+		input(result.handleFunctionTypeChange, "beale");
+		const parameters = { mutationRate: 0, crossoverRate: 0, tournamentSize: 1 };
+		const seededRandom = () => {
+			let state = 42;
+			return () => {
+				state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+				return state / 2 ** 32;
+			};
+		};
+		const random = vi.spyOn(Math, "random").mockImplementation(seededRandom());
+		result.reset();
+		result.step();
+		const actual = result.population();
+		random.mockImplementation(seededRandom());
+		const expected = new GeneticAlgorithm({
+			...DEFAULT_CONFIG,
+			...parameters,
+			populationSize: 10,
+			generations: 1,
+			functionType: "beale",
+			bounds: { min: -4.5, max: 4.5 },
+		});
+		expected.initializePopulation();
+		expected.evolve();
+		expect(actual).toEqual(expected.getPopulation());
+		random.mockImplementation(seededRandom());
+		result.restart();
+		vi.advanceTimersByTime(result.animationSpeed());
+		expect(result.population()).toEqual(actual);
+		expect(result.parameters()).toEqual(parameters);
+	});
+
+	test("validates advanced parameter boundaries and resets them without changing basic settings", () => {
+		const { result } = renderHook(useGeneticAlgorithm);
+		const initial = result.statistics();
+		for (const value of [-0.1, 1.1, Number.NaN, Number.POSITIVE_INFINITY]) {
+			result.handleParameterChange("mutationRate", value);
+			result.handleParameterChange("crossoverRate", value);
+		}
+		for (const value of [0, 1.5, 1001, Number.NaN]) {
+			result.handleParameterChange("tournamentSize", value);
+		}
+		expect(result.parameters()).toEqual(DEFAULT_GA_PARAMETERS);
+		expect(result.statistics()).toBe(initial);
+		result.resetParameters();
+		expect(result.statistics()).toBe(initial);
+		input(result.handlePopulationSizeBlur, "1");
+		input(result.handleGenerationsBlur, "5");
+		input(result.handleFunctionTypeChange, "ackley");
+		result.handleParameterChange("mutationRate", 0);
+		result.handleParameterChange("crossoverRate", 1);
+		result.handleParameterChange("tournamentSize", 1000);
+		expect(result.parameters()).toEqual({
+			mutationRate: 0,
+			crossoverRate: 1,
+			tournamentSize: 1000,
+		});
+		result.resetParameters();
+		expect(result.parameters()).toEqual(DEFAULT_GA_PARAMETERS);
+		expect(result.populationSize()).toBe(1);
+		expect(result.generations()).toBe(5);
+		expect(result.functionType()).toBe("ackley");
+	});
+
+	test("locks advanced changes and restoring defaults until the run is reset", () => {
+		const { result } = renderHook(useGeneticAlgorithm);
+		result.handleParameterChange("mutationRate", 0.25);
+		result.handleParameterChange("crossoverRate", 0.5);
+		result.handleParameterChange("tournamentSize", 5);
+		const parameters = result.parameters();
+		const tryChanges = () => {
+			const statistics = result.statistics();
+			result.handleParameterChange("mutationRate", 0);
+			result.handleParameterChange("crossoverRate", 0);
+			result.handleParameterChange("tournamentSize", 1);
+			result.resetParameters();
+			expect(result.parameters()).toBe(parameters);
+			expect(result.statistics()).toBe(statistics);
+		};
+		result.start();
+		tryChanges();
+		result.stop();
+		tryChanges();
+		result.start();
+		vi.advanceTimersByTime(result.animationSpeed() * result.generations());
+		expect(result.runStatus()).toBe("completed");
+		tryChanges();
+		result.reset();
+		expect(result.parameters()).toBe(parameters);
+		result.resetParameters();
+		expect(result.parameters()).toEqual(DEFAULT_GA_PARAMETERS);
 	});
 
 	test("continues evolving while speed changes repeatedly", () => {
