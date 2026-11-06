@@ -195,6 +195,15 @@ body {
 	min-width: 0;
 }
 
+.visualization-content {
+	display: grid;
+	gap: 20px;
+}
+
+.landscape-panel {
+	min-width: 0;
+}
+
 .visualization-toolbar {
 	display: grid;
 	align-items: start;
@@ -267,7 +276,7 @@ body {
 }
 
 .view-settings {
-	margin-bottom: 20px;
+	margin-top: 12px;
 	border-block: 1px solid var(--color-border-subtle);
 }
 
@@ -293,10 +302,6 @@ body {
 	width: 18px;
 	height: 18px;
 	accent-color: var(--color-accent);
-}
-
-.three-settings .view-reset {
-	justify-self: start;
 }
 
 .three-settings select {
@@ -1026,8 +1031,8 @@ body {
 }
 
 .chart-legend {
-	display: flex;
-	flex-wrap: wrap;
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: 8px 20px;
 	margin: 0 0 12px;
 	padding: 0;
@@ -1039,12 +1044,22 @@ body {
 }
 
 .legend-item {
-	display: flex;
+	display: grid;
+	grid-template-columns: 20px minmax(0, 1fr);
 	align-items: center;
-	gap: 6px;
+	gap: 4px 6px;
 	font-size: 0.8rem;
 	color: var(--color-text-secondary);
-	white-space: nowrap;
+}
+
+.legend-value {
+	grid-column: 2;
+	color: var(--color-text);
+	font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+	font-size: 0.9rem;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	overflow-wrap: anywhere;
 }
 
 .legend-line {
@@ -1079,6 +1094,23 @@ body {
 	font-size: 12px;
 	fill: var(--color-text-secondary);
 	font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 1025px) {
+	.ga-app {
+		--visualization-size: clamp(240px, calc(100svh - 360px), 640px);
+	}
+}
+
+@media (min-width: 1280px) {
+	.visualization-toolbar {
+		grid-template-columns: auto minmax(0, 1fr);
+	}
+
+	.visualization-content:has(> .fitness-chart) {
+		grid-template-columns: minmax(0, 1fr) minmax(320px, 1fr);
+		align-items: start;
+	}
 }
 
 @media (max-width: 1024px) {

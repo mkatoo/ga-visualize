@@ -7,6 +7,7 @@ import {
 	onMount,
 	Show,
 } from "solid-js";
+import { formatFitness } from "./format-fitness";
 import { VISUALIZATION_COLORS } from "./visualization-colors";
 
 interface FitnessChartProps {
@@ -196,19 +197,31 @@ export function FitnessChart(props: FitnessChartProps) {
 			</Show>
 			<ul class="chart-legend" aria-label="推移グラフの凡例">
 				<For each={series}>
-					{(item) => (
-						<li class="legend-item">
-							<span
-								class="legend-line"
-								style={{
-									"border-top-color": item.color,
-									"border-top-style": item.dash ? "dashed" : "solid",
-								}}
-								aria-hidden="true"
-							/>
-							{item.label}
-						</li>
-					)}
+					{(item) => {
+						const selectedFitness = () => {
+							const value = item.values()[selectedGeneration()];
+							return value === undefined ? "—" : formatFitness(value);
+						};
+						return (
+							<li class="legend-item">
+								<span
+									class="legend-line"
+									style={{
+										"border-top-color": item.color,
+										"border-top-style": item.dash ? "dashed" : "solid",
+									}}
+									aria-hidden="true"
+								/>
+								<span>{item.label}</span>
+								<span
+									class="legend-value"
+									title={item.values()[selectedGeneration()]?.toString()}
+								>
+									{selectedFitness()}
+								</span>
+							</li>
+						);
+					}}
 				</For>
 			</ul>
 			<p class="chart-help">

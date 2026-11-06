@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render } from "@solidjs/testing-library";
+import { cleanup, fireEvent, render, within } from "@solidjs/testing-library";
 import { createSignal } from "solid-js";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { FitnessChart } from "./fitness-chart";
@@ -7,6 +7,50 @@ describe("FitnessChart scale", () => {
 	afterEach(() => {
 		cleanup();
 		vi.unstubAllGlobals();
+	});
+
+	test("updates visible legend values with the selected generation and incoming results", () => {
+		const [selected, setSelected] = createSignal<number>();
+		const [history, setHistory] = createSignal({
+			best: [4, 2],
+			average: [8, 6],
+		});
+		const view = render(() => (
+			<FitnessChart
+				bestFitness={history().best}
+				averageFitness={history().average}
+				totalGenerations={2}
+				selectedGeneration={selected()}
+			/>
+		));
+		const legend = within(view.getByRole("list", { name: "推移グラフの凡例" }));
+		expect(legend.getByText("2.0000")).toBeVisible();
+		expect(legend.getByText("6.0000")).toBeVisible();
+
+		setSelected(0);
+		expect(legend.getByText("4.0000")).toBeVisible();
+		expect(legend.getByText("8.0000")).toBeVisible();
+		fireEvent.click(view.getByRole("button", { name: "対数" }));
+		expect(legend.getByText("4.0000")).toBeVisible();
+		expect(legend.getByText("8.0000")).toBeVisible();
+
+		setSelected(undefined);
+		setHistory({ best: [4, 2, 0], average: [8, 6, 0.00000012] });
+		expect(legend.getByText("0.0000")).toBeVisible();
+		expect(legend.getByText("1.200e-7")).toBeVisible();
+		expect(legend.getByText("1.200e-7")).toHaveAttribute("title", "1.2e-7");
+
+		setHistory({ best: [3], average: [9] });
+		expect(legend.getByText("3.0000")).toBeVisible();
+		expect(legend.getByText("9.0000")).toBeVisible();
+	});
+
+	test("shows missing results as a dash in the legend", () => {
+		const view = render(() => (
+			<FitnessChart bestFitness={[]} averageFitness={[]} totalGenerations={2} />
+		));
+		const legend = within(view.getByRole("list", { name: "推移グラフの凡例" }));
+		expect(legend.getAllByText("—")).toHaveLength(2);
 	});
 
 	test("uses a linear scale for small values while keeping zero finite", () => {
