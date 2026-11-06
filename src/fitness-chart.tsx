@@ -7,6 +7,7 @@ import {
 	onMount,
 	Show,
 } from "solid-js";
+import { FITNESS_CHART_INSETS } from "./constants";
 import { formatFitness } from "./format-fitness";
 import { VISUALIZATION_COLORS } from "./visualization-colors";
 
@@ -21,9 +22,7 @@ interface FitnessChartProps {
 const CHART_HEIGHT = 260;
 const PLOT_LEFT = 72;
 const PLOT_RIGHT_MARGIN = 20;
-const PLOT_TOP = 22;
-const PLOT_BOTTOM = CHART_HEIGHT - 48;
-const PLOT_HEIGHT = PLOT_BOTTOM - PLOT_TOP;
+const PLOT_TOP = FITNESS_CHART_INSETS.top;
 const fitnessNumberFormat = new Intl.NumberFormat("ja-JP", {
 	maximumSignificantDigits: 3,
 });
@@ -31,6 +30,7 @@ const fitnessNumberFormat = new Intl.NumberFormat("ja-JP", {
 export function FitnessChart(props: FitnessChartProps) {
 	const id = createUniqueId();
 	const [width, setWidth] = createSignal(640);
+	const [height, setHeight] = createSignal(CHART_HEIGHT);
 	const [selection, setSelection] = createSignal<number>();
 	const [scale, setScale] = createSignal<"linear" | "logarithmic">("linear");
 	const latestGeneration = () =>
@@ -58,19 +58,23 @@ export function FitnessChart(props: FitnessChartProps) {
 	let container!: HTMLDivElement;
 	let observer: ResizeObserver | undefined;
 	onMount(() => {
-		const updateWidth = (nextWidth: number) => {
+		const updateSize = (nextWidth: number, nextHeight: number) => {
 			if (nextWidth > 0) setWidth(nextWidth);
+			if (nextHeight > PLOT_TOP + FITNESS_CHART_INSETS.bottom)
+				setHeight(nextHeight);
 		};
-		updateWidth(container.clientWidth);
+		updateSize(container.clientWidth, container.clientHeight);
 		if (typeof ResizeObserver === "undefined") return;
 		observer = new ResizeObserver(([entry]) => {
-			if (entry) updateWidth(entry.contentRect.width);
+			if (entry) updateSize(entry.contentRect.width, entry.contentRect.height);
 		});
 		observer.observe(container);
 	});
 	onCleanup(() => observer?.disconnect());
 
 	const plotWidth = () => Math.max(1, width() - PLOT_LEFT - PLOT_RIGHT_MARGIN);
+	const plotBottom = () => height() - FITNESS_CHART_INSETS.bottom;
+	const plotHeight = () => plotBottom() - PLOT_TOP;
 	const maxGeneration = () => Math.max(1, props.totalGenerations);
 	const maxFitness = createMemo(
 		() => Math.max(0, ...props.bestFitness, ...props.averageFitness) || 1,
@@ -100,7 +104,7 @@ export function FitnessChart(props: FitnessChartProps) {
 				: fitness > 0
 					? (Math.log10(fitness) - bounds.min) / (bounds.max - bounds.min)
 					: 0;
-		return PLOT_BOTTOM - position * PLOT_HEIGHT;
+		return plotBottom() - position * plotHeight();
 	};
 	let tap: { pointerId: number; x: number; y: number } | undefined;
 	const cancelTap = () => {
@@ -114,13 +118,12 @@ export function FitnessChart(props: FitnessChartProps) {
 		const bounds = event.currentTarget.getBoundingClientRect();
 		if (bounds.width <= 0 || bounds.height <= 0) return;
 		const pointerX = ((event.clientX - bounds.left) / bounds.width) * width();
-		const pointerY =
-			((event.clientY - bounds.top) / bounds.height) * CHART_HEIGHT;
+		const pointerY = ((event.clientY - bounds.top) / bounds.height) * height();
 		if (
 			pointerX < PLOT_LEFT ||
 			pointerX > width() - PLOT_RIGHT_MARGIN ||
 			pointerY < PLOT_TOP ||
-			pointerY > PLOT_BOTTOM
+			pointerY > plotBottom()
 		)
 			return;
 		return ((pointerX - PLOT_LEFT) / plotWidth()) * maxGeneration();
@@ -190,48 +193,11 @@ export function FitnessChart(props: FitnessChartProps) {
 					</fieldset>
 				</div>
 			</figcaption>
-			<Show when={scale() === "logarithmic"}>
-				<p class="chart-help" id={`${id}-scale-help`}>
-					縦軸は対数目盛です。0は対数で表せないため、グラフの下端に表示します。
-				</p>
-			</Show>
-			<ul class="chart-legend" aria-label="推移グラフの凡例">
-				<For each={series}>
-					{(item) => {
-						const selectedFitness = () => {
-							const value = item.values()[selectedGeneration()];
-							return value === undefined ? "—" : formatFitness(value);
-						};
-						return (
-							<li class="legend-item">
-								<span
-									class="legend-line"
-									style={{
-										"border-top-color": item.color,
-										"border-top-style": item.dash ? "dashed" : "solid",
-									}}
-									aria-hidden="true"
-								/>
-								<span>{item.label}</span>
-								<span
-									class="legend-value"
-									title={item.values()[selectedGeneration()]?.toString()}
-								>
-									{selectedFitness()}
-								</span>
-							</li>
-						);
-					}}
-				</For>
-			</ul>
-			<p class="chart-help">
-				グラフをタップするか、上部の表示世代を指定すると、その世代の評価値を表示します。
-			</p>
 			<div class="chart-container" ref={container}>
 				<svg
 					width="100%"
-					height={CHART_HEIGHT}
-					viewBox={`0 0 ${width()} ${CHART_HEIGHT}`}
+					height={height()}
+					viewBox={`0 0 ${width()} ${height()}`}
 					role="img"
 					aria-labelledby={`${id}-title`}
 					aria-describedby={`${id}-description`}
@@ -295,13 +261,13 @@ export function FitnessChart(props: FitnessChartProps) {
 							x1={PLOT_LEFT}
 							y1={PLOT_TOP}
 							x2={PLOT_LEFT}
-							y2={PLOT_BOTTOM}
+							y2={plotBottom()}
 						/>
 						<line
 							x1={PLOT_LEFT}
-							y1={PLOT_BOTTOM}
+							y1={plotBottom()}
 							x2={x(maxGeneration())}
-							y2={PLOT_BOTTOM}
+							y2={plotBottom()}
 						/>
 					</g>
 					<g class="chart-x-ticks">
@@ -310,14 +276,14 @@ export function FitnessChart(props: FitnessChartProps) {
 								<g>
 									<line
 										x1={x(generation)}
-										y1={PLOT_BOTTOM}
+										y1={plotBottom()}
 										x2={x(generation)}
-										y2={PLOT_BOTTOM + 5}
+										y2={plotBottom() + 5}
 										class="chart-tick"
 									/>
 									<text
 										x={x(generation)}
-										y={PLOT_BOTTOM + 22}
+										y={plotBottom() + 22}
 										text-anchor="middle"
 										class="axis-label"
 									>
@@ -364,7 +330,7 @@ export function FitnessChart(props: FitnessChartProps) {
 						x1={x(selectedGeneration())}
 						x2={x(selectedGeneration())}
 						y1={PLOT_TOP}
-						y2={PLOT_BOTTOM}
+						y2={plotBottom()}
 						stroke="#64748b"
 						stroke-dasharray="3 4"
 					/>
@@ -374,7 +340,7 @@ export function FitnessChart(props: FitnessChartProps) {
 						</text>
 						<text
 							x={PLOT_LEFT + plotWidth() / 2}
-							y={CHART_HEIGHT - 4}
+							y={height() - 4}
 							text-anchor="middle"
 							class="axis-label"
 						>
@@ -382,6 +348,45 @@ export function FitnessChart(props: FitnessChartProps) {
 						</text>
 					</g>
 				</svg>
+			</div>
+			<div class="chart-annotations">
+				<Show when={scale() === "logarithmic"}>
+					<p class="chart-help" id={`${id}-scale-help`}>
+						縦軸は対数目盛です。0は対数で表せないため、グラフの下端に表示します。
+					</p>
+				</Show>
+				<ul class="chart-legend" aria-label="推移グラフの凡例">
+					<For each={series}>
+						{(item) => {
+							const selectedFitness = () => {
+								const value = item.values()[selectedGeneration()];
+								return value === undefined ? "—" : formatFitness(value);
+							};
+							return (
+								<li class="legend-item">
+									<span
+										class="legend-line"
+										style={{
+											"border-top-color": item.color,
+											"border-top-style": item.dash ? "dashed" : "solid",
+										}}
+										aria-hidden="true"
+									/>
+									<span>{item.label}</span>
+									<span
+										class="legend-value"
+										title={item.values()[selectedGeneration()]?.toString()}
+									>
+										{selectedFitness()}
+									</span>
+								</li>
+							);
+						}}
+					</For>
+				</ul>
+				<p class="chart-help">
+					グラフをタップするか、上部の表示世代を指定すると、その世代の評価値を表示します。
+				</p>
 			</div>
 		</figure>
 	);

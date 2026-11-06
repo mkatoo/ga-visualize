@@ -278,6 +278,7 @@ body {
 .view-settings {
 	margin-top: 12px;
 	border-block: 1px solid var(--color-border-subtle);
+	text-align: left;
 }
 
 .view-reset:disabled {
@@ -1009,11 +1010,17 @@ body {
 	margin-bottom: 12px;
 }
 
+.landscape-heading,
 .chart-header h2 {
 	margin: 0;
 	color: var(--color-text);
 	font-size: 1.2rem;
 	font-weight: 500;
+}
+
+.landscape-heading {
+	margin-bottom: 12px;
+	text-align: left;
 }
 
 .chart-generation {
@@ -1109,7 +1116,37 @@ body {
 
 	.visualization-content:has(> .fitness-chart) {
 		grid-template-columns: minmax(0, 1fr) minmax(320px, 1fr);
-		align-items: start;
+		row-gap: 0;
+	}
+
+	.visualization-content:has(> .fitness-chart)
+		> :is(.landscape-panel, .fitness-chart) {
+		display: grid;
+		grid-row: span 3;
+		grid-template-rows: subgrid;
+		row-gap: 0;
+	}
+
+	.visualization-content:has(> .fitness-chart)
+		:is(.landscape-heading, .chart-header) {
+		display: flex;
+		align-items: center;
+		min-height: 52px;
+	}
+
+	.visualization-content:has(> .fitness-chart) .landscape-view {
+		padding-block: var(--chart-padding-top) var(--chart-padding-bottom);
+	}
+
+	.visualization-content:has(> .fitness-chart) .chart-container {
+		position: relative;
+		min-height: 260px;
+	}
+
+	.visualization-content:has(> .fitness-chart) .chart-container svg {
+		position: absolute;
+		inset: 0;
+		height: 100%;
 	}
 }
 

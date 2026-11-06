@@ -8,6 +8,7 @@ import {
 	Show,
 } from "solid-js";
 import { Dynamic } from "solid-js/web";
+import { FITNESS_CHART_INSETS } from "../constants";
 import type { Individual } from "../genetic-algorithm";
 import {
 	createLandscape,
@@ -146,50 +147,57 @@ export function GAVisualization(props: GAVisualizationProps) {
 			<Show when={error()}>
 				<output class="visualization-error">{error()}</output>
 			</Show>
-			<div class="visualization-content">
-				<div class="landscape-panel">
-					<div class="visualizer">
-						<div class="landscape-view">
+			<div
+				class="visualization-content"
+				style={{
+					"--chart-padding-top": `${FITNESS_CHART_INSETS.top}px`,
+					"--chart-padding-bottom": `${FITNESS_CHART_INSETS.bottom}px`,
+				}}
+			>
+				<div class="landscape-panel visualizer">
+					<h2 class="landscape-heading">地形と個体分布</h2>
+					<div class="landscape-view">
+						<Show
+							when={mode() === "3d"}
+							fallback={
+								<Visualizer
+									population={props.population}
+									bestIndividual={props.bestIndividual}
+									landscape={landscape()}
+								/>
+							}
+						>
 							<Show
-								when={mode() === "3d"}
+								when={threeComponent()}
 								fallback={
-									<Visualizer
-										population={props.population}
-										bestIndividual={props.bestIndividual}
-										landscape={landscape()}
-									/>
+									<output class="three-loading">
+										3D表示を読み込んでいます…
+									</output>
 								}
 							>
-								<Show
-									when={threeComponent()}
-									fallback={
-										<output class="three-loading">
-											3D表示を読み込んでいます…
-										</output>
-									}
-								>
-									{(component) => (
-										<Dynamic
-											component={component()}
-											landscape={landscape()}
-											population={props.population}
-											bestIndividual={props.bestIndividual}
-											heightScale={heightScale()}
-											wireframe={wireframe()}
-											resolution={resolution()}
-											resetView={resetView()}
-											animateReset={animateReset()}
-											camera={camera}
-											onCameraChange={(state: CameraState) => {
-												camera = state;
-											}}
-											onError={fail}
-										/>
-									)}
-								</Show>
+								{(component) => (
+									<Dynamic
+										component={component()}
+										landscape={landscape()}
+										population={props.population}
+										bestIndividual={props.bestIndividual}
+										heightScale={heightScale()}
+										wireframe={wireframe()}
+										resolution={resolution()}
+										resetView={resetView()}
+										animateReset={animateReset()}
+										camera={camera}
+										onCameraChange={(state: CameraState) => {
+											camera = state;
+										}}
+										onError={fail}
+									/>
+								)}
 							</Show>
-							<FitnessScale scale={colorScale()} />
-						</div>
+						</Show>
+						<FitnessScale scale={colorScale()} />
+					</div>
+					<div class="landscape-annotations">
 						<p class="three-help">
 							<Show
 								when={mode() === "3d"}
@@ -217,49 +225,51 @@ export function GAVisualization(props: GAVisualizationProps) {
 								既知の最適解 ({optimum().x}, {optimum().y})
 							</span>
 						</section>
+						<details class="view-settings" hidden={mode() !== "3d"}>
+							<summary class="settings-toggle">
+								<span class="settings-title">3D表示設定</span>
+							</summary>
+							<p class="settings-help">
+								3D表示の高さ・色・格子線を調整できます。
+							</p>
+							<div class="three-settings">
+								<label>
+									高さ・色の尺度
+									<select
+										value={heightScale()}
+										onChange={(e) =>
+											setHeightScale(e.currentTarget.value as HeightScale)
+										}
+									>
+										<option value="linear">線形（評価値に比例）</option>
+										<option value="logarithmic">
+											対数（小さな評価値の違いを強調）
+										</option>
+									</select>
+								</label>
+								<label>
+									曲面の分割数
+									<select
+										value={resolution()}
+										onChange={(e) =>
+											setResolution(Number(e.currentTarget.value))
+										}
+									>
+										<option value={100}>100（標準）</option>
+										<option value={64}>64（軽量）</option>
+									</select>
+								</label>
+								<label class="wireframe-toggle">
+									<input
+										type="checkbox"
+										checked={wireframe()}
+										onChange={(e) => setWireframe(e.currentTarget.checked)}
+									/>
+									格子線のみ
+								</label>
+							</div>
+						</details>
 					</div>
-					<details class="view-settings" hidden={mode() !== "3d"}>
-						<summary class="settings-toggle">
-							<span class="settings-title">3D表示設定</span>
-						</summary>
-						<p class="settings-help">
-							3D表示の高さ・色・格子線を調整できます。
-						</p>
-						<div class="three-settings">
-							<label>
-								高さ・色の尺度
-								<select
-									value={heightScale()}
-									onChange={(e) =>
-										setHeightScale(e.currentTarget.value as HeightScale)
-									}
-								>
-									<option value="linear">線形（評価値に比例）</option>
-									<option value="logarithmic">
-										対数（小さな評価値の違いを強調）
-									</option>
-								</select>
-							</label>
-							<label>
-								曲面の分割数
-								<select
-									value={resolution()}
-									onChange={(e) => setResolution(Number(e.currentTarget.value))}
-								>
-									<option value={100}>100（標準）</option>
-									<option value={64}>64（軽量）</option>
-								</select>
-							</label>
-							<label class="wireframe-toggle">
-								<input
-									type="checkbox"
-									checked={wireframe()}
-									onChange={(e) => setWireframe(e.currentTarget.checked)}
-								/>
-								格子線のみ
-							</label>
-						</div>
-					</details>
 				</div>
 				{props.chart}
 			</div>

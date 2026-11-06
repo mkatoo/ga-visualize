@@ -400,4 +400,52 @@ describe("FitnessChart scale", () => {
 		unmount();
 		expect(disconnect).toHaveBeenCalledOnce();
 	});
+
+	test("resizes the vertical plot without shrinking labels and still selects the tapped generation", () => {
+		let resize!: ResizeObserverCallback;
+		vi.stubGlobal("PointerEvent", MouseEvent);
+		vi.stubGlobal(
+			"ResizeObserver",
+			class {
+				constructor(callback: ResizeObserverCallback) {
+					resize = callback;
+				}
+				observe = vi.fn();
+				disconnect = vi.fn();
+			},
+		);
+		const onSelect = vi.fn();
+		const view = render(() => (
+			<FitnessChart
+				bestFitness={[4, 2, 1]}
+				averageFitness={[8, 6, 4]}
+				totalGenerations={2}
+				onSelectGeneration={onSelect}
+			/>
+		));
+		const chart = view.getByRole("img");
+		resize(
+			[{ contentRect: { width: 640, height: 400 } }] as ResizeObserverEntry[],
+			{} as ResizeObserver,
+		);
+		expect(chart).toHaveAttribute("viewBox", "0 0 640 400");
+		expect(view.container.querySelector("circle")).toHaveAttribute(
+			"cy",
+			"310.75",
+		);
+		expect(view.container.querySelector(".chart-y-ticks line")).toHaveAttribute(
+			"y1",
+			"352",
+		);
+		vi.spyOn(chart, "getBoundingClientRect").mockReturnValue({
+			left: 0,
+			top: 0,
+			width: 640,
+			height: 400,
+		} as DOMRect);
+		fireEvent.pointerDown(chart, { clientX: 346, clientY: 300 });
+		fireEvent.pointerUp(chart, { clientX: 346, clientY: 300 });
+		expect(onSelect).toHaveBeenLastCalledWith(1);
+		expect(view.getByText("最良評価値: 2")).toBeInTheDocument();
+	});
 });

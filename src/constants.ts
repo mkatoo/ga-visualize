@@ -4,6 +4,9 @@ export const CONTOUR_RESOLUTION = 80;
 // キャンバス描画用の定数
 export const CANVAS_SIZE = 500;
 
+// 推移グラフの軸ラベル用の余白
+export const FITNESS_CHART_INSETS = { top: 22, bottom: 48 } as const;
+
 // アニメーション速度の定数
 export const DEFAULT_ANIMATION_SPEED = 500;
 export const MIN_ANIMATION_INTERVAL = 50;
