@@ -15,7 +15,11 @@ import {
 	type GAParameterName,
 	isValidGAParameter,
 } from "../ga-parameters";
-import { DEFAULT_CONFIG, GeneticAlgorithm } from "../genetic-algorithm";
+import {
+	DEFAULT_CONFIG,
+	type GAConfig,
+	GeneticAlgorithm,
+} from "../genetic-algorithm";
 import {
 	type FunctionType,
 	getObjectiveFunction,
@@ -36,20 +40,16 @@ export function useGeneticAlgorithm() {
 	const [functionType, setFunctionType] = createSignal<FunctionType>(
 		DEFAULT_FUNCTION_TYPE,
 	);
-	const getBoundsForFunction = (type: FunctionType) => {
-		return getObjectiveFunction(type).bounds;
-	};
+	const createGAConfig = (): GAConfig => ({
+		...DEFAULT_CONFIG,
+		...parameters(),
+		populationSize: populationSize(),
+		generations: generations(),
+		functionType: functionType(),
+		bounds: getObjectiveFunction(functionType()).bounds,
+	});
 
-	const [ga, setGA] = createSignal(
-		new GeneticAlgorithm({
-			...DEFAULT_CONFIG,
-			...parameters(),
-			populationSize: populationSize(),
-			generations: generations(),
-			functionType: functionType(),
-			bounds: getBoundsForFunction(functionType()),
-		}),
-	);
+	const [ga, setGA] = createSignal(new GeneticAlgorithm(createGAConfig()));
 	const [population, setPopulation] = createSignal(ga().getPopulation());
 	const [statistics, setStatistics] = createSignal(ga().getStatistics());
 	const [selectedGeneration, setSelectedGeneration] = createSignal<
@@ -86,20 +86,23 @@ export function useGeneticAlgorithm() {
 		DEFAULT_ANIMATION_SPEED,
 	);
 
+	const syncFromGA = () => {
+		setPopulation(ga().getPopulation());
+		setStatistics(ga().getStatistics());
+	};
+
 	const initializeGA = () => {
 		setSelectedGeneration(null);
 		setHasStarted(false);
 		ga().initializePopulation();
-		setPopulation(ga().getPopulation());
-		setStatistics(ga().getStatistics());
+		syncFromGA();
 	};
 
 	const step = () => {
 		setSelectedGeneration(null);
 		setHasStarted(true);
 		const canContinue = ga().evolve();
-		setPopulation(ga().getPopulation());
-		setStatistics(ga().getStatistics());
+		syncFromGA();
 
 		if (!canContinue || ga().getGeneration() >= generations()) {
 			stop();
@@ -151,16 +154,7 @@ export function useGeneticAlgorithm() {
 
 	const updateGAConfig = () => {
 		batch(() => {
-			setGA(
-				new GeneticAlgorithm({
-					...DEFAULT_CONFIG,
-					...parameters(),
-					populationSize: populationSize(),
-					generations: generations(),
-					functionType: functionType(),
-					bounds: getBoundsForFunction(functionType()),
-				}),
-			);
+			setGA(new GeneticAlgorithm(createGAConfig()));
 			initializeGA();
 		});
 	};
