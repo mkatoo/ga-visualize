@@ -1,7 +1,7 @@
 import { createSignal, onCleanup, onMount } from "solid-js";
-import { GAControls } from "./components/ga-controls";
 import { GAVisualization } from "./components/ga-visualization";
 import { GenerationHistory } from "./components/generation-history";
+import { ControlPanel } from "./control-panel";
 import { FitnessChart } from "./fitness-chart";
 import { useGeneticAlgorithm } from "./hooks/use-genetic-algorithm";
 import { EASE_OUT_CSS } from "./motion";
@@ -47,9 +47,9 @@ export function GAApp() {
 		resetParameters,
 		handleParameterChange,
 		handleSpeedChange,
-		handlePopulationSizeBlur,
-		handleGenerationsBlur,
-		handleFunctionTypeChange,
+		changePopulationSize,
+		changeGenerations,
+		changeFunctionType,
 		constraints,
 	} = useGeneticAlgorithm();
 
@@ -70,30 +70,35 @@ export function GAApp() {
 			</header>
 
 			<div class="main-content">
-				<GAControls
-					isRunning={isRunning()}
-					isViewingHistory={isViewingHistory()}
-					runStatus={runStatus()}
-					onRestart={restart}
-					functionType={functionType()}
-					populationSize={populationSize()}
-					generations={generations()}
-					parameters={parameters()}
-					animationSpeed={animationSpeed()}
-					settingsLocked={settingsLocked()}
-					statistics={statistics()}
-					onStart={start}
-					onStop={stop}
-					onStep={step}
-					onReset={reset}
-					onResetParameters={resetParameters}
-					onParameterChange={handleParameterChange}
-					onFunctionTypeChange={handleFunctionTypeChange}
-					onPopulationSizeBlur={handlePopulationSizeBlur}
-					onGenerationsBlur={handleGenerationsBlur}
-					onSpeedChange={handleSpeedChange}
-					constraints={constraints}
-				/>
+				<div class="control-panel">
+					<ControlPanel
+						isRunning={isRunning()}
+						isViewingHistory={isViewingHistory()}
+						runStatus={runStatus()}
+						onRestart={restart}
+						functionType={functionType()}
+						populationSize={populationSize()}
+						generations={generations()}
+						parameters={parameters()}
+						animationSpeed={animationSpeed()}
+						settingsLocked={settingsLocked()}
+						currentGeneration={statistics().generation}
+						onStart={start}
+						onStop={stop}
+						onStep={step}
+						onReset={reset}
+						onResetParameters={resetParameters}
+						onParameterChange={handleParameterChange}
+						onFunctionTypeChange={changeFunctionType}
+						onPopulationSizeChange={changePopulationSize}
+						onGenerationsChange={changeGenerations}
+						onSpeedChange={handleSpeedChange}
+						minPopulationSize={constraints.minPopulationSize}
+						maxPopulationSize={constraints.maxPopulationSize}
+						minGenerations={constraints.minGenerations}
+						maxGenerations={constraints.maxGenerations}
+					/>
+				</div>
 				<div class="visualization-workspace">
 					<GAVisualization
 						population={displayedSnapshot().population}

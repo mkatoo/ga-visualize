@@ -1,4 +1,8 @@
 import { createEffect, createSignal, createUniqueId, on, Show } from "solid-js";
+import {
+	createNumericDraft,
+	isIntegerInRange,
+} from "../hooks/create-numeric-draft";
 
 interface GenerationHistoryProps {
 	generation: number;
@@ -9,16 +13,17 @@ interface GenerationHistoryProps {
 
 export function GenerationHistory(props: GenerationHistoryProps) {
 	const id = createUniqueId();
-	const [draft, setDraft] = createSignal(String(props.generation));
+	const field = createNumericDraft({
+		value: () => props.generation,
+		validate: (value) => isIntegerInRange(value, 0, props.latestGeneration),
+		onCommit: (value) => props.onSelect(value),
+		sync: false,
+	});
+	const { draft, setDraft, invalid: invalidDraft } = field;
 	const [isEditing, setIsEditing] = createSignal(false);
-	const invalidDraft = () =>
-		draft().trim() === "" ||
-		!Number.isInteger(Number(draft())) ||
-		Number(draft()) < 0 ||
-		Number(draft()) > props.latestGeneration;
 	const cancelDraft = () => {
 		setIsEditing(false);
-		setDraft(String(props.generation));
+		field.cancel();
 	};
 	createEffect(
 		on(
@@ -30,9 +35,7 @@ export function GenerationHistory(props: GenerationHistoryProps) {
 	);
 	const commitDraft = () => {
 		setIsEditing(false);
-		if (invalidDraft()) return;
-		props.onSelect(Number(draft()));
-		setDraft(String(props.generation));
+		field.commit();
 	};
 	const selectGeneration = (input: HTMLInputElement) => {
 		const value = input.valueAsNumber;

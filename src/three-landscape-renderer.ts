@@ -1,130 +1,40 @@
 import {
 	BufferAttribute,
 	BufferGeometry,
-	CanvasTexture,
 	Color,
-	DoubleSide,
 	DynamicDrawUsage,
 	Group,
-	LineBasicMaterial,
-	LineSegments,
-	Mesh,
-	MeshBasicMaterial,
+	type LineBasicMaterial,
+	type LineSegments,
+	type Mesh,
+	type MeshBasicMaterial,
 	PerspectiveCamera,
 	Points,
-	PointsMaterial,
+	type PointsMaterial,
 	Scene,
 	SRGBColorSpace,
-	Vector3,
 	WebGLRenderer,
 } from "three";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { MAX_POPULATION_SIZE } from "./constants";
-import { getFitnessColor, getFitnessColorPosition } from "./fitness-colors";
 import type { Individual } from "./genetic-algorithm";
 import {
 	createSurfaceGrid,
-	getFitnessHeight,
-	getHeightTickValue,
 	getIndividualPosition,
 	type HeightScale,
 	type Landscape,
 	type SurfaceGrid,
 } from "./landscape";
-import { CAMERA_RESET_DURATION, easeOut } from "./motion";
 import { getObjectiveFunction } from "./objective-functions";
+import { type AxisLabel, updateAxes } from "./three-axes";
+import {
+	type CameraState,
+	ThreeCameraController,
+} from "./three-camera-controller";
+import { createMarkerMaterial, disposeGroup } from "./three-resources";
+import { createTerrainMeshes, updateTerrainMeshes } from "./three-terrain";
 import { VISUALIZATION_COLORS } from "./visualization-colors";
 
-export interface CameraState {
-	position: [number, number, number];
-	target: [number, number, number];
-}
-
-interface AxisLabel {
-	element: HTMLSpanElement;
-	position: Vector3;
-}
-
-// Geometries, materials and maps may be shared by objects. Dispose each once.
-const disposeGroup = (group: Group | Scene) => {
-	const geometries = new Set<BufferGeometry>();
-	const materials = new Set<
-		MeshBasicMaterial | LineBasicMaterial | PointsMaterial
-	>();
-	const textures = new Set<CanvasTexture>();
-	group.traverse((object) => {
-		if (
-			object instanceof Mesh ||
-			object instanceof LineSegments ||
-			object instanceof Points
-		) {
-			geometries.add(object.geometry);
-			const objectMaterials = Array.isArray(object.material)
-				? object.material
-				: [object.material];
-			for (const material of objectMaterials) {
-				materials.add(material);
-				if (material.map) textures.add(material.map);
-			}
-		}
-	});
-	for (const geometry of geometries) geometry.dispose();
-	for (const material of materials) material.dispose();
-	for (const texture of textures) texture.dispose();
-	group.clear();
-};
-
-const createMarkerMaterial = (
-	color: string,
-	size: number,
-	ring = false,
-	cross = false,
-) => {
-	const canvas = document.createElement("canvas");
-	canvas.width = canvas.height = 64;
-	const ctx = canvas.getContext("2d");
-	if (!ctx) throw new Error("個体マーカーを生成できませんでした。");
-	ctx.beginPath();
-	if (cross) {
-		ctx.moveTo(14, 14);
-		ctx.lineTo(50, 50);
-		ctx.moveTo(50, 14);
-		ctx.lineTo(14, 50);
-	} else {
-		ctx.arc(32, 32, 23, 0, Math.PI * 2);
-	}
-	ctx.strokeStyle = "#ffffff";
-	ctx.lineWidth = ring ? 10 : 9;
-	ctx.stroke();
-	if (ring || cross) {
-		ctx.strokeStyle = color;
-		ctx.lineWidth = 5;
-		ctx.stroke();
-	} else {
-		ctx.fillStyle = color;
-		ctx.fill();
-	}
-	const map = new CanvasTexture(canvas);
-	map.colorSpace = SRGBColorSpace;
-	return new PointsMaterial({
-		map,
-		size,
-		sizeAttenuation: false,
-		transparent: true,
-		alphaTest: 0.1,
-		depthTest: !ring && !cross,
-		depthWrite: !ring && !cross,
-		toneMapped: false,
-	});
-};
-
-const tickFormat = (value: number) => {
-	if (value !== 0 && (Math.abs(value) < 0.01 || Math.abs(value) >= 10000))
-		return value.toExponential(1);
-	return new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 2 }).format(
-		value,
-	);
-};
+export type { CameraState } from "./three-camera-controller";
 
 export class ThreeLandscapeRenderer {
 	private readonly scene = new Scene();
@@ -134,7 +44,7 @@ export class ThreeLandscapeRenderer {
 	private readonly labelLayer = document.createElement("div");
 	private labels: AxisLabel[] = [];
 	private readonly renderer: WebGLRenderer;
-	private controls?: OrbitControls;
+	private cameraController?: ThreeCameraController;
 	private observer?: ResizeObserver;
 	private populationPoints?: Points<BufferGeometry, PointsMaterial>;
 	private bestPoint?: Points<BufferGeometry, PointsMaterial>;
@@ -149,14 +59,6 @@ export class ThreeLandscapeRenderer {
 	private best: Individual | null = null;
 	private frame: number | null = null;
 	private disposed = false;
-	private motionQuery?: MediaQueryList;
-	private pointerInput = false;
-	private suppressCameraChange = false;
-	private cameraTransition?: {
-		position: Vector3;
-		target: Vector3;
-		startedAt: number;
-	};
 
 	constructor(
 		private readonly host: HTMLElement,
@@ -187,30 +89,13 @@ export class ThreeLandscapeRenderer {
 			// Set Z up before OrbitControls creates its internal coordinate transform.
 			this.camera.up.set(0, 0, 1);
 			this.camera.position.set(3, -4, 3.3);
-			this.controls = new OrbitControls(this.camera, canvas);
-			this.controls.enableDamping = false;
-			this.controls.dampingFactor = 0.2;
-			this.controls.autoRotate = false;
-			this.controls.minDistance = 1.2;
-			this.controls.maxDistance = 12;
-			this.controls.maxPolarAngle = Math.PI / 2 - 0.02;
-			this.controls.listenToKeyEvents(canvas);
-			this.controls.addEventListener("change", this.cameraChanged);
-			canvas.addEventListener("pointerdown", this.pointerStarted, true);
-			canvas.addEventListener("wheel", this.pointerStarted, {
-				capture: true,
-				passive: true,
-			});
-			canvas.addEventListener("keydown", this.keyboardStarted, true);
-			if (typeof window.matchMedia === "function") {
-				this.motionQuery = window.matchMedia(
-					"(prefers-reduced-motion: reduce)",
-				);
-				this.motionQuery.addEventListener(
-					"change",
-					this.motionPreferenceChanged,
-				);
-			}
+			this.cameraController = new ThreeCameraController(
+				this.camera,
+				canvas,
+				this.cameraChanged,
+				() => this.requestRender(),
+			);
+
 			this.populationPoints = new Points(
 				new BufferGeometry().setAttribute(
 					"position",
@@ -265,50 +150,11 @@ export class ThreeLandscapeRenderer {
 		if (!this.disposed) this.onError("WebGLの描画コンテキストが失われました。");
 	};
 
-	private readonly cameraChanged = () => {
-		if (!this.controls || this.disposed || this.suppressCameraChange) return;
-		this.onCameraChange({
-			position: this.camera.position.toArray(),
-			target: this.controls.target.toArray(),
-		});
+	private readonly cameraChanged = (state: CameraState) => {
+		if (this.disposed) return;
+		this.onCameraChange(state);
 		this.requestRender();
 	};
-
-	private readonly pointerStarted = () => {
-		this.pointerInput = true;
-		this.cameraTransition = undefined;
-		if (this.controls) this.controls.enableDamping = !this.motionQuery?.matches;
-	};
-
-	private readonly keyboardStarted = () => {
-		this.pointerInput = false;
-		this.stopCameraMotion();
-	};
-
-	private readonly motionPreferenceChanged = () => {
-		if (this.motionQuery?.matches) {
-			const wasResetting = !!this.cameraTransition;
-			this.stopCameraMotion();
-			if (wasResetting) this.resetCamera();
-		} else if (this.controls) {
-			this.controls.enableDamping = this.pointerInput;
-		}
-	};
-
-	private stopCameraMotion() {
-		this.cameraTransition = undefined;
-		if (!this.controls) return;
-		// Clear OrbitControls' residual deltas without moving the visible camera.
-		const position = this.camera.position.clone();
-		const target = this.controls.target.clone();
-		this.suppressCameraChange = true;
-		this.controls.enableDamping = false;
-		this.controls.update();
-		this.camera.position.copy(position);
-		this.controls.target.copy(target);
-		this.controls.update();
-		this.suppressCameraChange = false;
-	}
 
 	private readonly resize = () => {
 		if (this.disposed) return;
@@ -324,29 +170,7 @@ export class ThreeLandscapeRenderer {
 		this.frame = requestAnimationFrame((time) => {
 			if (this.disposed) return;
 			try {
-				const transition = this.cameraTransition;
-				if (transition && this.controls) {
-					const progress = Math.min(
-						1,
-						(time - transition.startedAt) / CAMERA_RESET_DURATION,
-					);
-					const eased = easeOut(progress);
-					this.camera.position.lerpVectors(
-						transition.position,
-						new Vector3(3, -4, 3.3),
-						eased,
-					);
-					this.controls.target.lerpVectors(
-						transition.target,
-						new Vector3(0, 0, 0.35),
-						eased,
-					);
-					if (progress >= 1) this.cameraTransition = undefined;
-				}
-				const moving =
-					this.controls?.enableDamping || transition
-						? this.controls?.update()
-						: false;
+				const moving = this.cameraController?.update(time);
 				this.renderer.render(this.scene, this.camera);
 				const { width, height } = this.host.getBoundingClientRect();
 				for (const label of this.labels) {
@@ -359,8 +183,7 @@ export class ThreeLandscapeRenderer {
 					label.element.style.top = `${((1 - point.y) * height) / 2}px`;
 				}
 				this.frame = null;
-				if (this.cameraTransition || (moving && this.controls?.enableDamping))
-					this.requestRender();
+				if (moving) this.requestRender();
 			} catch {
 				this.frame = null;
 				this.onError("3Dの描画に失敗しました。");
@@ -383,72 +206,20 @@ export class ThreeLandscapeRenderer {
 			this.surfaceGrid = grid;
 			disposeGroup(this.terrain);
 			this.landscape = landscape;
-			const geometry = new BufferGeometry();
-			geometry.setAttribute(
-				"position",
-				new BufferAttribute(new Float32Array(grid.fitness.length * 3), 3),
-			);
-			geometry.setAttribute(
-				"color",
-				new BufferAttribute(new Float32Array(grid.fitness.length * 3), 3),
-			);
-			geometry.setIndex(new BufferAttribute(grid.indices, 1));
-			this.surface = new Mesh(
-				geometry,
-				new MeshBasicMaterial({
-					vertexColors: true,
-					side: DoubleSide,
-					polygonOffset: true,
-					polygonOffsetFactor: 1,
-					polygonOffsetUnits: 1,
-					toneMapped: false,
-				}),
-			);
-			const lines = new BufferGeometry().setAttribute(
-				"position",
-				geometry.getAttribute("position"),
-			);
-			lines.setIndex(new BufferAttribute(grid.gridIndices, 1));
-			this.gridLines = new LineSegments(
-				lines,
-				new LineBasicMaterial({
-					color: "#334155",
-					transparent: true,
-					opacity: 0.15,
-					depthWrite: false,
-				}),
-			);
+			const meshes = createTerrainMeshes(grid);
+			this.surface = meshes.surface;
+			this.gridLines = meshes.gridLines;
 			this.terrain.add(this.surface, this.gridLines);
 		}
 		if (!this.surface || !this.surfaceGrid) return;
-		const positions = this.surface.geometry.getAttribute("position");
-		const colors = this.surface.geometry.getAttribute("color");
-		const color = new Color();
-		const colorScale = {
-			maximum: landscape.colorScale.maximum,
-			logarithmic: scale === "logarithmic",
-		};
-		for (let x = 0; x <= resolution; x++) {
-			for (let y = 0; y <= resolution; y++) {
-				const i = x * (resolution + 1) + y;
-				const fitness = this.surfaceGrid.fitness[i];
-				positions.setXYZ(
-					i,
-					(2 * x) / resolution - 1,
-					(2 * y) / resolution - 1,
-					getFitnessHeight(fitness, landscape.colorScale.maximum, scale),
-				);
-				const rgb = getFitnessColor(
-					getFitnessColorPosition(fitness, colorScale),
-				);
-				color.setRGB(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255, SRGBColorSpace);
-				colors.setXYZ(i, color.r, color.g, color.b);
-			}
-		}
-		positions.needsUpdate = true;
-		colors.needsUpdate = true;
-		this.surface.geometry.computeBoundingSphere();
-		this.gridLines?.geometry.computeBoundingSphere();
+		updateTerrainMeshes(
+			this.surface,
+			this.gridLines,
+			this.surfaceGrid,
+			landscape,
+			scale,
+			resolution,
+		);
 		if (this.optimumPoint) {
 			const optimum = getObjectiveFunction(landscape.functionType).optimum;
 			this.optimumPoint.visible =
@@ -523,122 +294,28 @@ export class ThreeLandscapeRenderer {
 	}
 
 	resetCamera(animate = false) {
-		if (!this.controls || this.disposed) return;
-		this.stopCameraMotion();
-		if (animate && !this.motionQuery?.matches) {
-			this.cameraTransition = {
-				position: this.camera.position.clone(),
-				target: this.controls.target.clone(),
-				startedAt: performance.now(),
-			};
-			this.requestRender();
-		} else {
-			this.restoreCamera({ position: [3, -4, 3.3], target: [0, 0, 0.35] });
-		}
+		this.cameraController?.resetCamera(animate);
 	}
-
 	restoreCamera(state: CameraState) {
-		if (!this.controls || this.disposed) return;
-		this.stopCameraMotion();
-		this.camera.position.fromArray(state.position);
-		this.controls.target.fromArray(state.target);
-		this.controls.update();
-		this.cameraChanged();
+		this.cameraController?.restoreCamera(state);
 	}
 
 	private updateAxes() {
-		if (!this.landscape) return;
-		disposeGroup(this.axes);
-		this.labelLayer.replaceChildren();
-		this.labels = [];
-		const vertices = [
-			-1, -1.12, 0, 1, -1.12, 0, -1.12, -1, 0, -1.12, 1, 0, -1.12, -1.12, 0,
-			-1.12, -1.12, 1.15,
-		];
-		const addLabel = (
-			text: string,
-			position: [number, number, number],
-			title = text,
-		) => {
-			const element = document.createElement("span");
-			element.textContent = text;
-			element.title = title;
-			this.labelLayer.append(element);
-			this.labels.push({ element, position: new Vector3(...position) });
-		};
-		const { min, max } = this.landscape.bounds;
-		for (let i = 0; i <= 4; i++) {
-			const t = i / 4;
-			const xy = t * 2 - 1;
-			const value = min + t * (max - min);
-			const fitness = getHeightTickValue(
-				t,
-				this.landscape.colorScale.maximum,
+		if (this.landscape)
+			this.labels = updateAxes(
+				this.axes,
+				this.labelLayer,
+				this.landscape,
 				this.heightScale,
 			);
-			vertices.push(
-				xy,
-				-1.12,
-				0,
-				xy,
-				-1.17,
-				0,
-				-1.12,
-				xy,
-				0,
-				-1.17,
-				xy,
-				0,
-				-1.12,
-				-1.12,
-				t,
-				-1.17,
-				-1.12,
-				t,
-			);
-			addLabel(tickFormat(value), [xy, -1.28, 0], `x = ${value}`);
-			addLabel(tickFormat(value), [-1.28, xy, 0], `y = ${value}`);
-			addLabel(tickFormat(fitness), [-1.27, -1.22, t], `評価値 = ${fitness}`);
-		}
-		addLabel("x", [1.2, -1.12, 0]);
-		addLabel("y", [-1.12, 1.2, 0]);
-		addLabel("評価値", [-1.12, -1.12, 1.3]);
-		const geometry = new BufferGeometry().setAttribute(
-			"position",
-			new BufferAttribute(new Float32Array(vertices), 3),
-		);
-		this.axes.add(
-			new LineSegments(geometry, new LineBasicMaterial({ color: "#475569" })),
-		);
 	}
 
 	dispose() {
 		if (this.disposed) return;
 		this.disposed = true;
-		this.cameraTransition = undefined;
 		if (this.frame !== null) cancelAnimationFrame(this.frame);
-		this.motionQuery?.removeEventListener(
-			"change",
-			this.motionPreferenceChanged,
-		);
 		this.observer?.disconnect();
-		this.controls?.removeEventListener("change", this.cameraChanged);
-		this.controls?.dispose();
-		this.renderer.domElement.removeEventListener(
-			"pointerdown",
-			this.pointerStarted,
-			true,
-		);
-		this.renderer.domElement.removeEventListener(
-			"wheel",
-			this.pointerStarted,
-			true,
-		);
-		this.renderer.domElement.removeEventListener(
-			"keydown",
-			this.keyboardStarted,
-			true,
-		);
+		this.cameraController?.dispose();
 		this.renderer.domElement.removeEventListener(
 			"webglcontextlost",
 			this.contextLost,

@@ -3,6 +3,12 @@ import {
 	DEFAULT_GENERATIONS,
 	DEFAULT_POPULATION_SIZE,
 } from "./constants";
+import {
+	blxAlphaCrossover,
+	gaussianMutation,
+	type RandomSource,
+	tournamentSelection,
+} from "./ga-operators";
 import { type FunctionType, getObjectiveFunction } from "./objective-functions";
 
 export interface Individual {
@@ -67,7 +73,10 @@ export class GeneticAlgorithm {
 	private bestEverGeneration = 0;
 	private history: PopulationFrame[] = [];
 
-	constructor(config: GAConfig = DEFAULT_CONFIG) {
+	constructor(
+		config: GAConfig = DEFAULT_CONFIG,
+		private readonly random: RandomSource = () => Math.random(),
+	) {
 		this.config = config;
 	}
 
@@ -78,8 +87,8 @@ export class GeneticAlgorithm {
 
 	private createRandomIndividual(): Individual {
 		const { min, max } = this.config.bounds;
-		const x = Math.random() * (max - min) + min;
-		const y = Math.random() * (max - min) + min;
+		const x = this.random() * (max - min) + min;
+		const y = this.random() * (max - min) + min;
 		return {
 			x,
 			y,
@@ -91,88 +100,6 @@ export class GeneticAlgorithm {
 		for (const individual of this.population) {
 			individual.fitness = this.evaluateFunction(individual.x, individual.y);
 		}
-	}
-
-	private tournamentSelection(): Individual {
-		if (this.population.length === 0) {
-			throw new Error(
-				"Population is empty - cannot perform tournament selection",
-			);
-		}
-
-		let best =
-			this.population[Math.floor(Math.random() * this.population.length)];
-
-		for (let i = 1; i < this.config.tournamentSize; i++) {
-			const candidate =
-				this.population[Math.floor(Math.random() * this.population.length)];
-			if (candidate && candidate.fitness < best.fitness) {
-				best = candidate;
-			}
-		}
-
-		return { ...best };
-	}
-
-	private blxAlphaCrossover(
-		parent1: Individual,
-		parent2: Individual,
-		alpha = 0.5,
-	): [Individual, Individual] {
-		const dx = Math.abs(parent1.x - parent2.x);
-		const dy = Math.abs(parent1.y - parent2.y);
-
-		const minX = Math.min(parent1.x, parent2.x) - alpha * dx;
-		const maxX = Math.max(parent1.x, parent2.x) + alpha * dx;
-		const minY = Math.min(parent1.y, parent2.y) - alpha * dy;
-		const maxY = Math.max(parent1.y, parent2.y) + alpha * dy;
-
-		const child1: Individual = {
-			x: Math.random() * (maxX - minX) + minX,
-			y: Math.random() * (maxY - minY) + minY,
-			fitness: 0,
-		};
-
-		const child2: Individual = {
-			x: Math.random() * (maxX - minX) + minX,
-			y: Math.random() * (maxY - minY) + minY,
-			fitness: 0,
-		};
-
-		child1.x = this.clampToBounds(child1.x);
-		child1.y = this.clampToBounds(child1.y);
-		child2.x = this.clampToBounds(child2.x);
-		child2.y = this.clampToBounds(child2.y);
-
-		return [child1, child2];
-	}
-
-	private gaussianMutation(individual: Individual): Individual {
-		const mutated = { ...individual };
-
-		if (Math.random() < this.config.mutationRate) {
-			const sigma = (this.config.bounds.max - this.config.bounds.min) * 0.1;
-			mutated.x += this.gaussianRandom() * sigma;
-			mutated.y += this.gaussianRandom() * sigma;
-
-			mutated.x = this.clampToBounds(mutated.x);
-			mutated.y = this.clampToBounds(mutated.y);
-		}
-
-		return mutated;
-	}
-
-	private clampToBounds(value: number): number {
-		const { min, max } = this.config.bounds;
-		return Math.max(min, Math.min(max, value));
-	}
-
-	private gaussianRandom(): number {
-		let u = 0,
-			v = 0;
-		while (u === 0) u = Math.random();
-		while (v === 0) v = Math.random();
-		return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
 	}
 
 	initializePopulation(): void {
@@ -200,20 +127,43 @@ export class GeneticAlgorithm {
 		const newPopulation: Individual[] = [];
 
 		while (newPopulation.length < this.config.populationSize) {
-			const parent1 = this.tournamentSelection();
-			const parent2 = this.tournamentSelection();
+			const parent1 = tournamentSelection(
+				this.population,
+				this.config.tournamentSize,
+				this.random,
+			);
+			const parent2 = tournamentSelection(
+				this.population,
+				this.config.tournamentSize,
+				this.random,
+			);
 
 			let child1: Individual, child2: Individual;
 
-			if (Math.random() < this.config.crossoverRate) {
-				[child1, child2] = this.blxAlphaCrossover(parent1, parent2);
+			if (this.random() < this.config.crossoverRate) {
+				[child1, child2] = blxAlphaCrossover(
+					parent1,
+					parent2,
+					this.config.bounds,
+					this.random,
+				);
 			} else {
 				child1 = { ...parent1 };
 				child2 = { ...parent2 };
 			}
 
-			child1 = this.gaussianMutation(child1);
-			child2 = this.gaussianMutation(child2);
+			child1 = gaussianMutation(
+				child1,
+				this.config.bounds,
+				this.config.mutationRate,
+				this.random,
+			);
+			child2 = gaussianMutation(
+				child2,
+				this.config.bounds,
+				this.config.mutationRate,
+				this.random,
+			);
 
 			newPopulation.push(child1);
 			if (newPopulation.length < this.config.populationSize) {

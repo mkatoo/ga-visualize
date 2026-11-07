@@ -1,4 +1,4 @@
-import { batch, createMemo, createSignal, onCleanup } from "solid-js";
+import { batch, createMemo, createSignal } from "solid-js";
 import {
 	DEFAULT_ANIMATION_SPEED,
 	DEFAULT_FUNCTION_TYPE,
@@ -20,6 +20,8 @@ import {
 	type FunctionType,
 	getObjectiveFunction,
 } from "../objective-functions";
+
+import { createGenerationTimer } from "./create-generation-timer";
 
 export type RunStatus = "ready" | "running" | "paused" | "completed";
 
@@ -84,9 +86,6 @@ export function useGeneticAlgorithm() {
 		DEFAULT_ANIMATION_SPEED,
 	);
 
-	let timerId: number | null = null;
-	let lastGenerationAt = 0;
-
 	const initializeGA = () => {
 		setSelectedGeneration(null);
 		setHasStarted(false);
@@ -107,20 +106,11 @@ export function useGeneticAlgorithm() {
 		}
 	};
 
-	const scheduleNextGeneration = () => {
-		if (timerId !== null) clearTimeout(timerId);
-		const elapsed = Date.now() - lastGenerationAt;
-		timerId = window.setTimeout(
-			() => {
-				timerId = null;
-				if (!isRunning()) return;
-				step();
-				lastGenerationAt = Date.now();
-				if (isRunning()) scheduleNextGeneration();
-			},
-			Math.max(0, animationSpeed() - elapsed),
-		);
-	};
+	const timer = createGenerationTimer({
+		interval: animationSpeed,
+		isRunning,
+		onGeneration: step,
+	});
 
 	const start = () => {
 		if (isRunning() || ga().getGeneration() >= generations()) return;
@@ -128,16 +118,12 @@ export function useGeneticAlgorithm() {
 		setHasStarted(true);
 		setIsRunning(true);
 		setSelectedGeneration(null);
-		lastGenerationAt = Date.now();
-		scheduleNextGeneration();
+		timer.start();
 	};
 
 	const stop = () => {
 		setIsRunning(false);
-		if (timerId !== null) {
-			clearTimeout(timerId);
-			timerId = null;
-		}
+		timer.cancel();
 	};
 
 	const selectGeneration = (generation: number) => {
@@ -179,10 +165,9 @@ export function useGeneticAlgorithm() {
 		});
 	};
 
-	const validateAndSetPopulationSize = (value: string) => {
+	const changePopulationSize = (value: number) => {
 		if (settingsLocked()) return populationSize();
-		const parsed = value.trim() === "" ? Number.NaN : Number(value);
-		const numValue = Number.isInteger(parsed) ? parsed : populationSize();
+		const numValue = Number.isInteger(value) ? value : populationSize();
 		const clampedValue = Math.max(
 			MIN_POPULATION_SIZE,
 			Math.min(MAX_POPULATION_SIZE, numValue),
@@ -195,10 +180,9 @@ export function useGeneticAlgorithm() {
 		return clampedValue;
 	};
 
-	const validateAndSetGenerations = (value: string) => {
+	const changeGenerations = (value: number) => {
 		if (settingsLocked()) return generations();
-		const parsed = value.trim() === "" ? Number.NaN : Number(value);
-		const numValue = Number.isInteger(parsed) ? parsed : generations();
+		const numValue = Number.isInteger(value) ? value : generations();
 		const clampedValue = Math.max(
 			MIN_GENERATIONS,
 			Math.min(MAX_GENERATIONS, numValue),
@@ -214,7 +198,7 @@ export function useGeneticAlgorithm() {
 	const handleSpeedChange = (interval: number) => {
 		setAnimationSpeed(interval);
 
-		if (isRunning()) scheduleNextGeneration();
+		if (isRunning()) timer.reschedule();
 	};
 
 	const handleParameterChange = (name: GAParameterName, value: number) => {
@@ -240,42 +224,11 @@ export function useGeneticAlgorithm() {
 		updateGAConfig();
 	};
 
-	const handlePopulationSizeChange = (event: Event) => {
-		const target = event.target as HTMLInputElement;
-		if (target.value === "") return;
-		validateAndSetPopulationSize(target.value);
-	};
-
-	const handlePopulationSizeBlur = (event: Event) => {
-		const target = event.target as HTMLInputElement;
-		const clampedValue = validateAndSetPopulationSize(target.value);
-		target.value = clampedValue.toString();
-	};
-
-	const handleGenerationsChange = (event: Event) => {
-		const target = event.target as HTMLInputElement;
-		if (target.value === "") return;
-		validateAndSetGenerations(target.value);
-	};
-
-	const handleGenerationsBlur = (event: Event) => {
-		const target = event.target as HTMLInputElement;
-		const clampedValue = validateAndSetGenerations(target.value);
-		target.value = clampedValue.toString();
-	};
-
-	const handleFunctionTypeChange = (event: Event) => {
-		if (settingsLocked()) return;
-		const target = event.target as HTMLSelectElement;
-		const newFunctionType = target.value as FunctionType;
-		if (newFunctionType === functionType()) return;
-		setFunctionType(newFunctionType);
+	const changeFunctionType = (value: FunctionType) => {
+		if (settingsLocked() || value === functionType()) return;
+		setFunctionType(value);
 		updateGAConfig();
 	};
-
-	onCleanup(() => {
-		if (timerId !== null) clearTimeout(timerId);
-	});
 
 	initializeGA();
 
@@ -306,14 +259,12 @@ export function useGeneticAlgorithm() {
 		restart,
 		resetParameters,
 
-		// Event handlers
+		// Setting actions
 		handleSpeedChange,
 		handleParameterChange,
-		handlePopulationSizeChange,
-		handlePopulationSizeBlur,
-		handleGenerationsChange,
-		handleGenerationsBlur,
-		handleFunctionTypeChange,
+		changePopulationSize,
+		changeGenerations,
+		changeFunctionType,
 
 		// Constants for validation
 		constraints: {

@@ -6,6 +6,7 @@ import {
 	WebGLRenderer,
 	type WebGLRendererParameters,
 } from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { getFitnessColor } from "./fitness-colors";
 import { createLandscape } from "./landscape";
@@ -253,4 +254,67 @@ test("honors reduced motion changes during a reset and removes its listener on d
 	expect(frame).toBeUndefined();
 	renderer?.dispose();
 	expect(listeners.size).toBe(0);
+});
+
+test("disposes shared scene resources once and cancels pending rendering", () => {
+	const host = createView();
+	renderer?.updateLandscape(
+		createLandscape("sphere", { min: -10, max: 10 }),
+		"linear",
+		4,
+	);
+	tick(16);
+	const scene: Scene = draw.mock.lastCall?.[0];
+	const disposables = new Set<{ dispose(): void }>();
+	scene.traverse((object) => {
+		const mesh = object as Mesh;
+		if (!mesh.geometry) return;
+		disposables.add(mesh.geometry);
+		const materials = Array.isArray(mesh.material)
+			? mesh.material
+			: [mesh.material];
+		for (const material of materials) {
+			disposables.add(material);
+			if ("map" in material && material.map)
+				disposables.add(material.map as { dispose(): void });
+		}
+	});
+	const spies = Array.from(disposables, (resource) =>
+		vi.spyOn(resource, "dispose"),
+	);
+	renderer?.resetCamera(true);
+	renderer?.dispose();
+	renderer?.dispose();
+	for (const spy of spies) expect(spy).toHaveBeenCalledTimes(1);
+	expect(cancelAnimationFrame).toHaveBeenCalledTimes(1);
+	expect(host.children).toHaveLength(0);
+	const drawCount = draw.mock.calls.length;
+	tick(32);
+	expect(draw).toHaveBeenCalledTimes(drawCount);
+});
+
+test("cleans up controls and WebGL when camera initialization fails", () => {
+	const host = document.createElement("div");
+	const query = {
+		matches: false,
+		addEventListener: vi.fn(() => {
+			throw new Error("motion listener failed");
+		}),
+		removeEventListener: vi.fn(),
+	};
+	vi.stubGlobal(
+		"matchMedia",
+		vi.fn(() => query),
+	);
+	const disposeControls = vi.spyOn(OrbitControls.prototype, "dispose");
+	expect(() => new ThreeLandscapeRenderer(host, vi.fn(), vi.fn())).toThrow(
+		"motion listener failed",
+	);
+	const webgl = vi.mocked(WebGLRenderer).mock.results.at(-1)
+		?.value as WebGLRenderer;
+	expect(disposeControls).toHaveBeenCalledTimes(1);
+	expect(query.removeEventListener).toHaveBeenCalledTimes(1);
+	expect(webgl.dispose).toHaveBeenCalledTimes(1);
+	expect(webgl.forceContextLoss).toHaveBeenCalledTimes(1);
+	expect(host.children).toHaveLength(0);
 });

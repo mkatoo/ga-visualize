@@ -7,25 +7,15 @@ import { useGeneticAlgorithm } from "./use-genetic-algorithm";
 const fields = [
 	{
 		name: "populationSize",
-		change: "handlePopulationSizeChange",
-		blur: "handlePopulationSizeBlur",
+		change: "changePopulationSize",
 		value: "150",
 	},
 	{
 		name: "generations",
-		change: "handleGenerationsChange",
-		blur: "handleGenerationsBlur",
+		change: "changeGenerations",
 		value: "60",
 	},
 ] as const;
-
-function input(handler: (event: Event) => void, value: string) {
-	const element = document.createElement("input");
-	element.value = value;
-	element.addEventListener("input", handler);
-	element.dispatchEvent(new Event("input"));
-	return element;
-}
 
 describe("Genetic algorithm settings", () => {
 	beforeEach(() => vi.useFakeTimers());
@@ -39,7 +29,7 @@ describe("Genetic algorithm settings", () => {
 		"uses $name changes directly before the first run",
 		({ name, change, value }) => {
 			const { result } = renderHook(useGeneticAlgorithm);
-			input(result[change], value);
+			result[change](Number(value));
 			expect(result[name]()).toBe(Number(value));
 			expect(result.settingsLocked()).toBe(false);
 			expect(result.statistics().generation).toBe(0);
@@ -50,15 +40,13 @@ describe("Genetic algorithm settings", () => {
 	);
 
 	test.each(fields)(
-		"restores an empty $name on blur without recreating the population",
-		({ name, change, blur }) => {
+		"ignores a nonnumeric $name without recreating the population",
+		({ name, change }) => {
 			const { result } = renderHook(useGeneticAlgorithm);
 			const statistics = result.statistics();
 			const original = result[name]();
-			const element = input(result[change], "");
-			element.addEventListener("blur", result[blur]);
-			element.dispatchEvent(new Event("blur"));
-			expect(element.value).toBe(String(original));
+			expect(result[change](Number.NaN)).toBe(original);
+			expect(result[name]()).toBe(original);
 			expect(result.statistics()).toBe(statistics);
 		},
 	);
@@ -69,38 +57,38 @@ describe("Genetic algorithm settings", () => {
 			const { result } = renderHook(useGeneticAlgorithm);
 			const original = result[name]();
 			result.start();
-			input(result[change], value);
+			result[change](Number(value));
 			expect(result[name]()).toBe(original);
 			result.stop();
 			const paused = result.statistics();
-			input(result[change], value);
+			result[change](Number(value));
 			expect(result[name]()).toBe(original);
 			expect(result.statistics()).toBe(paused);
 			result.start();
 			vi.advanceTimersByTime(result.animationSpeed() * result.generations());
 			expect(result.runStatus()).toBe("completed");
 			const completed = result.statistics();
-			input(result[change], value);
+			result[change](Number(value));
 			expect(result[name]()).toBe(original);
 			expect(result.statistics()).toBe(completed);
 			result.reset();
 			expect(result.settingsLocked()).toBe(false);
-			input(result[change], value);
+			result[change](Number(value));
 			expect(result[name]()).toBe(Number(value));
 		},
 	);
 
 	test("locks the objective function after a single step and permits changes after reset", () => {
 		const { result } = renderHook(useGeneticAlgorithm);
-		input(result.handleFunctionTypeChange, "beale");
+		result.changeFunctionType("beale");
 		expect(result.ga().getBounds()).toEqual({ min: -4.5, max: 4.5 });
 		result.step();
 		const statistics = result.statistics();
-		input(result.handleFunctionTypeChange, "sphere");
+		result.changeFunctionType("sphere");
 		expect(result.functionType()).toBe("beale");
 		expect(result.statistics()).toBe(statistics);
 		result.reset();
-		input(result.handleFunctionTypeChange, "sphere");
+		result.changeFunctionType("sphere");
 		expect(result.functionType()).toBe("sphere");
 		expect(result.ga().getBounds()).toEqual({ min: -10, max: 10 });
 	});
@@ -110,9 +98,9 @@ describe("Genetic algorithm settings", () => {
 		result.handleParameterChange("mutationRate", 0);
 		result.handleParameterChange("crossoverRate", 0);
 		result.handleParameterChange("tournamentSize", 1);
-		input(result.handlePopulationSizeBlur, "10");
-		input(result.handleGenerationsBlur, "1");
-		input(result.handleFunctionTypeChange, "beale");
+		result.changePopulationSize(10);
+		result.changeGenerations(1);
+		result.changeFunctionType("beale");
 		const parameters = { mutationRate: 0, crossoverRate: 0, tournamentSize: 1 };
 		const seededRandom = () => {
 			let state = 42;
@@ -158,9 +146,9 @@ describe("Genetic algorithm settings", () => {
 		expect(result.statistics()).toBe(initial);
 		result.resetParameters();
 		expect(result.statistics()).toBe(initial);
-		input(result.handlePopulationSizeBlur, "1");
-		input(result.handleGenerationsBlur, "5");
-		input(result.handleFunctionTypeChange, "ackley");
+		result.changePopulationSize(1);
+		result.changeGenerations(5);
+		result.changeFunctionType("ackley");
 		result.handleParameterChange("mutationRate", 0);
 		result.handleParameterChange("crossoverRate", 1);
 		result.handleParameterChange("tournamentSize", 1000);

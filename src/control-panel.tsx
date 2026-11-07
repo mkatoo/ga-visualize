@@ -1,11 +1,4 @@
-import {
-	createEffect,
-	createMemo,
-	createSignal,
-	onCleanup,
-	onMount,
-	Show,
-} from "solid-js";
+import { createMemo, onCleanup, onMount, Show } from "solid-js";
 import { MAX_ANIMATION_INTERVAL, MIN_ANIMATION_INTERVAL } from "./constants";
 import {
 	DEFAULT_GA_PARAMETERS,
@@ -14,6 +7,10 @@ import {
 	type GAParameters,
 	isValidGAParameter,
 } from "./ga-parameters";
+import {
+	createNumericDraft,
+	isIntegerInRange,
+} from "./hooks/create-numeric-draft";
 import type { RunStatus } from "./hooks/use-genetic-algorithm";
 import type { FunctionType } from "./objective-functions";
 import { OBJECTIVE_FUNCTIONS } from "./objective-functions";
@@ -40,9 +37,9 @@ interface ControlPanelProps {
 	onReset: () => void;
 	onResetParameters: () => void;
 	onParameterChange: (name: GAParameterName, value: number) => void;
-	onFunctionTypeChange: (event: Event) => void;
-	onPopulationSizeBlur: (event: Event) => void;
-	onGenerationsBlur: (event: Event) => void;
+	onFunctionTypeChange: (value: FunctionType) => void;
+	onPopulationSizeChange: (value: number) => void;
+	onGenerationsChange: (value: number) => void;
 	onSpeedChange: (interval: number) => void;
 
 	// Constants
@@ -54,61 +51,36 @@ interface ControlPanelProps {
 
 export function ControlPanel(props: ControlPanelProps) {
 	const speedLabel = () => `${props.animationSpeed / 1000}秒／世代`;
-	const [populationDraft, setPopulationDraft] = createSignal(
-		String(props.populationSize),
-	);
-	const [generationsDraft, setGenerationsDraft] = createSignal(
-		String(props.generations),
-	);
-	createEffect(() => setPopulationDraft(String(props.populationSize)));
-	createEffect(() => setGenerationsDraft(String(props.generations)));
+	const population = createNumericDraft({
+		value: () => props.populationSize,
+		validate: (value) =>
+			isIntegerInRange(value, props.minPopulationSize, props.maxPopulationSize),
+		onCommit: (value) => props.onPopulationSizeChange(value),
+		disabled: () => props.settingsLocked,
+	});
+	const generations = createNumericDraft({
+		value: () => props.generations,
+		validate: (value) =>
+			isIntegerInRange(value, props.minGenerations, props.maxGenerations),
+		onCommit: (value) => props.onGenerationsChange(value),
+		disabled: () => props.settingsLocked,
+	});
 	const parameterFields = GA_PARAMETER_FIELDS.map((field) => {
 		const value = createMemo(() => props.parameters[field.key]);
-		const [draft, setDraft] = createSignal(String(value()));
-		createEffect(() => setDraft(String(value())));
-		const invalid = () =>
-			draft().trim() === "" || !isValidGAParameter(field.key, Number(draft()));
-		const cancel = () => setDraft(String(value()));
-		const commit = () => {
-			if (props.settingsLocked || invalid()) return;
-			props.onParameterChange(field.key, Number(draft()));
-			cancel();
+		return {
+			...field,
+			...createNumericDraft({
+				value,
+				validate: (value) => isValidGAParameter(field.key, value),
+				onCommit: (value) => props.onParameterChange(field.key, value),
+				disabled: () => props.settingsLocked,
+			}),
 		};
-		return { ...field, draft, setDraft, invalid, cancel, commit };
 	});
 	const invalidParameters = () =>
 		parameterFields.some((field) => field.invalid());
-	const validNumber = (value: string, min: number, max: number) =>
-		value.trim() !== "" &&
-		Number.isInteger(Number(value)) &&
-		Number(value) >= min &&
-		Number(value) <= max;
-	const invalidPopulation = () =>
-		!validNumber(
-			populationDraft(),
-			props.minPopulationSize,
-			props.maxPopulationSize,
-		);
-	const invalidGenerations = () =>
-		!validNumber(
-			generationsDraft(),
-			props.minGenerations,
-			props.maxGenerations,
-		);
 	const invalidSettings = () =>
-		invalidPopulation() || invalidGenerations() || invalidParameters();
-	const commitPopulation = (event: Event) => {
-		if (!invalidPopulation()) {
-			props.onPopulationSizeBlur(event);
-			setPopulationDraft(String(props.populationSize));
-		}
-	};
-	const commitGenerations = (event: Event) => {
-		if (!invalidGenerations()) {
-			props.onGenerationsBlur(event);
-			setGenerationsDraft(String(props.generations));
-		}
-	};
+		population.invalid() || generations.invalid() || invalidParameters();
 	let settings!: HTMLDetailsElement;
 	let runControls!: HTMLFieldSetElement;
 	const focusInvalidSetting = () => {
@@ -205,8 +177,8 @@ export function ControlPanel(props: ControlPanelProps) {
 					type="button"
 					class="btn btn-text"
 					onClick={() => {
-						setPopulationDraft(String(props.populationSize));
-						setGenerationsDraft(String(props.generations));
+						population.cancel();
+						generations.cancel();
 						props.onReset();
 						for (const field of parameterFields) field.cancel();
 					}}
@@ -279,7 +251,11 @@ export function ControlPanel(props: ControlPanelProps) {
 								id="functionType"
 								aria-describedby="function-description"
 								value={props.functionType}
-								onChange={props.onFunctionTypeChange}
+								onChange={(event) =>
+									props.onFunctionTypeChange(
+										event.currentTarget.value as FunctionType,
+									)
+								}
 								disabled={props.settingsLocked}
 							>
 								{Object.entries(OBJECTIVE_FUNCTIONS).map(([key, func]) => (
@@ -301,26 +277,19 @@ export function ControlPanel(props: ControlPanelProps) {
 								inputmode="numeric"
 								min={props.minPopulationSize}
 								max={props.maxPopulationSize}
-								value={populationDraft()}
+								value={population.draft()}
 								onInput={(event) =>
-									setPopulationDraft(event.currentTarget.value)
+									population.setDraft(event.currentTarget.value)
 								}
-								onBlur={commitPopulation}
-								onKeyDown={(event) => {
-									if (event.key === "Enter") {
-										event.preventDefault();
-										commitPopulation(event);
-									}
-									if (event.key === "Escape")
-										setPopulationDraft(String(props.populationSize));
-								}}
-								aria-invalid={invalidPopulation()}
+								onBlur={population.commit}
+								onKeyDown={population.onKeyDown}
+								aria-invalid={population.invalid()}
 								aria-describedby={
-									invalidPopulation() ? "population-error" : undefined
+									population.invalid() ? "population-error" : undefined
 								}
 								disabled={props.settingsLocked}
 							/>
-							<Show when={invalidPopulation()}>
+							<Show when={population.invalid()}>
 								<p id="population-error" class="field-error">
 									{props.minPopulationSize}〜{props.maxPopulationSize}
 									の整数を入力してください。
@@ -338,26 +307,19 @@ export function ControlPanel(props: ControlPanelProps) {
 								inputmode="numeric"
 								min={props.minGenerations}
 								max={props.maxGenerations}
-								value={generationsDraft()}
+								value={generations.draft()}
 								onInput={(event) =>
-									setGenerationsDraft(event.currentTarget.value)
+									generations.setDraft(event.currentTarget.value)
 								}
-								onBlur={commitGenerations}
-								onKeyDown={(event) => {
-									if (event.key === "Enter") {
-										event.preventDefault();
-										commitGenerations(event);
-									}
-									if (event.key === "Escape")
-										setGenerationsDraft(String(props.generations));
-								}}
-								aria-invalid={invalidGenerations()}
+								onBlur={generations.commit}
+								onKeyDown={generations.onKeyDown}
+								aria-invalid={generations.invalid()}
 								aria-describedby={
-									invalidGenerations() ? "generations-error" : undefined
+									generations.invalid() ? "generations-error" : undefined
 								}
 								disabled={props.settingsLocked}
 							/>
-							<Show when={invalidGenerations()}>
+							<Show when={generations.invalid()}>
 								<p id="generations-error" class="field-error">
 									{props.minGenerations}〜{props.maxGenerations}
 									の整数を入力してください。
@@ -392,13 +354,7 @@ export function ControlPanel(props: ControlPanelProps) {
 											field.setDraft(event.currentTarget.value)
 										}
 										onBlur={field.commit}
-										onKeyDown={(event) => {
-											if (event.key === "Enter") {
-												event.preventDefault();
-												field.commit();
-											}
-											if (event.key === "Escape") field.cancel();
-										}}
+										onKeyDown={field.onKeyDown}
 										disabled={props.settingsLocked}
 										aria-invalid={field.invalid()}
 										aria-describedby={

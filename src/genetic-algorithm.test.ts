@@ -1,4 +1,10 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
+import {
+	blxAlphaCrossover,
+	gaussianMutation,
+	gaussianRandom,
+	tournamentSelection,
+} from "./ga-operators";
 import {
 	DEFAULT_CONFIG,
 	type GAConfig,
@@ -7,38 +13,23 @@ import {
 } from "./genetic-algorithm";
 import { getObjectiveFunction } from "./objective-functions";
 
-// Type helper for testing private methods
-interface GeneticAlgorithmTestable {
-	createRandomIndividual(): Individual;
-	gaussianRandom(): number;
-	tournamentSelection(): Individual;
-	blxAlphaCrossover(
-		parent1: Individual,
-		parent2: Individual,
-		alpha?: number,
-	): [Individual, Individual];
-	gaussianMutation(individual: Individual): Individual;
-	population: Individual[];
-	config: GAConfig;
-}
-
 describe("GeneticAlgorithm", () => {
 	let ga: GeneticAlgorithm;
+	let random: () => number;
 
 	beforeEach(() => {
 		let randomState = 42;
-		vi.spyOn(Math, "random").mockImplementation(() => {
+		random = () => {
 			randomState = (Math.imul(randomState, 1664525) + 1013904223) >>> 0;
 			return randomState / 2 ** 32;
-		});
-		ga = new GeneticAlgorithm({
-			...DEFAULT_CONFIG,
-			bounds: { ...DEFAULT_CONFIG.bounds },
-		});
-	});
-
-	afterEach(() => {
-		vi.restoreAllMocks();
+		};
+		ga = new GeneticAlgorithm(
+			{
+				...DEFAULT_CONFIG,
+				bounds: { ...DEFAULT_CONFIG.bounds },
+			},
+			random,
+		);
 	});
 
 	describe("Objective Function Integration", () => {
@@ -59,11 +50,10 @@ describe("GeneticAlgorithm", () => {
 				...DEFAULT_CONFIG,
 				bounds: { min: -10, max: 10 },
 			};
-			const gaWithBounds = new GeneticAlgorithm(config);
+			const gaWithBounds = new GeneticAlgorithm(config, random);
+			gaWithBounds.initializePopulation();
 
-			for (let i = 0; i < 100; i++) {
-				const testableGA = gaWithBounds as unknown as GeneticAlgorithmTestable;
-				const individual = testableGA.createRandomIndividual();
+			for (const individual of gaWithBounds.getPopulation()) {
 				expect(individual.x).toBeGreaterThanOrEqual(-10);
 				expect(individual.x).toBeLessThanOrEqual(10);
 				expect(individual.y).toBeGreaterThanOrEqual(-10);
@@ -75,8 +65,8 @@ describe("GeneticAlgorithm", () => {
 		});
 
 		test("should create individuals with correct fitness", () => {
-			const testableGA = ga as unknown as GeneticAlgorithmTestable;
-			const individual = testableGA.createRandomIndividual();
+			ga.initializePopulation();
+			const individual = ga.getPopulation()[0];
 			const expectedFitness =
 				individual.x * individual.x + individual.y * individual.y;
 			expect(individual.fitness).toBe(expectedFitness);
@@ -87,8 +77,7 @@ describe("GeneticAlgorithm", () => {
 		test("should generate numbers with approximately normal distribution", () => {
 			const samples: number[] = [];
 			for (let i = 0; i < 1000; i++) {
-				const testableGA = ga as unknown as GeneticAlgorithmTestable;
-				samples.push(testableGA.gaussianRandom());
+				samples.push(gaussianRandom(random));
 			}
 
 			const mean = samples.reduce((sum, x) => sum + x, 0) / samples.length;
@@ -110,15 +99,10 @@ describe("GeneticAlgorithm", () => {
 				{ x: 2, y: 2, fitness: 8 }, // worst
 			];
 
-			const testableGA = ga as unknown as GeneticAlgorithmTestable;
-			testableGA.population = population;
-			testableGA.config.tournamentSize = 2;
-
 			// Run tournament selection multiple times and check it tends to select better individuals
 			const results: number[] = [];
 			for (let i = 0; i < 100; i++) {
-				const testableGA = ga as unknown as GeneticAlgorithmTestable;
-				const selected = testableGA.tournamentSelection();
+				const selected = tournamentSelection(population, 2, random);
 				results.push(selected.fitness);
 			}
 
@@ -138,11 +122,11 @@ describe("GeneticAlgorithm", () => {
 			const parent1: Individual = { x: 0, y: 0, fitness: 0 };
 			const parent2: Individual = { x: 4, y: 4, fitness: 32 };
 			const alpha = 0.5;
-
-			const testableGA = ga as unknown as GeneticAlgorithmTestable;
-			const [child1, child2] = testableGA.blxAlphaCrossover(
+			const [child1, child2] = blxAlphaCrossover(
 				parent1,
 				parent2,
+				DEFAULT_CONFIG.bounds,
+				random,
 				alpha,
 			);
 
@@ -163,13 +147,15 @@ describe("GeneticAlgorithm", () => {
 				...DEFAULT_CONFIG,
 				bounds: { min: -5, max: 5 },
 			};
-			const gaWithBounds = new GeneticAlgorithm(config);
 
 			const parent1: Individual = { x: -4, y: -4, fitness: 32 };
 			const parent2: Individual = { x: 4, y: 4, fitness: 32 };
-
-			const testableGA = gaWithBounds as unknown as GeneticAlgorithmTestable;
-			const [child1, child2] = testableGA.blxAlphaCrossover(parent1, parent2);
+			const [child1, child2] = blxAlphaCrossover(
+				parent1,
+				parent2,
+				config.bounds,
+				random,
+			);
 
 			expect(child1.x).toBeGreaterThanOrEqual(-5);
 			expect(child1.x).toBeLessThanOrEqual(5);
@@ -189,11 +175,14 @@ describe("GeneticAlgorithm", () => {
 				...DEFAULT_CONFIG,
 				mutationRate: 0,
 			};
-			const gaNoMutation = new GeneticAlgorithm(config);
 
 			const individual: Individual = { x: 1, y: 2, fitness: 5 };
-			const testableGA = gaNoMutation as unknown as GeneticAlgorithmTestable;
-			const mutated = testableGA.gaussianMutation(individual);
+			const mutated = gaussianMutation(
+				individual,
+				config.bounds,
+				config.mutationRate,
+				random,
+			);
 
 			expect(mutated.x).toBe(individual.x);
 			expect(mutated.y).toBe(individual.y);
@@ -205,13 +194,15 @@ describe("GeneticAlgorithm", () => {
 				mutationRate: 1.0, // Always mutate
 				bounds: { min: -10, max: 10 },
 			};
-			const gaAlwaysMutate = new GeneticAlgorithm(config);
 
 			for (let i = 0; i < 50; i++) {
 				const individual: Individual = { x: 9, y: 9, fitness: 162 };
-				const testableGA =
-					gaAlwaysMutate as unknown as GeneticAlgorithmTestable;
-				const mutated = testableGA.gaussianMutation(individual);
+				const mutated = gaussianMutation(
+					individual,
+					config.bounds,
+					config.mutationRate,
+					random,
+				);
 
 				expect(mutated.x).toBeGreaterThanOrEqual(-10);
 				expect(mutated.x).toBeLessThanOrEqual(10);
@@ -248,20 +239,14 @@ describe("GeneticAlgorithm", () => {
 		});
 
 		test("should find individual with minimum fitness", () => {
-			const population: Individual[] = [
-				{ x: 2, y: 3, fitness: 13 },
-				{ x: 0, y: 1, fitness: 1 }, // best
-				{ x: 1, y: 2, fitness: 5 },
-			];
-
-			const testableGA = ga as unknown as GeneticAlgorithmTestable;
-			testableGA.population = population;
-
+			ga.initializePopulation();
+			const population = ga.getPopulation();
 			const best = ga.getBestIndividual();
 			expect(best).not.toBeNull();
-			expect(best?.fitness).toBe(1);
-			expect(best?.x).toBe(0);
-			expect(best?.y).toBe(1);
+			expect(best?.fitness).toBe(
+				Math.min(...population.map((individual) => individual.fitness)),
+			);
+			expect(population).toContain(best);
 		});
 	});
 
@@ -283,35 +268,29 @@ describe("GeneticAlgorithm", () => {
 		});
 
 		test("retains the best discovery when a later generation worsens and clears it on reset", () => {
-			const run = new GeneticAlgorithm({
-				...DEFAULT_CONFIG,
-				populationSize: 1,
-				crossoverRate: 0,
-				mutationRate: 0,
-			});
-			const internal = run as unknown as GeneticAlgorithmTestable;
-			vi.spyOn(internal, "createRandomIndividual").mockReturnValue({
-				x: 0,
-				y: 0,
-				fitness: 0,
-			});
+			let value = 0.5;
+			const run = new GeneticAlgorithm(
+				{
+					...DEFAULT_CONFIG,
+					populationSize: 1,
+					crossoverRate: 0,
+					mutationRate: 1,
+				},
+				() => value,
+			);
 			run.initializePopulation();
-			vi.spyOn(internal, "gaussianMutation").mockReturnValue({
-				x: 2,
-				y: 3,
-				fitness: 13,
-			});
+			const initial = run.getStatistics().currentBest;
+			expect(initial?.fitness).toBe(0);
 			run.evolve();
-			expect(run.getStatistics().currentBest?.fitness).toBe(13);
-			expect(run.getStatistics().bestEver).toEqual({ x: 0, y: 0, fitness: 0 });
+			expect(run.getStatistics().currentBest?.fitness).toBeGreaterThan(0);
+			expect(run.getStatistics().bestEver).toEqual(initial);
 			expect(run.getStatistics().bestEverGeneration).toBe(0);
-			vi.mocked(internal.createRandomIndividual).mockReturnValue({
-				x: 1,
-				y: 1,
-				fitness: 2,
-			});
+			value = 0.6;
 			run.initializePopulation();
-			expect(run.getStatistics().bestEver?.fitness).toBe(2);
+			expect(run.getStatistics().bestEver).toEqual(
+				run.getStatistics().currentBest,
+			);
+			expect(run.getStatistics().bestEver?.fitness).toBeGreaterThan(0);
 		});
 
 		test("should track generation statistics correctly", () => {
@@ -397,15 +376,24 @@ describe("GeneticAlgorithm", () => {
 				functionType: "sphere",
 			};
 
-			const customGA = new GeneticAlgorithm(customConfig);
-			const testableGA = customGA as unknown as GeneticAlgorithmTestable;
-			expect(testableGA.config).toEqual(customConfig);
+			const customGA = new GeneticAlgorithm(customConfig, random);
+			customGA.initializePopulation();
+			expect(customGA.getBounds()).toEqual(customConfig.bounds);
+			expect(customGA.getPopulation()).toHaveLength(
+				customConfig.populationSize,
+			);
+			for (let i = 0; i < customConfig.generations; i++)
+				expect(customGA.evolve()).toBe(true);
+			expect(customGA.evolve()).toBe(false);
 		});
 
 		test("should use default configuration when none provided", () => {
 			const defaultGA = new GeneticAlgorithm();
-			const testableGA = defaultGA as unknown as GeneticAlgorithmTestable;
-			expect(testableGA.config).toEqual(DEFAULT_CONFIG);
+			defaultGA.initializePopulation();
+			expect(defaultGA.getPopulation()).toHaveLength(
+				DEFAULT_CONFIG.populationSize,
+			);
+			expect(defaultGA.getBounds()).toEqual(DEFAULT_CONFIG.bounds);
 		});
 	});
 });
