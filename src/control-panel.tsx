@@ -1,5 +1,4 @@
 import { createMemo, onCleanup, onMount, Show } from "solid-js";
-import { MAX_ANIMATION_INTERVAL, MIN_ANIMATION_INTERVAL } from "./constants";
 import {
 	DEFAULT_GA_PARAMETERS,
 	GA_PARAMETER_FIELDS,
@@ -40,7 +39,6 @@ interface ControlPanelProps {
 	onFunctionTypeChange: (value: FunctionType) => void;
 	onPopulationSizeChange: (value: number) => void;
 	onGenerationsChange: (value: number) => void;
-	onSpeedChange: (interval: number) => void;
 
 	// Constants
 	minPopulationSize: number;
@@ -50,7 +48,6 @@ interface ControlPanelProps {
 }
 
 export function ControlPanel(props: ControlPanelProps) {
-	const speedLabel = () => `${props.animationSpeed / 1000}秒／世代`;
 	const population = createNumericDraft({
 		value: () => props.populationSize,
 		validate: (value) =>
@@ -198,31 +195,6 @@ export function ControlPanel(props: ControlPanelProps) {
 					</div>
 				</Show>
 			</fieldset>
-
-			<div class="speed-control">
-				<div class="speed-control-header">
-					<label for="speed">アニメーション速度:</label>
-					<span class="speed-value">{speedLabel()}</span>
-				</div>
-				<input
-					id="speed"
-					type="range"
-					min={0}
-					max={MAX_ANIMATION_INTERVAL - MIN_ANIMATION_INTERVAL}
-					step="50"
-					value={MAX_ANIMATION_INTERVAL - props.animationSpeed}
-					onInput={(event) =>
-						props.onSpeedChange(
-							MAX_ANIMATION_INTERVAL - event.currentTarget.valueAsNumber,
-						)
-					}
-					aria-valuetext={speedLabel()}
-				/>
-				<div class="speed-range-labels" aria-hidden="true">
-					<span>遅い</span>
-					<span>速い</span>
-				</div>
-			</div>
 
 			<details class="settings-details" ref={settings} open>
 				<summary class="settings-toggle">

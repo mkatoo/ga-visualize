@@ -30,7 +30,7 @@ body {
 
 .ga-app {
 	--visualization-size: 640px;
-	max-width: 1200px;
+	max-width: 1520px;
 	margin: 0 auto;
 	padding: 20px;
 	background-color: var(--color-background);
@@ -179,7 +179,7 @@ body {
 
 .main-content {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) 320px;
+	grid-template-columns: minmax(0, 1fr) 280px;
 	grid-template-areas: "visualization controls";
 	gap: 20px;
 	align-items: start;
@@ -197,25 +197,44 @@ body {
 
 .visualization-content {
 	display: grid;
+	grid-template-areas: "summary" "landscape" "playback" "chart";
+	grid-template-columns: minmax(0, 1fr);
 	gap: 20px;
 }
 
 .landscape-panel {
+	grid-area: landscape;
 	min-width: 0;
 }
 
-.visualization-toolbar {
+.landscape-header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px 12px;
+	margin-bottom: 12px;
+}
+
+.playback-controls {
+	grid-area: playback;
 	display: grid;
-	align-items: start;
-	gap: 8px 16px;
+	gap: 16px 24px;
 	min-width: 0;
-	margin: 0 0 16px;
+	padding-top: 16px;
+	border-top: 1px solid var(--color-border-subtle);
+}
+
+.visualization-toolbar {
+	min-width: 0;
+	margin: 0;
 	padding: 0;
 	border: 0;
 }
 
 .view-toolbar {
 	display: flex;
+	flex-wrap: wrap;
 	justify-content: space-between;
 	align-items: center;
 	gap: 12px;
@@ -238,7 +257,7 @@ body {
 	min-height: var(--control-height);
 	border: 1px solid transparent;
 	border-radius: var(--control-radius);
-	padding: 8px 16px;
+	padding: 8px 12px;
 	background: transparent;
 	color: var(--color-text-secondary);
 	font: inherit;
@@ -358,7 +377,6 @@ body {
 	font-size: 0.8rem;
 	line-height: 1.6;
 	text-align: center;
-	min-height: 3.2em;
 	margin: 8px 0;
 }
 
@@ -391,7 +409,7 @@ body {
 	justify-content: center;
 	flex-wrap: wrap;
 	gap: 8px 16px;
-	margin: 12px 0 20px;
+	margin: 12px 0 0;
 	font-size: 0.8rem;
 	color: var(--color-text-secondary);
 }
@@ -505,7 +523,8 @@ body {
 }
 
 .generation-summary {
-	margin-bottom: 16px;
+	grid-area: summary;
+	min-width: 0;
 	padding-bottom: 16px;
 	border-bottom: 1px solid var(--color-border-subtle);
 }
@@ -519,8 +538,9 @@ body {
 
 .summary-metrics {
 	display: grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: 12px;
+	grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr));
+	align-items: end;
+	gap: 12px 24px;
 	margin: 0;
 }
 
@@ -532,20 +552,34 @@ body {
 .summary-metrics dd {
 	margin: 6px 0 0;
 	font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-	font-size: clamp(0.875rem, 2.5vw, 1.1rem);
+	font-size: 1rem;
 	font-weight: 600;
 	font-variant-numeric: tabular-nums;
 	overflow-wrap: anywhere;
 }
 
 .summary-metrics .best-individual dd {
-	color: var(--color-best);
+	color: var(--color-heading);
+	font-size: 1.75rem;
+	line-height: 1.2;
 }
-.summary-metrics .average-fitness dd {
-	color: var(--color-population);
+
+.summary-metrics dt::before {
+	content: "";
+	display: inline-block;
+	width: 6px;
+	height: 6px;
+	margin-right: 6px;
+	border-radius: 50%;
+	background: var(--color-best);
 }
-.summary-best-ever dd {
-	color: var(--color-success);
+
+.summary-metrics .average-fitness dt::before {
+	background: var(--color-population);
+}
+
+.summary-best-ever dt::before {
+	background: var(--color-success);
 }
 
 .current-generation,
@@ -613,7 +647,7 @@ body {
 .control-panel {
 	grid-area: controls;
 	min-width: 0;
-	padding: 20px;
+	padding: 16px;
 }
 
 .settings-toggle {
@@ -871,9 +905,7 @@ body {
 }
 
 .speed-control {
-	margin-bottom: 20px;
-	padding-bottom: 16px;
-	border-bottom: 1px solid var(--color-border-subtle);
+	min-width: 0;
 }
 
 .speed-control-header {
@@ -997,6 +1029,7 @@ body {
 }
 
 .fitness-chart {
+	grid-area: chart;
 	min-width: 0;
 	margin: 0;
 }
@@ -1019,7 +1052,6 @@ body {
 }
 
 .landscape-heading {
-	margin-bottom: 12px;
 	text-align: left;
 }
 
@@ -1059,16 +1091,6 @@ body {
 	color: var(--color-text-secondary);
 }
 
-.legend-value {
-	grid-column: 2;
-	color: var(--color-text);
-	font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-	font-size: 0.9rem;
-	font-weight: 600;
-	font-variant-numeric: tabular-nums;
-	overflow-wrap: anywhere;
-}
-
 .legend-line {
 	width: 20px;
 	flex-shrink: 0;
@@ -1105,30 +1127,43 @@ body {
 
 @media (min-width: 1025px) {
 	.ga-app {
-		--visualization-size: clamp(240px, calc(100svh - 360px), 640px);
+		--visualization-size: clamp(400px, calc(100svh - 420px), 480px);
 	}
 }
 
-@media (min-width: 1280px) {
-	.visualization-toolbar {
-		grid-template-columns: auto minmax(0, 1fr);
+@media (min-width: 1400px) {
+	.playback-controls {
+		grid-template-columns: minmax(0, 1fr) 220px;
 	}
 
 	.visualization-content:has(> .fitness-chart) {
-		grid-template-columns: minmax(0, 1fr) minmax(320px, 1fr);
+		grid-template-columns: minmax(484px, 1.2fr) minmax(320px, 1fr);
+		grid-template-areas:
+			"summary summary"
+			"landscape chart"
+			"landscape chart"
+			"landscape chart"
+			"playback playback";
 		row-gap: 0;
+	}
+
+	.visualization-content:has(> .fitness-chart) .generation-summary {
+		margin-bottom: 16px;
+	}
+
+	.visualization-content:has(> .fitness-chart) .playback-controls {
+		margin-top: 20px;
 	}
 
 	.visualization-content:has(> .fitness-chart)
 		> :is(.landscape-panel, .fitness-chart) {
 		display: grid;
-		grid-row: span 3;
 		grid-template-rows: subgrid;
 		row-gap: 0;
 	}
 
 	.visualization-content:has(> .fitness-chart)
-		:is(.landscape-heading, .chart-header) {
+		:is(.landscape-header, .chart-header) {
 		display: flex;
 		align-items: center;
 		min-height: 52px;
@@ -1179,6 +1214,20 @@ body {
 	.main-content {
 		grid-template-columns: 1fr;
 		grid-template-areas: "controls" "visualization";
+		gap: 12px;
+	}
+
+	.visualization-content {
+		grid-template-areas: "landscape" "summary" "playback" "chart";
+	}
+
+	.header {
+		padding: 12px 16px;
+		margin-bottom: 12px;
+	}
+
+	.header p {
+		display: none;
 	}
 
 	.button-group {
@@ -1225,11 +1274,6 @@ body {
 		padding: 12px;
 	}
 
-	.header {
-		padding: 16px;
-		margin-bottom: 16px;
-	}
-
 	.visualization-panel,
 	.control-panel {
 		padding: 16px;
@@ -1246,6 +1290,14 @@ body {
 }
 
 @media (max-width: 600px) {
+	.summary-metrics {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.summary-metrics .best-individual {
+		grid-column: 1 / -1;
+	}
+
 	.three-settings {
 		grid-template-columns: minmax(0, 1fr);
 	}

@@ -413,7 +413,7 @@ describe("2D / 3D visualization", () => {
 				view.container.querySelector(".fitness-chart") as HTMLElement,
 			).getByText("平均評価値"),
 		).toBeVisible();
-		const toolbar = within(view.getByRole("group", { name: "表示ツールバー" }));
+		const toolbar = within(view.getByRole("region", { name: "世代の履歴" }));
 		const slider = toolbar.getByRole("slider", {
 			name: "表示世代のスライダー",
 		});

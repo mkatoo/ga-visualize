@@ -9,7 +9,7 @@ describe("FitnessChart scale", () => {
 		vi.unstubAllGlobals();
 	});
 
-	test("updates visible legend values with the selected generation and incoming results", () => {
+	test("updates selected chart values with the selected generation and incoming results", () => {
 		const [selected, setSelected] = createSignal<number>();
 		const [history, setHistory] = createSignal({
 			best: [4, 2],
@@ -23,34 +23,27 @@ describe("FitnessChart scale", () => {
 				selectedGeneration={selected()}
 			/>
 		));
-		const legend = within(view.getByRole("list", { name: "推移グラフの凡例" }));
-		expect(legend.getByText("2.0000")).toBeVisible();
-		expect(legend.getByText("6.0000")).toBeVisible();
+		const chart = within(
+			view.getByRole("img", { name: "遺伝的アルゴリズムの評価値推移グラフ" }),
+		);
+		expect(chart.getByText("最良評価値: 2")).toBeInTheDocument();
+		expect(chart.getByText("平均評価値: 6")).toBeInTheDocument();
 
 		setSelected(0);
-		expect(legend.getByText("4.0000")).toBeVisible();
-		expect(legend.getByText("8.0000")).toBeVisible();
+		expect(chart.getByText("最良評価値: 4")).toBeInTheDocument();
+		expect(chart.getByText("平均評価値: 8")).toBeInTheDocument();
 		fireEvent.click(view.getByRole("button", { name: "対数" }));
-		expect(legend.getByText("4.0000")).toBeVisible();
-		expect(legend.getByText("8.0000")).toBeVisible();
+		expect(chart.getByText("最良評価値: 4")).toBeInTheDocument();
+		expect(chart.getByText("平均評価値: 8")).toBeInTheDocument();
 
 		setSelected(undefined);
 		setHistory({ best: [4, 2, 0], average: [8, 6, 0.00000012] });
-		expect(legend.getByText("0.0000")).toBeVisible();
-		expect(legend.getByText("1.200e-7")).toBeVisible();
-		expect(legend.getByText("1.200e-7")).toHaveAttribute("title", "1.2e-7");
+		expect(chart.getByText("最良評価値: 0")).toBeInTheDocument();
+		expect(chart.getByText("平均評価値: 1.2e-7")).toBeInTheDocument();
 
 		setHistory({ best: [3], average: [9] });
-		expect(legend.getByText("3.0000")).toBeVisible();
-		expect(legend.getByText("9.0000")).toBeVisible();
-	});
-
-	test("shows missing results as a dash in the legend", () => {
-		const view = render(() => (
-			<FitnessChart bestFitness={[]} averageFitness={[]} totalGenerations={2} />
-		));
-		const legend = within(view.getByRole("list", { name: "推移グラフの凡例" }));
-		expect(legend.getAllByText("—")).toHaveLength(2);
+		expect(chart.getByText("最良評価値: 3")).toBeInTheDocument();
+		expect(chart.getByText("平均評価値: 9")).toBeInTheDocument();
 	});
 
 	test("uses a linear scale for small values while keeping zero finite", () => {

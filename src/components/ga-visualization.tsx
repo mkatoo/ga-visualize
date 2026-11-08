@@ -1,5 +1,6 @@
 import {
 	type Component,
+	children,
 	createEffect,
 	createMemo,
 	createSignal,
@@ -40,6 +41,7 @@ interface GAVisualizationProps {
 }
 
 export function GAVisualization(props: GAVisualizationProps) {
+	const playback = children(() => props.children);
 	const [mode, setMode] = createSignal<"2d" | "3d">("2d");
 	const [threeComponent, setThreeComponent] =
 		createSignal<Component<Visualizer3DProps>>();
@@ -101,49 +103,6 @@ export function GAVisualization(props: GAVisualizationProps) {
 	onCleanup(() => request++);
 	return (
 		<div class="visualization-panel">
-			<fieldset class="visualization-toolbar" aria-label="表示ツールバー">
-				<div class="view-toolbar">
-					<fieldset class="view-toggle" aria-label="表示方式">
-						<button
-							type="button"
-							aria-pressed={mode() === "2d"}
-							onClick={() => {
-								request++;
-								setMode("2d");
-							}}
-						>
-							2D
-						</button>
-						<button
-							type="button"
-							aria-pressed={mode() === "3d"}
-							onClick={select3D}
-						>
-							3D
-						</button>
-					</fieldset>
-					<Show when={mode() === "3d"}>
-						<button
-							type="button"
-							class="view-reset"
-							disabled={!threeComponent()}
-							onClick={(event) => {
-								setAnimateReset(event.detail > 0);
-								setResetView((v) => v + 1);
-							}}
-						>
-							視点リセット
-						</button>
-					</Show>
-				</div>
-				{props.children}
-			</fieldset>
-			<GenerationSummary
-				generation={props.generation}
-				bestIndividual={props.bestIndividual}
-				averageFitness={props.averageFitness}
-				bestEver={props.bestEver ?? props.bestIndividual}
-			/>
 			<Show when={error()}>
 				<output class="visualization-error">{error()}</output>
 			</Show>
@@ -155,7 +114,45 @@ export function GAVisualization(props: GAVisualizationProps) {
 				}}
 			>
 				<div class="landscape-panel visualizer">
-					<h2 class="landscape-heading">地形と個体分布</h2>
+					<div class="landscape-header">
+						<h2 class="landscape-heading">地形と個体分布</h2>
+						<fieldset class="visualization-toolbar" aria-label="表示ツールバー">
+							<div class="view-toolbar">
+								<fieldset class="view-toggle" aria-label="表示方式">
+									<button
+										type="button"
+										aria-pressed={mode() === "2d"}
+										onClick={() => {
+											request++;
+											setMode("2d");
+										}}
+									>
+										2D
+									</button>
+									<button
+										type="button"
+										aria-pressed={mode() === "3d"}
+										onClick={select3D}
+									>
+										3D
+									</button>
+								</fieldset>
+								<Show when={mode() === "3d"}>
+									<button
+										type="button"
+										class="view-reset"
+										disabled={!threeComponent()}
+										onClick={(event) => {
+											setAnimateReset(event.detail > 0);
+											setResetView((v) => v + 1);
+										}}
+									>
+										視点リセット
+									</button>
+								</Show>
+							</div>
+						</fieldset>
+					</div>
 					<div class="landscape-view">
 						<Show
 							when={mode() === "3d"}
@@ -271,6 +268,15 @@ export function GAVisualization(props: GAVisualizationProps) {
 						</details>
 					</div>
 				</div>
+				<GenerationSummary
+					generation={props.generation}
+					bestIndividual={props.bestIndividual}
+					averageFitness={props.averageFitness}
+					bestEver={props.bestEver ?? props.bestIndividual}
+				/>
+				<Show when={playback()}>
+					<div class="playback-controls">{playback()}</div>
+				</Show>
 				{props.chart}
 			</div>
 			<ResultDetails

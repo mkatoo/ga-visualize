@@ -8,7 +8,6 @@ import {
 	Show,
 } from "solid-js";
 import { FITNESS_CHART_INSETS } from "./constants";
-import { formatFitness } from "./format-fitness";
 import { VISUALIZATION_COLORS } from "./visualization-colors";
 
 interface FitnessChartProps {
@@ -357,35 +356,23 @@ export function FitnessChart(props: FitnessChartProps) {
 				</Show>
 				<ul class="chart-legend" aria-label="推移グラフの凡例">
 					<For each={series}>
-						{(item) => {
-							const selectedFitness = () => {
-								const value = item.values()[selectedGeneration()];
-								return value === undefined ? "—" : formatFitness(value);
-							};
-							return (
-								<li class="legend-item">
-									<span
-										class="legend-line"
-										style={{
-											"border-top-color": item.color,
-											"border-top-style": item.dash ? "dashed" : "solid",
-										}}
-										aria-hidden="true"
-									/>
-									<span>{item.label}</span>
-									<span
-										class="legend-value"
-										title={item.values()[selectedGeneration()]?.toString()}
-									>
-										{selectedFitness()}
-									</span>
-								</li>
-							);
-						}}
+						{(item) => (
+							<li class="legend-item">
+								<span
+									class="legend-line"
+									style={{
+										"border-top-color": item.color,
+										"border-top-style": item.dash ? "dashed" : "solid",
+									}}
+									aria-hidden="true"
+								/>
+								<span>{item.label}</span>
+							</li>
+						)}
 					</For>
 				</ul>
 				<p class="chart-help">
-					グラフをタップするか、上部の表示世代を指定すると、その世代の評価値を表示します。
+					グラフをタップするか、表示世代を指定すると、その世代の評価値を表示します。
 				</p>
 			</div>
 		</figure>

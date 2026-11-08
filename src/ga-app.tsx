@@ -1,6 +1,7 @@
 import { createSignal, onCleanup, onMount } from "solid-js";
 import { GAVisualization } from "./components/ga-visualization";
 import { GenerationHistory } from "./components/generation-history";
+import { SpeedControl } from "./components/speed-control";
 import { ControlPanel } from "./control-panel";
 import { FitnessChart } from "./fitness-chart";
 import { useGeneticAlgorithm } from "./hooks/use-genetic-algorithm";
@@ -92,7 +93,6 @@ export function GAApp() {
 						onFunctionTypeChange={changeFunctionType}
 						onPopulationSizeChange={changePopulationSize}
 						onGenerationsChange={changeGenerations}
-						onSpeedChange={handleSpeedChange}
 						minPopulationSize={constraints.minPopulationSize}
 						maxPopulationSize={constraints.maxPopulationSize}
 						minGenerations={constraints.minGenerations}
@@ -124,6 +124,10 @@ export function GAApp() {
 							latestGeneration={statistics().generation}
 							onSelect={selectGeneration}
 							onShowLatest={showLatest}
+						/>
+						<SpeedControl
+							animationSpeed={animationSpeed()}
+							onSpeedChange={handleSpeedChange}
 						/>
 					</GAVisualization>
 				</div>

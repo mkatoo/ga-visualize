@@ -44,7 +44,7 @@ export function GenerationSummary(props: GenerationSummaryProps) {
 			<p class="summary-generation">第{props.generation}世代</p>
 			<dl class="summary-metrics">
 				<div class="best-individual">
-					<dt>最良評価値</dt>
+					<dt>表示世代の最良</dt>
 					<dd
 						title={
 							props.bestIndividual
