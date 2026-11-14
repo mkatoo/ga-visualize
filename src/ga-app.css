@@ -540,6 +540,15 @@ body {
 	font-variant-numeric: tabular-nums;
 }
 
+.summary-generation[data-history="true"] {
+	width: fit-content;
+	padding: 2px 8px;
+	border-radius: var(--control-radius);
+	background: var(--color-surface-hover);
+	color: var(--color-accent);
+	font-weight: 600;
+}
+
 .summary-metrics,
 .summary-secondary {
 	display: grid;
@@ -1386,6 +1395,22 @@ body {
 
 	.function-parameter {
 		grid-column: 1 / -1;
+	}
+}
+
+@media (max-width: 1024px) and (max-height: 500px) {
+	.header {
+		padding-block: 8px;
+		margin-bottom: 8px;
+	}
+
+	.control-panel,
+	.visualization-panel {
+		padding-block: 12px;
+	}
+
+	.main-content {
+		gap: 8px;
 	}
 }
 

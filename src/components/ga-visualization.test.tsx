@@ -34,7 +34,7 @@ const createRenderer = () => ({
 
 const displayedGeneration = (view: ReturnType<typeof render>) =>
 	within(view.getByRole("region", { name: "表示中の世代の要約" })).getByText(
-		/^第\d+世代$/,
+		/^(第\d+世代|履歴表示中：第\d+／\d+世代)$/,
 	);
 
 describe("2D / 3D visualization", () => {
@@ -432,9 +432,12 @@ describe("2D / 3D visualization", () => {
 		fireEvent.click(view.getByRole("button", { name: "開始" }));
 		vi.advanceTimersByTime(500);
 		const generationOne = renderer.updatePopulation.mock.lastCall?.[0];
-		const generationOneStatistics = view.getByRole("region", {
-			name: "表示中の世代の要約",
-		}).textContent;
+		const summaryMetrics = () =>
+			Array.from(
+				view.container.querySelectorAll(".generation-summary dd"),
+				(value) => value.textContent,
+			);
+		const generationOneStatistics = summaryMetrics();
 		const readout = view.getByRole("region", { name: "表示中の世代の要約" });
 		fireEvent.click(view.getByText("結果の詳細"));
 		const coordinates = view.getByRole("region", {
@@ -448,20 +451,22 @@ describe("2D / 3D visualization", () => {
 		});
 		expect(view.getByRole("button", { name: "最新から再開" })).toBeEnabled();
 		expect(renderer.updatePopulation.mock.lastCall?.[0]).toEqual(generationOne);
-		expect(displayedGeneration(view)).toHaveTextContent(/^第1世代$/);
+		expect(displayedGeneration(view)).toHaveTextContent(
+			"履歴表示中：第1／3世代",
+		);
 		expect(generationInput).toHaveValue(1);
 		expect(coordinates.textContent).toBe(generationOneCoordinates);
 		expect(coordinates).toBeVisible();
-		expect(
-			view.getByRole("region", { name: "表示中の世代の要約" }).textContent,
-		).toBe(generationOneStatistics);
+		expect(summaryMetrics()).toEqual(generationOneStatistics);
 		fireEvent.input(generationInput, {
 			target: { value: "2" },
 		});
 		expect(slider).toHaveValue("1");
 		fireEvent.keyDown(generationInput, { key: "Enter" });
 		expect(slider).toHaveValue("2");
-		expect(displayedGeneration(view)).toHaveTextContent(/^第2世代$/);
+		expect(displayedGeneration(view)).toHaveTextContent(
+			"履歴表示中：第2／3世代",
+		);
 		fireEvent.click(view.getByRole("button", { name: "最新世代に戻る" }));
 		expect(slider).toHaveValue("3");
 		expect(generationInput).toHaveValue(3);
@@ -502,9 +507,7 @@ describe("2D / 3D visualization", () => {
 		fireEvent.pointerUp(chart, { clientX: 100, clientY: 100 });
 		expect(generationInput).toHaveValue(1);
 		expect(slider).toHaveValue("1");
-		expect(
-			view.getByRole("region", { name: "表示中の世代の要約" }).textContent,
-		).toBe(generationOneStatistics);
+		expect(summaryMetrics()).toEqual(generationOneStatistics);
 		expect(renderer.updatePopulation.mock.lastCall?.[0]).toEqual(generationOne);
 		fireEvent.click(view.getByRole("button", { name: "最新から再開" }));
 		vi.advanceTimersByTime(500);
@@ -562,6 +565,43 @@ describe("2D / 3D visualization", () => {
 		expect(displayedGeneration(view)).toHaveTextContent(/^第0世代$/);
 		vi.advanceTimersByTime(500);
 		expect(view.getByRole("status")).toHaveTextContent("実行が完了しました");
+	});
+
+	test("labels historical results separately from a completed run and restores the latest result", () => {
+		vi.useFakeTimers();
+		const view = render(() => <GAApp />);
+		const summary = view.getByRole("region", { name: "表示中の世代の要約" });
+		const bestEver = () => summary.querySelector(".summary-best-ever dd");
+		fireEvent.input(view.getByLabelText("世代数 (1-1000):"), {
+			target: { value: "3" },
+		});
+		fireEvent.blur(view.getByLabelText("世代数 (1-1000):"));
+		const initialBest = bestEver()?.textContent;
+		fireEvent.click(view.getByRole("button", { name: "開始" }));
+		vi.advanceTimersByTime(1500);
+		const latestBest = bestEver()?.textContent;
+
+		fireEvent.input(
+			view.getByRole("slider", { name: "表示世代のスライダー" }),
+			{
+				target: { value: "0" },
+			},
+		);
+		expect(displayedGeneration(view)).toHaveTextContent(
+			"履歴表示中：第0／3世代",
+		);
+		expect(within(summary).getByText("第0世代までの最良")).toBeVisible();
+		expect(bestEver()).toHaveTextContent(initialBest ?? "");
+		expect(view.getByRole("status")).toHaveTextContent("実行が完了しました");
+
+		fireEvent.click(view.getByRole("button", { name: "最新世代に戻る" }));
+		expect(displayedGeneration(view)).toHaveTextContent(/^第3世代$/);
+		expect(summary).not.toHaveTextContent("履歴表示中");
+		expect(within(summary).getByText("第3世代までの最良")).toBeVisible();
+		expect(bestEver()).toHaveTextContent(latestBest ?? "");
+		fireEvent.click(view.getByRole("button", { name: "リセット" }));
+		expect(displayedGeneration(view)).toHaveTextContent(/^第0世代$/);
+		expect(summary).not.toHaveTextContent("履歴表示中");
 	});
 
 	test("commits numeric settings on blur or Enter and explains invalid drafts", () => {

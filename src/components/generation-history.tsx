@@ -1,4 +1,11 @@
-import { createEffect, createSignal, createUniqueId, on, Show } from "solid-js";
+import {
+	createEffect,
+	createRenderEffect,
+	createSignal,
+	createUniqueId,
+	on,
+	Show,
+} from "solid-js";
 import {
 	createNumericDraft,
 	isIntegerInRange,
@@ -86,12 +93,17 @@ export function GenerationHistory(props: GenerationHistoryProps) {
 					</span>
 				</label>
 				<input
+					ref={(input) => {
+						createRenderEffect(() => {
+							// Update the bound first so the browser cannot clamp a new generation to the old maximum.
+							input.max = String(props.latestGeneration);
+							input.value = String(props.generation);
+						});
+					}}
 					class="generation-range"
 					type="range"
 					min={0}
-					max={props.latestGeneration}
 					step={1}
-					value={props.generation}
 					disabled={props.latestGeneration === 0}
 					aria-label="表示世代のスライダー"
 					aria-describedby={`${id}-help`}

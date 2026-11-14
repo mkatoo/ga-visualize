@@ -85,9 +85,9 @@ describe("Population statistics fitness values", () => {
 			expect(getByTitle(`平均評価値: ${fitness}`)).toHaveTextContent(
 				displayedValue,
 			);
-			expect(getByTitle(`これまでの最良評価値: ${fitness}`)).toHaveTextContent(
-				displayedValue,
-			);
+			expect(
+				getByTitle(`第7世代までの最良評価値: ${fitness}`),
+			).toHaveTextContent(displayedValue);
 		},
 	);
 });

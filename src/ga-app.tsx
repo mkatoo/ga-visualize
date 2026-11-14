@@ -111,6 +111,7 @@ export function GAApp() {
 						population={displayedSnapshot().population}
 						bounds={ga().getBounds()}
 						generation={displayedSnapshot().generation}
+						latestGeneration={statistics().generation}
 						averageFitness={displayedSnapshot().averageFitness}
 						bestIndividual={displayedSnapshot().currentBest}
 						bestEver={displayedSnapshot().bestEver}

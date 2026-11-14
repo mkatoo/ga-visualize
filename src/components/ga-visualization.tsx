@@ -31,6 +31,7 @@ interface GAVisualizationProps {
 	population: Individual[];
 	bounds: { min: number; max: number };
 	generation: number;
+	latestGeneration?: number;
 	averageFitness: number;
 	bestIndividual: Individual | null;
 	bestEver?: Individual | null;
@@ -110,11 +111,11 @@ export function GAVisualization(props: GAVisualizationProps) {
 				class="visualization-content"
 				style={{
 					"--chart-padding-top": `${FITNESS_CHART_INSETS.top}px`,
-					"--chart-padding-bottom": `${FITNESS_CHART_INSETS.bottom}px`,
 				}}
 			>
 				<GenerationSummary
 					generation={props.generation}
+					latestGeneration={props.latestGeneration}
 					bestIndividual={props.bestIndividual}
 					averageFitness={props.averageFitness}
 					bestEver={props.bestEver ?? props.bestIndividual}
@@ -228,50 +229,6 @@ export function GAVisualization(props: GAVisualizationProps) {
 								既知の最適解 ({optimum().x}, {optimum().y})
 							</span>
 						</section>
-						<details class="view-settings" hidden={mode() !== "3d"}>
-							<summary class="settings-toggle">
-								<span class="settings-title">3D表示設定</span>
-							</summary>
-							<p class="settings-help">
-								3D表示の高さ・色・格子線を調整できます。
-							</p>
-							<div class="three-settings">
-								<label>
-									高さ・色の尺度
-									<select
-										value={heightScale()}
-										onChange={(e) =>
-											setHeightScale(e.currentTarget.value as HeightScale)
-										}
-									>
-										<option value="linear">線形（評価値に比例）</option>
-										<option value="logarithmic">
-											対数（小さな評価値の違いを強調）
-										</option>
-									</select>
-								</label>
-								<label>
-									曲面の分割数
-									<select
-										value={resolution()}
-										onChange={(e) =>
-											setResolution(Number(e.currentTarget.value))
-										}
-									>
-										<option value={100}>100（標準）</option>
-										<option value={64}>64（軽量）</option>
-									</select>
-								</label>
-								<label class="wireframe-toggle">
-									<input
-										type="checkbox"
-										checked={wireframe()}
-										onChange={(e) => setWireframe(e.currentTarget.checked)}
-									/>
-									格子線のみ
-								</label>
-							</div>
-						</details>
 					</div>
 				</div>
 				<Show when={playback()}>
@@ -279,6 +236,46 @@ export function GAVisualization(props: GAVisualizationProps) {
 				</Show>
 				{props.chart}
 			</div>
+			<details class="view-settings" hidden={mode() !== "3d"}>
+				<summary class="settings-toggle">
+					<span class="settings-title">3D表示設定</span>
+				</summary>
+				<p class="settings-help">3D表示の高さ・色・格子線を調整できます。</p>
+				<div class="three-settings">
+					<label>
+						高さ・色の尺度
+						<select
+							value={heightScale()}
+							onChange={(e) =>
+								setHeightScale(e.currentTarget.value as HeightScale)
+							}
+						>
+							<option value="linear">線形（評価値に比例）</option>
+							<option value="logarithmic">
+								対数（小さな評価値の違いを強調）
+							</option>
+						</select>
+					</label>
+					<label>
+						曲面の分割数
+						<select
+							value={resolution()}
+							onChange={(e) => setResolution(Number(e.currentTarget.value))}
+						>
+							<option value={100}>100（標準）</option>
+							<option value={64}>64（軽量）</option>
+						</select>
+					</label>
+					<label class="wireframe-toggle">
+						<input
+							type="checkbox"
+							checked={wireframe()}
+							onChange={(e) => setWireframe(e.currentTarget.checked)}
+						/>
+						格子線のみ
+					</label>
+				</div>
+			</details>
 			<ResultDetails
 				generation={props.generation}
 				bestIndividual={props.bestIndividual}

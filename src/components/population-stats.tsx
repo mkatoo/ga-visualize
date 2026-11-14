@@ -33,16 +33,26 @@ function IndividualCoordinates(props: { individual: Individual }) {
 
 interface GenerationSummaryProps {
 	generation: number;
+	latestGeneration?: number;
 	averageFitness: number;
 	bestIndividual: Individual | null;
 	bestEver: Individual | null;
 }
 
 export function GenerationSummary(props: GenerationSummaryProps) {
+	const isViewingHistory = () =>
+		props.generation < (props.latestGeneration ?? props.generation);
 	return (
 		<section class="generation-summary" aria-label="表示中の世代の要約">
 			<div class="summary-primary">
-				<p class="summary-generation">第{props.generation}世代</p>
+				<p class="summary-generation" data-history={isViewingHistory()}>
+					<Show
+						when={isViewingHistory()}
+						fallback={<>第{props.generation}世代</>}
+					>
+						履歴表示中：第{props.generation}／{props.latestGeneration}世代
+					</Show>
+				</p>
 				<dl class="summary-metrics">
 					<div class="best-individual">
 						<dt>表示世代の最良</dt>
@@ -68,11 +78,11 @@ export function GenerationSummary(props: GenerationSummaryProps) {
 					</dd>
 				</div>
 				<div class="summary-best-ever">
-					<dt>これまでの最良</dt>
+					<dt>第{props.generation}世代までの最良</dt>
 					<dd
 						title={
 							props.bestEver
-								? `これまでの最良評価値: ${props.bestEver.fitness}`
+								? `第${props.generation}世代までの最良評価値: ${props.bestEver.fitness}`
 								: undefined
 						}
 					>
