@@ -8,6 +8,11 @@ import {
 	Show,
 } from "solid-js";
 import { FITNESS_CHART_INSETS } from "./constants";
+import {
+	createFitnessChartModel,
+	type FitnessChartScale,
+	formatFitnessTick,
+} from "./fitness-chart-model";
 import { VISUALIZATION_COLORS } from "./visualization-colors";
 
 interface FitnessChartProps {
@@ -19,19 +24,13 @@ interface FitnessChartProps {
 }
 
 const CHART_HEIGHT = 260;
-const PLOT_LEFT = 72;
-const PLOT_RIGHT_MARGIN = 20;
-const PLOT_TOP = FITNESS_CHART_INSETS.top;
-const fitnessNumberFormat = new Intl.NumberFormat("ja-JP", {
-	maximumSignificantDigits: 3,
-});
 
 export function FitnessChart(props: FitnessChartProps) {
 	const id = createUniqueId();
 	const [width, setWidth] = createSignal(640);
 	const [height, setHeight] = createSignal(CHART_HEIGHT);
 	const [selection, setSelection] = createSignal<number>();
-	const [scale, setScale] = createSignal<"linear" | "logarithmic">("linear");
+	const [scale, setScale] = createSignal<FitnessChartScale>("linear");
 	const latestGeneration = () =>
 		Math.max(
 			0,
@@ -59,7 +58,7 @@ export function FitnessChart(props: FitnessChartProps) {
 	onMount(() => {
 		const updateSize = (nextWidth: number, nextHeight: number) => {
 			if (nextWidth > 0) setWidth(nextWidth);
-			if (nextHeight > PLOT_TOP + FITNESS_CHART_INSETS.bottom)
+			if (nextHeight > FITNESS_CHART_INSETS.top + FITNESS_CHART_INSETS.bottom)
 				setHeight(nextHeight);
 		};
 		updateSize(container.clientWidth, container.clientHeight);
@@ -71,40 +70,16 @@ export function FitnessChart(props: FitnessChartProps) {
 	});
 	onCleanup(() => observer?.disconnect());
 
-	const plotWidth = () => Math.max(1, width() - PLOT_LEFT - PLOT_RIGHT_MARGIN);
-	const plotBottom = () => height() - FITNESS_CHART_INSETS.bottom;
-	const plotHeight = () => plotBottom() - PLOT_TOP;
-	const maxGeneration = () => Math.max(1, props.totalGenerations);
-	const maxFitness = createMemo(
-		() => Math.max(0, ...props.bestFitness, ...props.averageFitness) || 1,
+	const model = createMemo(() =>
+		createFitnessChartModel({
+			bestFitness: props.bestFitness,
+			averageFitness: props.averageFitness,
+			totalGenerations: props.totalGenerations,
+			width: width(),
+			height: height(),
+			scale: scale(),
+		}),
 	);
-	const logBounds = createMemo(() => {
-		const positive = [...props.bestFitness, ...props.averageFitness].filter(
-			(value) => value > 0,
-		);
-		return {
-			min: Math.log10(Math.min(...positive, maxFitness())) - 1,
-			max: Math.log10(maxFitness()),
-		};
-	});
-	const formatTickFitness = (value: number) => {
-		if (value === 0) return "0";
-		return Math.abs(value) < 0.01 || Math.abs(value) >= 10_000
-			? value.toExponential(1)
-			: fitnessNumberFormat.format(value);
-	};
-	const x = (generation: number) =>
-		PLOT_LEFT + (generation / maxGeneration()) * plotWidth();
-	const y = (fitness: number) => {
-		const bounds = logBounds();
-		const position =
-			scale() === "linear"
-				? Math.max(0, fitness) / maxFitness()
-				: fitness > 0
-					? (Math.log10(fitness) - bounds.min) / (bounds.max - bounds.min)
-					: 0;
-		return plotBottom() - position * plotHeight();
-	};
 	let tap: { pointerId: number; x: number; y: number } | undefined;
 	const cancelTap = () => {
 		tap = undefined;
@@ -118,34 +93,8 @@ export function FitnessChart(props: FitnessChartProps) {
 		if (bounds.width <= 0 || bounds.height <= 0) return;
 		const pointerX = ((event.clientX - bounds.left) / bounds.width) * width();
 		const pointerY = ((event.clientY - bounds.top) / bounds.height) * height();
-		if (
-			pointerX < PLOT_LEFT ||
-			pointerX > width() - PLOT_RIGHT_MARGIN ||
-			pointerY < PLOT_TOP ||
-			pointerY > plotBottom()
-		)
-			return;
-		return ((pointerX - PLOT_LEFT) / plotWidth()) * maxGeneration();
+		return model().generationAtPoint(pointerX, pointerY);
 	};
-	const generationTicks = createMemo(() => {
-		const intervals = Math.min(
-			maxGeneration(),
-			Math.max(1, Math.floor(plotWidth() / 80)),
-		);
-		return Array.from({ length: intervals + 1 }, (_, i) =>
-			Math.round((i / intervals) * maxGeneration()),
-		);
-	});
-	const fitnessTicks = createMemo(() => {
-		const bounds = logBounds();
-		return [0, 0.25, 0.5, 0.75, 1].map((position) =>
-			scale() === "linear"
-				? position * maxFitness()
-				: position === 0
-					? 0
-					: 10 ** (bounds.min + position * (bounds.max - bounds.min)),
-		);
-	});
 	const series = [
 		{
 			label: "最良評価値",
@@ -232,24 +181,24 @@ export function FitnessChart(props: FitnessChartProps) {
 						目盛です。評価値は小さいほど良い解です。実線は最良評価値、破線は平均評価値を示します。
 					</desc>
 					<g class="chart-y-ticks">
-						<For each={fitnessTicks()}>
+						<For each={model().fitnessTicks}>
 							{(fitness) => (
 								<g>
 									<line
-										x1={PLOT_LEFT}
-										y1={y(fitness)}
-										x2={x(maxGeneration())}
-										y2={y(fitness)}
+										x1={model().plotLeft}
+										y1={model().y(fitness)}
+										x2={model().x(model().maxGeneration)}
+										y2={model().y(fitness)}
 										class="chart-gridline"
 									/>
 									<text
-										x={PLOT_LEFT - 10}
-										y={y(fitness)}
+										x={model().plotLeft - 10}
+										y={model().y(fitness)}
 										text-anchor="end"
 										dominant-baseline="middle"
 										class="axis-label"
 									>
-										{formatTickFitness(fitness)}
+										{formatFitnessTick(fitness)}
 									</text>
 								</g>
 							)}
@@ -257,32 +206,32 @@ export function FitnessChart(props: FitnessChartProps) {
 					</g>
 					<g class="chart-axes">
 						<line
-							x1={PLOT_LEFT}
-							y1={PLOT_TOP}
-							x2={PLOT_LEFT}
-							y2={plotBottom()}
+							x1={model().plotLeft}
+							y1={model().plotTop}
+							x2={model().plotLeft}
+							y2={model().plotBottom}
 						/>
 						<line
-							x1={PLOT_LEFT}
-							y1={plotBottom()}
-							x2={x(maxGeneration())}
-							y2={plotBottom()}
+							x1={model().plotLeft}
+							y1={model().plotBottom}
+							x2={model().x(model().maxGeneration)}
+							y2={model().plotBottom}
 						/>
 					</g>
 					<g class="chart-x-ticks">
-						<For each={generationTicks()}>
+						<For each={model().generationTicks}>
 							{(generation) => (
 								<g>
 									<line
-										x1={x(generation)}
-										y1={plotBottom()}
-										x2={x(generation)}
-										y2={plotBottom() + 5}
+										x1={model().x(generation)}
+										y1={model().plotBottom}
+										x2={model().x(generation)}
+										y2={model().plotBottom + 5}
 										class="chart-tick"
 									/>
 									<text
-										x={x(generation)}
-										y={plotBottom() + 22}
+										x={model().x(generation)}
+										y={model().plotBottom + 22}
 										text-anchor="middle"
 										class="axis-label"
 									>
@@ -300,7 +249,10 @@ export function FitnessChart(props: FitnessChartProps) {
 										<polyline
 											points={item
 												.values()
-												.map((fitness, i) => `${x(i)},${y(fitness)}`)
+												.map(
+													(fitness, i) =>
+														`${model().x(i)},${model().y(fitness)}`,
+												)
 												.join(" ")}
 											fill="none"
 											stroke={item.color}
@@ -310,8 +262,8 @@ export function FitnessChart(props: FitnessChartProps) {
 									</Show>
 									<Show when={item.values().length > 0}>
 										<circle
-											cx={x(selectedGeneration())}
-											cy={y(item.values()[selectedGeneration()] ?? 0)}
+											cx={model().x(selectedGeneration())}
+											cy={model().y(item.values()[selectedGeneration()] ?? 0)}
 											r="3.5"
 											fill={item.color}
 											stroke="white"
@@ -326,19 +278,19 @@ export function FitnessChart(props: FitnessChartProps) {
 					</g>
 					<line
 						class="chart-selection"
-						x1={x(selectedGeneration())}
-						x2={x(selectedGeneration())}
-						y1={PLOT_TOP}
-						y2={plotBottom()}
+						x1={model().x(selectedGeneration())}
+						x2={model().x(selectedGeneration())}
+						y1={model().plotTop}
+						y2={model().plotBottom}
 						stroke="#64748b"
 						stroke-dasharray="3 4"
 					/>
 					<g class="chart-labels">
-						<text x={PLOT_LEFT} y="13" class="axis-label">
+						<text x={model().plotLeft} y="13" class="axis-label">
 							評価値{scale() === "logarithmic" ? "（対数）" : ""}
 						</text>
 						<text
-							x={PLOT_LEFT + plotWidth() / 2}
+							x={model().plotLeft + model().plotWidth / 2}
 							y={height() - 4}
 							text-anchor="middle"
 							class="axis-label"
