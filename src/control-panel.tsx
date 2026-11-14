@@ -1,4 +1,5 @@
 import { onCleanup, onMount, Show } from "solid-js";
+import { NumericSettingField } from "./components/numeric-setting-field";
 import { DEFAULT_GA_PARAMETERS } from "./ga-parameters";
 import type { ExperimentSettings } from "./hooks/create-experiment-settings";
 import type { FunctionType } from "./objective-functions";
@@ -83,69 +84,43 @@ export function ControlPanel(props: ControlPanelProps) {
 							</p>
 						</div>
 
-						<div class="parameter-group">
-							<label for="populationSize">
-								個体数 ({props.minPopulationSize}-{props.maxPopulationSize}):
-							</label>
-							<input
-								id="populationSize"
-								type="number"
-								inputmode="numeric"
-								min={props.minPopulationSize}
-								max={props.maxPopulationSize}
-								value={props.drafts.population.draft()}
-								onInput={(event) =>
-									props.drafts.population.setDraft(event.currentTarget.value)
-								}
-								onBlur={props.drafts.population.commit}
-								onKeyDown={props.drafts.population.onKeyDown}
-								aria-invalid={props.drafts.population.invalid()}
-								aria-describedby={
-									props.drafts.population.invalid()
-										? "population-error"
-										: undefined
-								}
-								disabled={props.settingsLocked}
-							/>
-							<Show when={props.drafts.population.invalid()}>
-								<p id="population-error" class="field-error">
+						<NumericSettingField
+							id="populationSize"
+							label={
+								<>
+									個体数 ({props.minPopulationSize}-{props.maxPopulationSize}):
+								</>
+							}
+							draft={props.drafts.population}
+							min={props.minPopulationSize}
+							max={props.maxPopulationSize}
+							disabled={props.settingsLocked}
+							errorId="population-error"
+							errorMessage={
+								<>
 									{props.minPopulationSize}〜{props.maxPopulationSize}
 									の整数を入力してください。
-								</p>
-							</Show>
-						</div>
-
-						<div class="parameter-group">
-							<label for="generations">
-								世代数 ({props.minGenerations}-{props.maxGenerations}):
-							</label>
-							<input
-								id="generations"
-								type="number"
-								inputmode="numeric"
-								min={props.minGenerations}
-								max={props.maxGenerations}
-								value={props.drafts.generations.draft()}
-								onInput={(event) =>
-									props.drafts.generations.setDraft(event.currentTarget.value)
-								}
-								onBlur={props.drafts.generations.commit}
-								onKeyDown={props.drafts.generations.onKeyDown}
-								aria-invalid={props.drafts.generations.invalid()}
-								aria-describedby={
-									props.drafts.generations.invalid()
-										? "generations-error"
-										: undefined
-								}
-								disabled={props.settingsLocked}
-							/>
-							<Show when={props.drafts.generations.invalid()}>
-								<p id="generations-error" class="field-error">
+								</>
+							}
+						/>
+						<NumericSettingField
+							id="generations"
+							label={
+								<>
+									世代数 ({props.minGenerations}-{props.maxGenerations}):
+								</>
+							}
+							draft={props.drafts.generations}
+							min={props.minGenerations}
+							max={props.maxGenerations}
+							disabled={props.settingsLocked}
+							errorMessage={
+								<>
 									{props.minGenerations}〜{props.maxGenerations}
 									の整数を入力してください。
-								</p>
-							</Show>
-						</div>
+								</>
+							}
+						/>
 					</div>
 					<details class="advanced-settings">
 						<summary class="settings-toggle">
@@ -158,42 +133,31 @@ export function ControlPanel(props: ControlPanelProps) {
 						</summary>
 						<div class="parameter-controls advanced-settings-content">
 							{props.drafts.parameterFields.map((field) => (
-								<div class="parameter-group">
-									<label for={`ga-${field.key}`}>
-										{field.label} ({field.min}〜{field.max})
-									</label>
-									<input
-										id={`ga-${field.key}`}
-										type="number"
-										inputmode={field.integer ? "numeric" : "decimal"}
-										min={field.min}
-										max={field.max}
-										step={field.integer ? 1 : "any"}
-										value={field.draft()}
-										onInput={(event) =>
-											field.setDraft(event.currentTarget.value)
-										}
-										onBlur={field.commit}
-										onKeyDown={field.onKeyDown}
-										disabled={props.settingsLocked}
-										aria-invalid={field.invalid()}
-										aria-describedby={
-											field.invalid()
-												? `ga-${field.key}-help ga-${field.key}-error`
-												: `ga-${field.key}-help`
-										}
-									/>
-									<p id={`ga-${field.key}-help`} class="parameter-description">
-										{field.description} 初期値:{" "}
-										{DEFAULT_GA_PARAMETERS[field.key]}
-									</p>
-									<Show when={field.invalid()}>
-										<p id={`ga-${field.key}-error`} class="field-error">
+								<NumericSettingField
+									id={`ga-${field.key}`}
+									label={
+										<>
+											{field.label} ({field.min}〜{field.max})
+										</>
+									}
+									draft={field}
+									min={field.min}
+									max={field.max}
+									step={field.integer ? 1 : "any"}
+									disabled={props.settingsLocked}
+									description={
+										<>
+											{field.description} 初期値:{" "}
+											{DEFAULT_GA_PARAMETERS[field.key]}
+										</>
+									}
+									errorMessage={
+										<>
 											{field.min}〜{field.max}の
 											{field.integer ? "整数" : "数値"}を入力してください。
-										</p>
-									</Show>
-								</div>
+										</>
+									}
+								/>
 							))}
 							<button
 								type="button"

@@ -29,5 +29,7 @@ export function createNumericDraft(options: NumericDraftOptions) {
 	return { draft, setDraft, invalid, cancel, commit, onKeyDown };
 }
 
+export type NumericDraft = ReturnType<typeof createNumericDraft>;
+
 export const isIntegerInRange = (value: number, min: number, max: number) =>
 	Number.isInteger(value) && value >= min && value <= max;
