@@ -50,8 +50,13 @@ export function useGeneticAlgorithm() {
 	});
 
 	const [ga, setGA] = createSignal(new GeneticAlgorithm(createGAConfig()));
-	const [population, setPopulation] = createSignal(ga().getPopulation());
-	const [statistics, setStatistics] = createSignal(ga().getStatistics());
+	const readLatestResult = () => ({
+		population: ga().getPopulation(),
+		statistics: ga().getStatistics(),
+	});
+	const [latestResult, setLatestResult] = createSignal(readLatestResult());
+	const population = () => latestResult().population;
+	const statistics = () => latestResult().statistics;
 	const [selectedGeneration, setSelectedGeneration] = createSignal<
 		number | null
 	>(null);
@@ -87,8 +92,7 @@ export function useGeneticAlgorithm() {
 	);
 
 	const syncFromGA = () => {
-		setPopulation(ga().getPopulation());
-		setStatistics(ga().getStatistics());
+		setLatestResult(readLatestResult());
 	};
 
 	const initializeGA = () => {

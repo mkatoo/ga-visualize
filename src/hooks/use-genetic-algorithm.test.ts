@@ -1,7 +1,12 @@
 import { cleanup, renderHook } from "@solidjs/testing-library";
+import { createComputed } from "solid-js";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { DEFAULT_GA_PARAMETERS } from "../ga-parameters";
-import { DEFAULT_CONFIG, GeneticAlgorithm } from "../genetic-algorithm";
+import {
+	DEFAULT_CONFIG,
+	type GenerationSnapshot,
+	GeneticAlgorithm,
+} from "../genetic-algorithm";
 import { useGeneticAlgorithm } from "./use-genetic-algorithm";
 
 const fields = [
@@ -23,6 +28,35 @@ describe("Genetic algorithm settings", () => {
 		cleanup();
 		vi.restoreAllMocks();
 		vi.useRealTimers();
+	});
+
+	test("publishes matching population and statistics throughout run and history changes", () => {
+		const snapshots: GenerationSnapshot[] = [];
+		const { result } = renderHook(() => {
+			const simulation = useGeneticAlgorithm();
+			createComputed(() => snapshots.push(simulation.displayedSnapshot()));
+			return simulation;
+		});
+		result.changePopulationSize(12);
+		result.step();
+		result.step();
+		result.selectGeneration(1);
+		result.showLatest();
+		result.reset();
+		result.changeFunctionType("beale");
+		result.restart();
+		vi.advanceTimersByTime(result.animationSpeed());
+
+		for (const snapshot of snapshots) {
+			expect(snapshot.population).toContain(snapshot.currentBest);
+			expect(snapshot.averageFitness).toBeCloseTo(
+				snapshot.population.reduce(
+					(sum, individual) => sum + individual.fitness,
+					0,
+				) / snapshot.population.length,
+				10,
+			);
+		}
 	});
 
 	test.each(fields)(
