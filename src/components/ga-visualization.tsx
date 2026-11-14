@@ -113,6 +113,12 @@ export function GAVisualization(props: GAVisualizationProps) {
 					"--chart-padding-bottom": `${FITNESS_CHART_INSETS.bottom}px`,
 				}}
 			>
+				<GenerationSummary
+					generation={props.generation}
+					bestIndividual={props.bestIndividual}
+					averageFitness={props.averageFitness}
+					bestEver={props.bestEver ?? props.bestIndividual}
+				/>
 				<div class="landscape-panel visualizer">
 					<div class="landscape-header">
 						<h2 class="landscape-heading">地形と個体分布</h2>
@@ -268,12 +274,6 @@ export function GAVisualization(props: GAVisualizationProps) {
 						</details>
 					</div>
 				</div>
-				<GenerationSummary
-					generation={props.generation}
-					bestIndividual={props.bestIndividual}
-					averageFitness={props.averageFitness}
-					bestEver={props.bestEver ?? props.bestIndividual}
-				/>
 				<Show when={playback()}>
 					<div class="playback-controls">{playback()}</div>
 				</Show>

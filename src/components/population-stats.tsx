@@ -41,22 +41,26 @@ interface GenerationSummaryProps {
 export function GenerationSummary(props: GenerationSummaryProps) {
 	return (
 		<section class="generation-summary" aria-label="表示中の世代の要約">
-			<p class="summary-generation">第{props.generation}世代</p>
-			<dl class="summary-metrics">
-				<div class="best-individual">
-					<dt>表示世代の最良</dt>
-					<dd
-						title={
-							props.bestIndividual
-								? `評価値: ${props.bestIndividual.fitness}`
-								: undefined
-						}
-					>
-						{props.bestIndividual
-							? formatFitness(props.bestIndividual.fitness)
-							: "—"}
-					</dd>
-				</div>
+			<div class="summary-primary">
+				<p class="summary-generation">第{props.generation}世代</p>
+				<dl class="summary-metrics">
+					<div class="best-individual">
+						<dt>表示世代の最良</dt>
+						<dd
+							title={
+								props.bestIndividual
+									? `評価値: ${props.bestIndividual.fitness}`
+									: undefined
+							}
+						>
+							{props.bestIndividual
+								? formatFitness(props.bestIndividual.fitness)
+								: "—"}
+						</dd>
+					</div>
+				</dl>
+			</div>
+			<dl class="summary-secondary">
 				<div class="average-fitness">
 					<dt>平均評価値</dt>
 					<dd title={`平均評価値: ${props.averageFitness}`}>

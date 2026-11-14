@@ -1,9 +1,10 @@
 import { createSignal, onCleanup, onMount } from "solid-js";
 import { GAVisualization } from "./components/ga-visualization";
 import { GenerationHistory } from "./components/generation-history";
-import { SpeedControl } from "./components/speed-control";
+import { RunControls } from "./components/run-controls";
 import { ControlPanel } from "./control-panel";
 import { FitnessChart } from "./fitness-chart";
+import { createExperimentSettings } from "./hooks/create-experiment-settings";
 import { useGeneticAlgorithm } from "./hooks/use-genetic-algorithm";
 import { EASE_OUT_CSS } from "./motion";
 import { VISUALIZATION_COLORS } from "./visualization-colors";
@@ -54,6 +55,25 @@ export function GAApp() {
 		constraints,
 	} = useGeneticAlgorithm();
 
+	const drafts = createExperimentSettings({
+		get populationSize() {
+			return populationSize();
+		},
+		get generations() {
+			return generations();
+		},
+		get parameters() {
+			return parameters();
+		},
+		get settingsLocked() {
+			return settingsLocked();
+		},
+		constraints,
+		onPopulationSizeChange: changePopulationSize,
+		onGenerationsChange: changeGenerations,
+		onParameterChange: handleParameterChange,
+	});
+
 	return (
 		<div
 			ref={root}
@@ -73,26 +93,13 @@ export function GAApp() {
 			<div class="main-content">
 				<div class="control-panel">
 					<ControlPanel
-						isRunning={isRunning()}
-						isViewingHistory={isViewingHistory()}
-						runStatus={runStatus()}
-						onRestart={restart}
+						drafts={drafts}
 						functionType={functionType()}
 						populationSize={populationSize()}
 						generations={generations()}
-						parameters={parameters()}
-						animationSpeed={animationSpeed()}
 						settingsLocked={settingsLocked()}
-						currentGeneration={statistics().generation}
-						onStart={start}
-						onStop={stop}
-						onStep={step}
-						onReset={reset}
 						onResetParameters={resetParameters}
-						onParameterChange={handleParameterChange}
 						onFunctionTypeChange={changeFunctionType}
-						onPopulationSizeChange={changePopulationSize}
-						onGenerationsChange={changeGenerations}
 						minPopulationSize={constraints.minPopulationSize}
 						maxPopulationSize={constraints.maxPopulationSize}
 						minGenerations={constraints.minGenerations}
@@ -119,15 +126,30 @@ export function GAApp() {
 							/>
 						}
 					>
+						<RunControls
+							isRunning={isRunning()}
+							isViewingHistory={isViewingHistory()}
+							runStatus={runStatus()}
+							currentGeneration={statistics().generation}
+							generations={generations()}
+							animationSpeed={animationSpeed()}
+							invalidSettings={drafts.invalidSettings()}
+							onFocusInvalidSetting={drafts.focusInvalidSetting}
+							onStart={start}
+							onStop={stop}
+							onStep={step}
+							onRestart={restart}
+							onReset={() => {
+								drafts.cancelDrafts();
+								reset();
+							}}
+							onSpeedChange={handleSpeedChange}
+						/>
 						<GenerationHistory
 							generation={displayedGeneration()}
 							latestGeneration={statistics().generation}
 							onSelect={selectGeneration}
 							onShowLatest={showLatest}
-						/>
-						<SpeedControl
-							animationSpeed={animationSpeed()}
-							onSpeedChange={handleSpeedChange}
 						/>
 					</GAVisualization>
 				</div>
