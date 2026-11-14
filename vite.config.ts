@@ -13,9 +13,8 @@ export default defineConfig({
     environment: 'jsdom',
     globals: false,
     setupFiles: ['node_modules/@testing-library/jest-dom/vitest'],
-    // if you have few tests, try commenting this
-    // out to improve performance:
-    isolate: false,
+    // Keep module mocks independent when suites run in the same worker.
+    isolate: true,
   },
   build: {
     target: 'esnext',
