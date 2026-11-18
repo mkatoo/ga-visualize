@@ -2,6 +2,7 @@ import { createSignal, onCleanup, onMount } from "solid-js";
 import { GAVisualization } from "./components/ga-visualization";
 import { GenerationHistory } from "./components/generation-history";
 import { RunControls } from "./components/run-controls";
+import { SpeedControl } from "./components/speed-control";
 import { ControlPanel } from "./control-panel";
 import { FitnessChart } from "./fitness-chart";
 import { createExperimentSettings } from "./hooks/create-experiment-settings";
@@ -117,6 +118,35 @@ export function GAApp() {
 						bestEver={displayedSnapshot().bestEver}
 						bestEverGeneration={displayedSnapshot().bestEverGeneration}
 						functionType={functionType()}
+						history={
+							<>
+								<GenerationHistory
+									generation={displayedGeneration()}
+									latestGeneration={statistics().generation}
+									onSelect={selectGeneration}
+									onShowLatest={showLatest}
+								/>
+								<div class="playback-options">
+									<details class="speed-settings">
+										<summary class="settings-toggle">実行速度</summary>
+										<SpeedControl
+											animationSpeed={animationSpeed()}
+											onSpeedChange={handleSpeedChange}
+										/>
+									</details>
+									<button
+										type="button"
+										class="btn btn-text"
+										onClick={() => {
+											drafts.cancelDrafts();
+											reset();
+										}}
+									>
+										リセット
+									</button>
+								</div>
+							</>
+						}
 						chart={
 							<FitnessChart
 								selectedGeneration={displayedGeneration()}
@@ -140,17 +170,6 @@ export function GAApp() {
 							onStop={stop}
 							onStep={step}
 							onRestart={restart}
-							onReset={() => {
-								drafts.cancelDrafts();
-								reset();
-							}}
-							onSpeedChange={handleSpeedChange}
-						/>
-						<GenerationHistory
-							generation={displayedGeneration()}
-							latestGeneration={statistics().generation}
-							onSelect={selectGeneration}
-							onShowLatest={showLatest}
 						/>
 					</GAVisualization>
 				</div>

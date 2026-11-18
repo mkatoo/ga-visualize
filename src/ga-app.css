@@ -100,7 +100,6 @@ body {
 }
 
 .generation-history {
-	flex: 1 1 480px;
 	min-width: 0;
 }
 
@@ -197,7 +196,7 @@ body {
 
 .visualization-content {
 	display: grid;
-	grid-template-areas: "summary" "landscape" "playback" "chart";
+	grid-template-areas: "summary" "playback" "landscape" "chart";
 	grid-template-columns: minmax(0, 1fr);
 	gap: 20px;
 }
@@ -218,11 +217,32 @@ body {
 
 .playback-controls {
 	grid-area: playback;
-	display: grid;
-	gap: 12px;
 	min-width: 0;
-	padding-top: 16px;
+}
+
+.landscape-history {
+	padding-top: 8px;
 	border-top: 1px solid var(--color-border-subtle);
+	text-align: left;
+}
+
+.playback-options {
+	display: flex;
+	align-items: start;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.speed-settings {
+	flex: 1 1 0;
+	min-width: 0;
+	max-width: 320px;
+	font-size: 0.85rem;
+}
+
+.speed-settings > summary {
+	width: fit-content;
+	padding-inline: 8px;
 }
 
 .visualization-toolbar {
@@ -409,7 +429,7 @@ body {
 	justify-content: center;
 	flex-wrap: wrap;
 	gap: 8px 16px;
-	margin: 12px 0 0;
+	margin: 6px 0 0;
 	font-size: 0.8rem;
 	color: var(--color-text-secondary);
 }
@@ -701,7 +721,8 @@ body {
 
 .settings-details[open] > .settings-toggle::after,
 .result-details[open] > .settings-toggle::after,
-.advanced-settings[open] > .settings-toggle::after {
+.advanced-settings[open] > .settings-toggle::after,
+.speed-settings[open] > .settings-toggle::after {
 	transform: rotate(225deg);
 }
 
@@ -778,10 +799,6 @@ body {
 }
 
 .run-controls {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr);
-	align-items: end;
-	gap: 12px 24px;
 	min-width: 0;
 }
 
@@ -988,10 +1005,6 @@ body {
 	color: var(--color-text-muted);
 }
 
-.run-controls .speed-range-labels {
-	display: none;
-}
-
 .progress {
 	margin-bottom: 20px;
 }
@@ -1189,17 +1202,15 @@ body {
 }
 
 @media (min-width: 1280px) {
-	.run-controls {
-		grid-template-columns: minmax(0, 1fr) 240px;
-	}
 	.visualization-content:has(> .fitness-chart) {
 		grid-template-columns: minmax(424px, 1.15fr) minmax(300px, 1fr);
 		grid-template-areas:
 			"summary summary"
+			"playback playback"
 			"landscape chart"
 			"landscape chart"
 			"landscape chart"
-			"playback playback";
+			"landscape .";
 		row-gap: 0;
 	}
 
@@ -1208,7 +1219,7 @@ body {
 	}
 
 	.visualization-content:has(> .fitness-chart) .playback-controls {
-		margin-top: 12px;
+		margin-bottom: 12px;
 	}
 
 	.visualization-content:has(> .fitness-chart)
@@ -1244,7 +1255,7 @@ body {
 @media (max-width: 1024px) {
 	html {
 		--run-controls-fallback-height: calc(
-			172px +
+			102px +
 			env(safe-area-inset-bottom, 0px)
 		);
 		scroll-padding-bottom: calc(
@@ -1260,9 +1271,13 @@ body {
 		);
 	}
 
+	.ga-app {
+		--visualization-size: clamp(280px, calc(100svh - 340px), 640px);
+	}
+
 	html:has(.run-settings-error) {
 		--run-controls-fallback-height: calc(
-			228px +
+			154px +
 			env(safe-area-inset-bottom, 0px)
 		);
 	}
@@ -1274,7 +1289,11 @@ body {
 	}
 
 	.visualization-content {
-		grid-template-areas: "summary" "landscape" "metrics" "playback" "chart";
+		grid-template-areas: "summary" "landscape" "metrics" "chart";
+	}
+
+	.playback-controls {
+		display: contents;
 	}
 
 	.header {
@@ -1320,10 +1339,8 @@ body {
 		position: fixed;
 		inset: auto 0 0;
 		z-index: 20;
-		grid-template-columns: minmax(0, 1fr);
-		gap: 8px;
-		padding: 10px max(12px, env(safe-area-inset-right, 0px))
-			calc(10px + env(safe-area-inset-bottom, 0px))
+		padding: 8px max(12px, env(safe-area-inset-right, 0px))
+			calc(8px + env(safe-area-inset-bottom, 0px))
 			max(12px, env(safe-area-inset-left, 0px));
 		border-top: 1px solid var(--color-border-subtle);
 		background: var(--color-surface);
@@ -1332,7 +1349,7 @@ body {
 
 	.run-buttons {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 	}
 
 	.run-buttons .btn-primary {
@@ -1360,21 +1377,6 @@ body {
 
 	.button-group .progress-bar {
 		height: 4px;
-	}
-
-	.run-controls .speed-control {
-		display: grid;
-		grid-template-columns: auto minmax(80px, 1fr);
-		align-items: center;
-		gap: 12px;
-	}
-
-	.run-controls .speed-control-header {
-		gap: 6px;
-	}
-
-	.run-controls .speed-control label {
-		font-size: 0.8rem;
 	}
 }
 

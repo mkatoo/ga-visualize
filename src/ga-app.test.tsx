@@ -208,6 +208,7 @@ describe("GA application playback, history and layout", () => {
 		const summary = view.container.querySelector("summary");
 		const generation = () => displayedGeneration(view);
 		expect(settings).not.toHaveAttribute("open");
+		fireEvent.click(view.getByText("実行速度"));
 		const speed = view.getByRole("slider", { name: "アニメーション速度:" });
 		expect(speed).toBeVisible();
 		if (!summary) throw new Error("Settings summary is missing");

@@ -1,7 +1,6 @@
 import { onCleanup, onMount, Show } from "solid-js";
 import type { RunStatus } from "../hooks/use-genetic-algorithm";
 import { ProgressDisplay } from "../progress-display";
-import { SpeedControl } from "./speed-control";
 
 interface RunControlsProps {
 	isRunning: boolean;
@@ -15,9 +14,7 @@ interface RunControlsProps {
 	onStop: () => void;
 	onStep: () => void;
 	onRestart: () => void;
-	onReset: () => void;
 	onFocusInvalidSetting: () => void;
-	onSpeedChange: (value: number) => void;
 }
 
 export function RunControls(props: RunControlsProps) {
@@ -100,9 +97,6 @@ export function RunControls(props: RunControlsProps) {
 					>
 						{props.isViewingHistory ? "最新から1世代進める" : "1世代進める"}
 					</button>
-					<button type="button" class="btn btn-text" onClick={props.onReset}>
-						リセット
-					</button>
 				</div>
 				<Show when={props.invalidSettings}>
 					<div class="run-settings-error">
@@ -117,10 +111,6 @@ export function RunControls(props: RunControlsProps) {
 					</div>
 				</Show>
 			</fieldset>
-			<SpeedControl
-				animationSpeed={props.animationSpeed}
-				onSpeedChange={props.onSpeedChange}
-			/>
 		</div>
 	);
 }

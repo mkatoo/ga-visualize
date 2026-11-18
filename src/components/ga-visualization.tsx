@@ -38,6 +38,7 @@ interface GAVisualizationProps {
 	bestEverGeneration?: number;
 	functionType: FunctionType;
 	children?: JSX.Element;
+	history?: JSX.Element;
 	chart?: JSX.Element;
 }
 
@@ -120,6 +121,9 @@ export function GAVisualization(props: GAVisualizationProps) {
 					averageFitness={props.averageFitness}
 					bestEver={props.bestEver ?? props.bestIndividual}
 				/>
+				<Show when={playback()}>
+					<div class="playback-controls">{playback()}</div>
+				</Show>
 				<div class="landscape-panel visualizer">
 					<div class="landscape-header">
 						<h2 class="landscape-heading">地形と個体分布</h2>
@@ -202,19 +206,6 @@ export function GAVisualization(props: GAVisualizationProps) {
 						<FitnessScale scale={colorScale()} />
 					</div>
 					<div class="landscape-annotations">
-						<p class="three-help">
-							<Show
-								when={mode() === "3d"}
-								fallback="地形の色は評価値を示します。小さいほど良い解です。"
-							>
-								<span class="three-help-mouse">
-									ドラッグで回転・ホイールでズーム・右ドラッグで移動。
-								</span>
-								<span class="three-help-touch">
-									タッチは1本指で回転、2本指でズーム・移動。
-								</span>
-							</Show>
-						</p>
 						<section class="population-legend" aria-label="個体の凡例">
 							<span>
 								<i class="population-dot" />
@@ -229,11 +220,24 @@ export function GAVisualization(props: GAVisualizationProps) {
 								既知の最適解 ({optimum().x}, {optimum().y})
 							</span>
 						</section>
+						<p class="three-help">
+							<Show
+								when={mode() === "3d"}
+								fallback="地形の色は評価値を示します。小さいほど良い解です。"
+							>
+								<span class="three-help-mouse">
+									ドラッグで回転・ホイールでズーム・右ドラッグで移動。
+								</span>
+								<span class="three-help-touch">
+									タッチは1本指で回転、2本指でズーム・移動。
+								</span>
+							</Show>
+						</p>
 					</div>
+					<Show when={props.history}>
+						<div class="landscape-history">{props.history}</div>
+					</Show>
 				</div>
-				<Show when={playback()}>
-					<div class="playback-controls">{playback()}</div>
-				</Show>
 				{props.chart}
 			</div>
 			<details class="view-settings" hidden={mode() !== "3d"}>
