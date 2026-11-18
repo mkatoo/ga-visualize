@@ -53,6 +53,7 @@ export function GAVisualization(props: GAVisualizationProps) {
 	const [resolution, setResolution] = createSignal(100);
 	const [resetView, setResetView] = createSignal(0);
 	const [animateReset, setAnimateReset] = createSignal(false);
+	const current3D = () => (mode() === "3d" ? threeComponent() : undefined);
 	let camera: CameraState | undefined;
 	let request = 0;
 	const settings = createMemo(
@@ -72,7 +73,7 @@ export function GAVisualization(props: GAVisualizationProps) {
 		return createLandscape(functionType, { min, max });
 	});
 	const colorScale = createMemo(() =>
-		mode() === "3d"
+		current3D()
 			? {
 					...landscape().colorScale,
 					logarithmic: heightScale() === "logarithmic",
@@ -105,9 +106,6 @@ export function GAVisualization(props: GAVisualizationProps) {
 	onCleanup(() => request++);
 	return (
 		<div class="visualization-panel">
-			<Show when={error()}>
-				<output class="visualization-error">{error()}</output>
-			</Show>
 			<div
 				class="visualization-content"
 				style={{
@@ -128,59 +126,38 @@ export function GAVisualization(props: GAVisualizationProps) {
 					<div class="landscape-header">
 						<h2 class="landscape-heading">地形と個体分布</h2>
 						<fieldset class="visualization-toolbar" aria-label="表示ツールバー">
-							<div class="view-toolbar">
-								<fieldset class="view-toggle" aria-label="表示方式">
-									<button
-										type="button"
-										aria-pressed={mode() === "2d"}
-										onClick={() => {
-											request++;
-											setMode("2d");
-										}}
-									>
-										2D
-									</button>
-									<button
-										type="button"
-										aria-pressed={mode() === "3d"}
-										onClick={select3D}
-									>
-										3D
-									</button>
-								</fieldset>
-								<Show when={mode() === "3d"}>
-									<button
-										type="button"
-										class="view-reset"
-										disabled={!threeComponent()}
-										onClick={(event) => {
-											setAnimateReset(event.detail > 0);
-											setResetView((v) => v + 1);
-										}}
-									>
-										視点リセット
-									</button>
-								</Show>
-							</div>
+							<fieldset class="view-toggle" aria-label="表示方式">
+								<button
+									type="button"
+									aria-pressed={mode() === "2d"}
+									onClick={() => {
+										request++;
+										setMode("2d");
+										setError("");
+									}}
+								>
+									2D
+								</button>
+								<button
+									type="button"
+									aria-pressed={mode() === "3d"}
+									onClick={select3D}
+								>
+									3D
+								</button>
+							</fieldset>
 						</fieldset>
 					</div>
 					<div class="landscape-view">
-						<Show
-							when={mode() === "3d"}
-							fallback={
-								<Visualizer
-									population={props.population}
-									bestIndividual={props.bestIndividual}
-									landscape={landscape()}
-								/>
-							}
-						>
+						<div class="landscape-frame">
 							<Show
-								when={threeComponent()}
+								when={current3D()}
 								fallback={
-									<output class="three-loading">
-										3D表示を読み込んでいます…
-									</output>
+									<Visualizer
+										population={props.population}
+										bestIndividual={props.bestIndividual}
+										landscape={landscape()}
+									/>
 								}
 							>
 								{(component) => (
@@ -202,7 +179,29 @@ export function GAVisualization(props: GAVisualizationProps) {
 									/>
 								)}
 							</Show>
-						</Show>
+							<Show when={current3D()}>
+								<button
+									type="button"
+									class="view-reset"
+									onClick={(event) => {
+										setAnimateReset(event.detail > 0);
+										setResetView((v) => v + 1);
+									}}
+								>
+									視点リセット
+								</button>
+							</Show>
+							<Show when={mode() === "3d" && !current3D()}>
+								<output class="landscape-notice three-loading">
+									3D表示を読み込んでいます…
+								</output>
+							</Show>
+							<Show when={error()}>
+								<output class="landscape-notice visualization-error">
+									{error()}
+								</output>
+							</Show>
+						</div>
 						<FitnessScale scale={colorScale()} />
 					</div>
 					<div class="landscape-annotations">
@@ -222,7 +221,7 @@ export function GAVisualization(props: GAVisualizationProps) {
 						</section>
 						<p class="three-help">
 							<Show
-								when={mode() === "3d"}
+								when={current3D()}
 								fallback="地形の色は評価値を示します。小さいほど良い解です。"
 							>
 								<span class="three-help-mouse">
@@ -240,7 +239,7 @@ export function GAVisualization(props: GAVisualizationProps) {
 				</div>
 				{props.chart}
 			</div>
-			<details class="view-settings" hidden={mode() !== "3d"}>
+			<details class="view-settings" hidden={!current3D()}>
 				<summary class="settings-toggle">
 					<span class="settings-title">3D表示設定</span>
 				</summary>

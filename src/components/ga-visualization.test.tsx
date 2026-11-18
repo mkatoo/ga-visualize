@@ -185,22 +185,22 @@ describe("2D / 3D visualization", () => {
 		expect(renderer.resetCamera).toHaveBeenLastCalledWith(false);
 	});
 
-	test("keeps camera reset available in the toolbar while 3D settings are closed", async () => {
+	test("keeps camera reset available on the terrain while 3D settings are closed", async () => {
 		const view = renderPanel();
 		const toolbar = within(view.getByRole("group", { name: "表示ツールバー" }));
-		expect(toolbar.queryByRole("button", { name: "視点リセット" })).toBeNull();
+		expect(view.queryByRole("button", { name: "視点リセット" })).toBeNull();
 		fireEvent.click(toolbar.getByRole("button", { name: "3D" }));
 		await waitFor(() => expect(ThreeLandscapeRenderer).toHaveBeenCalled());
 		expect(view.container.querySelector(".view-settings")).not.toHaveAttribute(
 			"open",
 		);
-		const reset = toolbar.getByRole("button", { name: "視点リセット" });
+		const reset = view.getByRole("button", { name: "視点リセット" });
 		expect(reset).toBeVisible();
 		expect(reset).toBeEnabled();
 		fireEvent.click(reset, { detail: 1 });
 		expect(renderer.resetCamera).toHaveBeenLastCalledWith(true);
 		fireEvent.click(toolbar.getByRole("button", { name: "2D" }));
-		expect(toolbar.queryByRole("button", { name: "視点リセット" })).toBeNull();
+		expect(view.queryByRole("button", { name: "視点リセット" })).toBeNull();
 	});
 
 	test("does not create a renderer after returning to 2D during loading", async () => {
@@ -211,9 +211,11 @@ describe("2D / 3D visualization", () => {
 			}),
 		);
 		const view = renderPanel();
+		const initialCanvas = view.getByLabelText("目的関数の地形と個体分布");
 		fireEvent.click(view.getByRole("button", { name: "3D" }));
 		expect(view.getByRole("status")).toHaveTextContent("読み込んでいます");
-		expect(view.getByRole("button", { name: "視点リセット" })).toBeDisabled();
+		expect(view.getByLabelText("目的関数の地形と個体分布")).toBe(initialCanvas);
+		expect(view.queryByRole("button", { name: "視点リセット" })).toBeNull();
 		fireEvent.click(view.getByRole("button", { name: "2D" }));
 		resolve({ Visualizer3D });
 		await Promise.resolve();
