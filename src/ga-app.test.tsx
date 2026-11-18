@@ -133,21 +133,20 @@ describe("GA application playback, history and layout", () => {
 				target: { value: "0" },
 			},
 		);
-		expect(displayedGeneration(view)).toHaveTextContent(
-			"履歴表示中：第0／3世代",
-		);
-		expect(within(summary).getByText("第0世代までの最良")).toBeVisible();
+		expect(displayedGeneration(view)).toHaveTextContent(/^第0世代$/);
+		expect(within(summary).getByText("最新は第3世代")).toBeVisible();
+		expect(within(summary).getByText("ここまでの最良")).toBeVisible();
 		expect(bestEver()).toHaveTextContent(initialBest ?? "");
 		expect(view.getByRole("status")).toHaveTextContent("実行が完了しました");
 
 		fireEvent.click(view.getByRole("button", { name: "最新世代に戻る" }));
 		expect(displayedGeneration(view)).toHaveTextContent(/^第3世代$/);
-		expect(summary).not.toHaveTextContent("履歴表示中");
-		expect(within(summary).getByText("第3世代までの最良")).toBeVisible();
+		expect(summary).not.toHaveTextContent("最新は");
+		expect(within(summary).getByText("ここまでの最良")).toBeVisible();
 		expect(bestEver()).toHaveTextContent(latestBest ?? "");
 		confirmExperimentReset(view);
 		expect(displayedGeneration(view)).toHaveTextContent(/^第0世代$/);
-		expect(summary).not.toHaveTextContent("履歴表示中");
+		expect(summary).not.toHaveTextContent("最新は");
 	});
 
 	test("updates progress immediately for manual steps, fast playback, completion and reset", () => {

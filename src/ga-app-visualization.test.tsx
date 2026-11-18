@@ -125,9 +125,8 @@ describe("GA application visualization integration", () => {
 		});
 		expect(view.getByRole("button", { name: "最新から再開" })).toBeEnabled();
 		expect(renderer.updatePopulation.mock.lastCall?.[0]).toEqual(generationOne);
-		expect(displayedGeneration(view)).toHaveTextContent(
-			"履歴表示中：第1／3世代",
-		);
+		expect(displayedGeneration(view)).toHaveTextContent(/^第1世代$/);
+		expect(within(readout).getByText("最新は第3世代")).toBeVisible();
 		expect(generationInput).toHaveValue(1);
 		expect(coordinates.textContent).toBe(generationOneCoordinates);
 		expect(coordinates).toBeVisible();
@@ -138,9 +137,8 @@ describe("GA application visualization integration", () => {
 		expect(slider).toHaveValue("1");
 		fireEvent.keyDown(generationInput, { key: "Enter" });
 		expect(slider).toHaveValue("2");
-		expect(displayedGeneration(view)).toHaveTextContent(
-			"履歴表示中：第2／3世代",
-		);
+		expect(displayedGeneration(view)).toHaveTextContent(/^第2世代$/);
+		expect(within(readout).getByText("最新は第3世代")).toBeVisible();
 		fireEvent.click(view.getByRole("button", { name: "最新世代に戻る" }));
 		expect(slider).toHaveValue("3");
 		expect(generationInput).toHaveValue(3);
