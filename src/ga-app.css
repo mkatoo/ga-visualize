@@ -295,7 +295,7 @@ body {
 }
 
 .view-toggle button,
-.view-reset {
+.three-view-controls button {
 	min-height: var(--control-height);
 	border: 1px solid transparent;
 	border-radius: var(--control-radius);
@@ -313,17 +313,32 @@ body {
 	font-weight: 600;
 }
 
-.view-reset {
+.three-view-controls {
 	position: absolute;
 	inset-block-start: 8px;
-	inset-inline-end: 8px;
+	inset-inline: 8px;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: end;
+	gap: 6px;
+	pointer-events: none;
+}
+
+.three-view-controls button {
 	border-color: var(--color-border);
 	background: var(--color-surface);
 	font-size: 0.85rem;
+	pointer-events: auto;
+}
+
+.three-view-controls .three-touch-toggle[data-interacting="true"] {
+	background-color: var(--color-accent);
+	border-color: var(--color-accent);
+	color: var(--color-surface);
 }
 
 .view-toggle button:focus-visible,
-.view-reset:focus-visible,
+.three-view-controls button:focus-visible,
 .three-container canvas:focus-visible {
 	outline: 2px solid var(--color-focus);
 	outline-offset: 3px;
@@ -411,7 +426,6 @@ body {
 	display: block;
 	width: 100%;
 	height: 100%;
-	touch-action: none;
 }
 
 .three-axis-labels {
@@ -439,7 +453,8 @@ body {
 	margin: 8px 0;
 }
 
-.three-help-touch {
+.three-help-touch,
+.three-touch-toggle {
 	display: none;
 }
 
@@ -447,9 +462,12 @@ body {
 	.three-help-mouse {
 		display: none;
 	}
+}
 
-	.three-help-touch {
-		display: inline;
+@media (any-pointer: coarse) {
+	.three-help-touch,
+	.three-touch-toggle {
+		display: inline-block;
 	}
 }
 
@@ -931,13 +949,13 @@ body {
 	}
 
 	.view-toggle button:not([aria-pressed="true"]):hover,
-	.view-reset:hover:not(:disabled),
+	.three-view-controls button:hover,
 	.ga-app summary:hover {
 		background-color: var(--color-surface-hover);
 		color: var(--color-text);
 	}
 
-	.view-reset:hover:not(:disabled) {
+	.three-view-controls button:hover {
 		border-color: var(--color-border-strong);
 	}
 }
@@ -953,7 +971,7 @@ body {
 .btn-secondary:active:not(:disabled),
 .btn-text:active:not(:disabled),
 .view-toggle button:active,
-.view-reset:active:not(:disabled),
+.three-view-controls button:active,
 .ga-app summary:active {
 	background-color: var(--color-surface-hover);
 }

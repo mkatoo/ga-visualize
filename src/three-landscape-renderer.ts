@@ -293,6 +293,10 @@ export class ThreeLandscapeRenderer {
 		this.requestRender();
 	}
 
+	setTouchInteraction(enabled: boolean) {
+		this.cameraController?.setTouchInteraction(enabled);
+	}
+
 	resetCamera(animate = false) {
 		this.cameraController?.resetCamera(animate);
 	}

@@ -12,6 +12,7 @@ export class ThreeCameraController {
 	private disposed = false;
 	private motionQuery?: MediaQueryList;
 	private pointerInput = false;
+	private touchInteraction = false;
 	private suppressCameraChange = false;
 	private cameraTransition?: {
 		position: Vector3;
@@ -27,6 +28,7 @@ export class ThreeCameraController {
 	) {
 		this.controls = new OrbitControls(this.camera, this.canvas);
 		try {
+			this.canvas.style.touchAction = "auto";
 			this.controls.enableDamping = false;
 			this.controls.dampingFactor = 0.2;
 			this.controls.autoRotate = false;
@@ -35,6 +37,16 @@ export class ThreeCameraController {
 			this.controls.maxPolarAngle = Math.PI / 2 - 0.02;
 			this.controls.listenToKeyEvents(canvas);
 			this.controls.addEventListener("change", this.cameraChanged);
+			this.canvas.addEventListener(
+				"pointerdown",
+				this.suppressInactiveTouch,
+				true,
+			);
+			this.canvas.addEventListener(
+				"pointercancel",
+				this.suppressInactiveTouch,
+				true,
+			);
 			this.canvas.addEventListener("pointerdown", this.pointerStarted, true);
 			this.canvas.addEventListener("wheel", this.pointerStarted, {
 				capture: true,
@@ -61,6 +73,11 @@ export class ThreeCameraController {
 			position: this.camera.position.toArray(),
 			target: this.controls.target.toArray(),
 		});
+	};
+	private readonly suppressInactiveTouch = (event: PointerEvent) => {
+		if (event.pointerType === "touch" && !this.touchInteraction) {
+			event.stopImmediatePropagation();
+		}
 	};
 	private readonly pointerStarted = () => {
 		this.pointerInput = true;
@@ -97,6 +114,21 @@ export class ThreeCameraController {
 		this.controls.update();
 		this.suppressCameraChange = false;
 	}
+
+	setTouchInteraction(enabled: boolean) {
+		if (this.disposed || enabled === this.touchInteraction) return;
+		this.touchInteraction = enabled;
+		if (!enabled) {
+			this.pointerInput = false;
+			this.stopCameraMotion();
+			// Clear OrbitControls' gesture state if a finger is still on the canvas.
+			this.controls.disconnect();
+			this.controls.connect(this.canvas);
+			this.controls.listenToKeyEvents(this.canvas);
+		}
+		this.canvas.style.touchAction = enabled ? "none" : "auto";
+	}
+
 	resetCamera(animate = false) {
 		if (!this.controls || this.disposed) return;
 		this.stopCameraMotion();
@@ -157,6 +189,16 @@ export class ThreeCameraController {
 		);
 		this.controls.removeEventListener("change", this.cameraChanged);
 		this.controls.dispose();
+		this.canvas.removeEventListener(
+			"pointerdown",
+			this.suppressInactiveTouch,
+			true,
+		);
+		this.canvas.removeEventListener(
+			"pointercancel",
+			this.suppressInactiveTouch,
+			true,
+		);
 		this.canvas.removeEventListener("pointerdown", this.pointerStarted, true);
 		this.canvas.removeEventListener("wheel", this.pointerStarted, true);
 		this.canvas.removeEventListener("keydown", this.keyboardStarted, true);

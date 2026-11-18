@@ -164,6 +164,37 @@ test("resets the camera over 200ms and stops requesting frames when settled", ()
 	expect(frame).toBeUndefined();
 });
 
+test("only captures touches while touch interaction is enabled", () => {
+	const host = createView();
+	const canvas = host.querySelector("canvas");
+	if (!canvas) throw new Error("Canvas is missing");
+	canvas.setPointerCapture = vi.fn();
+	canvas.releasePointerCapture = vi.fn();
+	const touch = (type: string) =>
+		canvas.dispatchEvent(
+			Object.assign(new MouseEvent(type, { clientX: 100, clientY: 100 }), {
+				pointerId: 1,
+				pointerType: "touch",
+			}),
+		);
+
+	expect(canvas.style.touchAction).toBe("auto");
+	touch("pointerdown");
+	touch("pointercancel");
+	expect(canvas.setPointerCapture).not.toHaveBeenCalled();
+	expect(canvas.releasePointerCapture).not.toHaveBeenCalled();
+
+	renderer?.setTouchInteraction(true);
+	expect(canvas.style.touchAction).toBe("none");
+	touch("pointerdown");
+	expect(canvas.setPointerCapture).toHaveBeenCalledWith(1);
+	renderer?.setTouchInteraction(false);
+	expect(canvas.style.touchAction).toBe("auto");
+	touch("pointercancel");
+	touch("pointerdown");
+	expect(canvas.setPointerCapture).toHaveBeenCalledTimes(1);
+});
+
 test.each([false, true])(
 	"uses pointer inertia only when reduced motion is %s",
 	(reduced) => {

@@ -53,6 +53,7 @@ export function GAVisualization(props: GAVisualizationProps) {
 	const [resolution, setResolution] = createSignal(100);
 	const [resetView, setResetView] = createSignal(0);
 	const [animateReset, setAnimateReset] = createSignal(false);
+	const [touchInteraction, setTouchInteraction] = createSignal(false);
 	const current3D = () => (mode() === "3d" ? threeComponent() : undefined);
 	let camera: CameraState | undefined;
 	let request = 0;
@@ -88,6 +89,7 @@ export function GAVisualization(props: GAVisualizationProps) {
 	const fail = (reason: string) => {
 		request++;
 		setMode("2d");
+		setTouchInteraction(false);
 		setError(`${reason} 2D表示に戻しました。3Dボタンで再試行できます。`);
 	};
 	const select3D = async () => {
@@ -133,6 +135,7 @@ export function GAVisualization(props: GAVisualizationProps) {
 									onClick={() => {
 										request++;
 										setMode("2d");
+										setTouchInteraction(false);
 										setError("");
 									}}
 								>
@@ -171,6 +174,7 @@ export function GAVisualization(props: GAVisualizationProps) {
 										resolution={resolution()}
 										resetView={resetView()}
 										animateReset={animateReset()}
+										touchInteraction={touchInteraction()}
 										camera={camera}
 										onCameraChange={(state: CameraState) => {
 											camera = state;
@@ -180,16 +184,25 @@ export function GAVisualization(props: GAVisualizationProps) {
 								)}
 							</Show>
 							<Show when={current3D()}>
-								<button
-									type="button"
-									class="view-reset"
-									onClick={(event) => {
-										setAnimateReset(event.detail > 0);
-										setResetView((v) => v + 1);
-									}}
-								>
-									視点リセット
-								</button>
+								<div class="three-view-controls">
+									<button
+										type="button"
+										class="three-touch-toggle"
+										data-interacting={touchInteraction()}
+										onClick={() => setTouchInteraction((enabled) => !enabled)}
+									>
+										{touchInteraction() ? "操作終了" : "視点を操作"}
+									</button>
+									<button
+										type="button"
+										onClick={(event) => {
+											setAnimateReset(event.detail > 0);
+											setResetView((v) => v + 1);
+										}}
+									>
+										視点リセット
+									</button>
+								</div>
 							</Show>
 							<Show when={mode() === "3d" && !current3D()}>
 								<output class="landscape-notice three-loading">
@@ -228,7 +241,9 @@ export function GAVisualization(props: GAVisualizationProps) {
 									ドラッグで回転・ホイールでズーム・右ドラッグで移動。
 								</span>
 								<span class="three-help-touch">
-									タッチは1本指で回転、2本指でズーム・移動。
+									{touchInteraction()
+										? "1本指で回転、2本指でズーム・移動。"
+										: "「視点を操作」をタップして回転・ズーム。"}
 								</span>
 							</Show>
 						</p>

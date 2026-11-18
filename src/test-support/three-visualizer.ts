@@ -8,6 +8,7 @@ export const createRendererMock = () => ({
 	updateLandscape: vi.fn(),
 	updatePopulation: vi.fn(),
 	setWireframe: vi.fn(),
+	setTouchInteraction: vi.fn(),
 	restoreCamera: vi.fn(),
 	resetCamera: vi.fn(),
 	dispose: vi.fn(),

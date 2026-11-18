@@ -15,6 +15,7 @@ export interface Visualizer3DProps {
 	resolution: number;
 	resetView: number;
 	animateReset?: boolean;
+	touchInteraction?: boolean;
 	camera?: CameraState;
 	onCameraChange: (state: CameraState) => void;
 	onError: (reason: string) => void;
@@ -60,6 +61,9 @@ export function Visualizer3D(props: Visualizer3DProps) {
 		renderer?.updatePopulation(props.population, props.bestIndividual),
 	);
 	createEffect(() => renderer?.setWireframe(props.wireframe));
+	createEffect(() =>
+		renderer?.setTouchInteraction(props.touchInteraction ?? false),
+	);
 	createEffect(
 		on(
 			() => props.resetView,
