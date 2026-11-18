@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, within } from "@solidjs/testing-library";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { GAApp } from "./ga-app";
+import { confirmExperimentReset } from "./test-support/reset-experiment";
 import {
 	createRendererMock,
 	mock3DVisualizer,
@@ -188,7 +189,7 @@ describe("GA application visualization integration", () => {
 		expect(generationInput).toHaveValue(4);
 		expect(slider).toHaveValue("4");
 		expect(readout).toHaveTextContent("第4世代");
-		fireEvent.click(view.getByRole("button", { name: "リセット" }));
+		confirmExperimentReset(view);
 		expect(generationInput).toHaveValue(0);
 		expect(slider).toHaveValue("0");
 		expect(generationInput).toBeDisabled();

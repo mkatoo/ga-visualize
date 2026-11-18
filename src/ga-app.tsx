@@ -99,6 +99,11 @@ export function GAApp() {
 						populationSize={populationSize()}
 						generations={generations()}
 						settingsLocked={settingsLocked()}
+						hasHistory={statistics().generation > 0}
+						onReset={() => {
+							drafts.cancelDrafts();
+							reset();
+						}}
 						onResetParameters={resetParameters}
 						onFunctionTypeChange={changeFunctionType}
 						minPopulationSize={constraints.minPopulationSize}
@@ -126,25 +131,13 @@ export function GAApp() {
 									onSelect={selectGeneration}
 									onShowLatest={showLatest}
 								/>
-								<div class="playback-options">
-									<details class="speed-settings">
-										<summary class="settings-toggle">実行速度</summary>
-										<SpeedControl
-											animationSpeed={animationSpeed()}
-											onSpeedChange={handleSpeedChange}
-										/>
-									</details>
-									<button
-										type="button"
-										class="btn btn-text"
-										onClick={() => {
-											drafts.cancelDrafts();
-											reset();
-										}}
-									>
-										リセット
-									</button>
-								</div>
+								<details class="speed-settings">
+									<summary class="settings-toggle">実行速度</summary>
+									<SpeedControl
+										animationSpeed={animationSpeed()}
+										onSpeedChange={handleSpeedChange}
+									/>
+								</details>
 							</>
 						}
 						chart={

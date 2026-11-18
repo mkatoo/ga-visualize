@@ -99,6 +99,46 @@ body {
 	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
+.experiment-actions {
+	margin-top: 12px;
+	padding-top: 8px;
+	border-top: 1px solid var(--color-border-subtle);
+}
+
+.reset-dialog {
+	box-sizing: border-box;
+	width: min(400px, calc(100% - 32px));
+	padding: 20px;
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	background: var(--color-surface);
+	color: var(--color-text);
+	box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+}
+
+.reset-dialog::backdrop {
+	background: rgba(15, 23, 42, 0.35);
+}
+
+.reset-dialog h2 {
+	margin: 0;
+	font-size: 1.125rem;
+	color: var(--color-heading);
+}
+
+.reset-dialog p {
+	margin: 8px 0 16px;
+	font-size: 0.9rem;
+	line-height: 1.6;
+}
+
+.reset-dialog-actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: end;
+	gap: 8px;
+}
+
 .generation-history {
 	min-width: 0;
 }
@@ -226,16 +266,7 @@ body {
 	text-align: left;
 }
 
-.playback-options {
-	display: flex;
-	align-items: start;
-	justify-content: space-between;
-	gap: 12px;
-}
-
 .speed-settings {
-	flex: 1 1 0;
-	min-width: 0;
 	max-width: 320px;
 	font-size: 0.85rem;
 }
@@ -863,6 +894,11 @@ body {
 	color: var(--color-text);
 }
 
+.btn-danger {
+	background: var(--color-error);
+	color: var(--color-surface);
+}
+
 .btn-text {
 	padding-inline: 8px;
 	background-color: transparent;
@@ -893,6 +929,10 @@ body {
 		color: var(--color-text);
 	}
 
+	.btn-danger:hover {
+		background: #991b1b;
+	}
+
 	.view-toggle button:not([aria-pressed="true"]):hover,
 	.view-reset:hover:not(:disabled),
 	.ga-app summary:hover {
@@ -907,6 +947,10 @@ body {
 
 .btn-primary:active:not(:disabled) {
 	background-color: var(--color-accent-hover);
+}
+
+.btn-danger:active {
+	background: #991b1b;
 }
 
 .btn-secondary:active:not(:disabled),

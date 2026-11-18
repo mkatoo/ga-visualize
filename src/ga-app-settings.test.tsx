@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render } from "@solidjs/testing-library";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { GAApp } from "./ga-app";
 import { GeneticAlgorithm } from "./genetic-algorithm";
+import { confirmExperimentReset } from "./test-support/reset-experiment";
 import { mockCanvasContext } from "./test-support/visualization";
 
 describe("GA application settings", () => {
@@ -43,7 +44,7 @@ describe("GA application settings", () => {
 		expect(generations).toHaveValue(100);
 		expect(overview).toHaveTextContent("100世代");
 		fireEvent.input(population, { target: { value: "" } });
-		fireEvent.click(view.getByRole("button", { name: "リセット" }));
+		fireEvent.click(view.getByRole("button", { name: "実験をリセット" }));
 		expect(population).toHaveValue(150);
 		expect(view.getByRole("button", { name: "開始" })).toBeEnabled();
 	});
@@ -106,7 +107,7 @@ describe("GA application settings", () => {
 		fireEvent.blur(tournament);
 		expect(initialize).toHaveBeenCalledTimes(3);
 		fireEvent.input(mutation, { target: { value: "" } });
-		fireEvent.click(view.getByRole("button", { name: "リセット" }));
+		fireEvent.click(view.getByRole("button", { name: "実験をリセット" }));
 		expect(mutation).toHaveValue(0.125);
 		expect(crossover).toHaveValue(0);
 		expect(tournament).toHaveValue(7);
@@ -211,18 +212,20 @@ describe("GA application settings", () => {
 		expect(view.getByLabelText("個体数 (1-1000):")).toBeDisabled();
 		expect(view.getByLabelText("目的関数:")).toBeDisabled();
 		expect(
-			view.getByText("設定を変更するにはリセットしてください。"),
+			view.getByText("設定を変更するには「実験をリセット」を押してください。"),
 		).toBeTruthy();
 		fireEvent.click(view.getByRole("button", { name: "再開" }));
 		vi.advanceTimersByTime(500);
 		for (const control of advancedControls) expect(control).toBeDisabled();
 		expect(generations).toBeDisabled();
-		fireEvent.click(view.getByRole("button", { name: "リセット" }));
+		confirmExperimentReset(view);
 		for (const control of advancedControls) expect(control).toBeEnabled();
 		expect(generations).toBeEnabled();
 		expect(view.getByLabelText("目的関数:")).toBeEnabled();
 		expect(
-			view.queryByText("設定を変更するにはリセットしてください。"),
+			view.queryByText(
+				"設定を変更するには「実験をリセット」を押してください。",
+			),
 		).toBeNull();
 	});
 });

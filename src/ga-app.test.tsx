@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, within } from "@solidjs/testing-library";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { GAApp } from "./ga-app";
 import { OBJECTIVE_FUNCTIONS } from "./objective-functions";
+import { confirmExperimentReset } from "./test-support/reset-experiment";
 import {
 	displayedGeneration,
 	mockCanvasContext,
@@ -53,7 +54,7 @@ describe("GA application playback, history and layout", () => {
 		vi.advanceTimersByTime(500);
 		expect(generation()).toHaveTextContent(/^第3世代$/);
 
-		fireEvent.click(view.getByRole("button", { name: "リセット" }));
+		confirmExperimentReset(view);
 		expect(view.getByRole("button", { name: "開始" })).toBeEnabled();
 		expect(stepButton).toBeEnabled();
 		expect(generation()).toHaveTextContent(/^第0世代$/);
@@ -83,7 +84,7 @@ describe("GA application playback, history and layout", () => {
 		expect(slider).toHaveValue("1");
 		expect(view.getByRole("status")).toHaveTextContent("一時停止中");
 		fireEvent.input(input, { target: { value: "99" } });
-		fireEvent.click(view.getByRole("button", { name: "リセット" }));
+		confirmExperimentReset(view);
 		expect(input).toHaveValue(0);
 		expect(input).toBeDisabled();
 		expect(input).toHaveAttribute("aria-invalid", "false");
@@ -144,7 +145,7 @@ describe("GA application playback, history and layout", () => {
 		expect(summary).not.toHaveTextContent("履歴表示中");
 		expect(within(summary).getByText("第3世代までの最良")).toBeVisible();
 		expect(bestEver()).toHaveTextContent(latestBest ?? "");
-		fireEvent.click(view.getByRole("button", { name: "リセット" }));
+		confirmExperimentReset(view);
 		expect(displayedGeneration(view)).toHaveTextContent(/^第0世代$/);
 		expect(summary).not.toHaveTextContent("履歴表示中");
 	});
@@ -166,7 +167,7 @@ describe("GA application playback, history and layout", () => {
 		vi.advanceTimersByTime(50);
 		expect(fill).toHaveStyle({ transform: "scaleX(0.15)" });
 		expect(fill).toHaveAttribute("data-smooth", "false");
-		fireEvent.click(view.getByRole("button", { name: "リセット" }));
+		confirmExperimentReset(view);
 		expect(fill).toHaveStyle({ transform: "scaleX(0)" });
 		expect(fill).toHaveAttribute("data-smooth", "false");
 		const generations = view.getByLabelText("世代数 (1-1000):");

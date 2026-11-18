@@ -1,4 +1,4 @@
-import { onCleanup, onMount, Show } from "solid-js";
+import { createUniqueId, onCleanup, onMount, Show } from "solid-js";
 import { NumericSettingField } from "./components/numeric-setting-field";
 import { DEFAULT_GA_PARAMETERS } from "./ga-parameters";
 import type { ExperimentSettings } from "./hooks/create-experiment-settings";
@@ -11,6 +11,8 @@ interface ControlPanelProps {
 	populationSize: number;
 	generations: number;
 	settingsLocked: boolean;
+	hasHistory: boolean;
+	onReset: () => void;
 	onResetParameters: () => void;
 	onFunctionTypeChange: (value: FunctionType) => void;
 	minPopulationSize: number;
@@ -20,7 +22,9 @@ interface ControlPanelProps {
 }
 
 export function ControlPanel(props: ControlPanelProps) {
+	const id = createUniqueId();
 	let settings!: HTMLDetailsElement;
+	let resetDialog!: HTMLDialogElement;
 	let mobileQuery: MediaQueryList | undefined;
 	const updateLayout = () => {
 		settings.open = !mobileQuery?.matches;
@@ -58,7 +62,7 @@ export function ControlPanel(props: ControlPanelProps) {
 				<div class="settings-content">
 					<Show when={props.settingsLocked}>
 						<p class="settings-help">
-							設定を変更するにはリセットしてください。
+							設定を変更するには「実験をリセット」を押してください。
 						</p>
 					</Show>
 					<div class="parameter-controls">
@@ -173,8 +177,50 @@ export function ControlPanel(props: ControlPanelProps) {
 							</button>
 						</div>
 					</details>
+					<div class="experiment-actions">
+						<button
+							type="button"
+							class="btn btn-text"
+							onClick={() => {
+								if (props.hasHistory) resetDialog.showModal();
+								else props.onReset();
+							}}
+						>
+							実験をリセット
+						</button>
+					</div>
 				</div>
 			</details>
+			<dialog
+				ref={resetDialog}
+				class="reset-dialog"
+				aria-labelledby={`${id}-reset-title`}
+				aria-describedby={`${id}-reset-description`}
+			>
+				<h2 id={`${id}-reset-title`}>実験をリセットしますか？</h2>
+				<p id={`${id}-reset-description`}>
+					実行結果と世代の履歴が消えます。実験の設定値は保持されます。
+				</p>
+				<div class="reset-dialog-actions">
+					<button
+						type="button"
+						class="btn btn-secondary"
+						onClick={() => resetDialog.close()}
+					>
+						キャンセル
+					</button>
+					<button
+						type="button"
+						class="btn btn-danger"
+						onClick={() => {
+							resetDialog.close();
+							props.onReset();
+						}}
+					>
+						リセットする
+					</button>
+				</div>
+			</dialog>
 		</div>
 	);
 }
