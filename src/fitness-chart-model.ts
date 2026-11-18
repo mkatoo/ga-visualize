@@ -30,6 +30,11 @@ export function createFitnessChartModel(options: FitnessChartModelOptions) {
 	const plotWidth = Math.max(1, plotRight - plotLeft);
 	const plotHeight = plotBottom - plotTop;
 	const maxGeneration = Math.max(1, options.totalGenerations);
+	const latestGeneration = Math.min(
+		maxGeneration,
+		options.bestFitness.length - 1,
+		options.averageFitness.length - 1,
+	);
 	const maxFitness =
 		Math.max(0, ...options.bestFitness, ...options.averageFitness) || 1;
 	const positive = [...options.bestFitness, ...options.averageFitness].filter(
@@ -41,6 +46,13 @@ export function createFitnessChartModel(options: FitnessChartModelOptions) {
 	};
 	const x = (generation: number) =>
 		plotLeft + (generation / maxGeneration) * plotWidth;
+	const availableRight =
+		latestGeneration < 0
+			? plotLeft
+			: Math.min(
+					plotRight,
+					x(latestGeneration) + Math.max(8, plotWidth / maxGeneration / 2),
+				);
 	const y = (fitness: number) => {
 		const position =
 			options.scale === "linear"
@@ -67,20 +79,26 @@ export function createFitnessChartModel(options: FitnessChartModelOptions) {
 	);
 	const generationAtPoint = (pointerX: number, pointerY: number) => {
 		if (
+			latestGeneration < 0 ||
 			pointerX < plotLeft ||
-			pointerX > plotRight ||
+			pointerX > availableRight ||
 			pointerY < plotTop ||
 			pointerY > plotBottom
 		)
 			return;
-		return ((pointerX - plotLeft) / plotWidth) * maxGeneration;
+		return Math.min(
+			latestGeneration,
+			Math.round(((pointerX - plotLeft) / plotWidth) * maxGeneration),
+		);
 	};
 	return {
 		plotLeft,
 		plotTop,
 		plotBottom,
 		plotWidth,
+		availableRight,
 		maxGeneration,
+		latestGeneration,
 		x,
 		y,
 		generationTicks,

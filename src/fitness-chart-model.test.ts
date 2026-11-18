@@ -49,7 +49,7 @@ describe("fitness chart model", () => {
 	test("maps points inside the plot to generations and rejects axis and margin clicks", () => {
 		const model = createFitnessChartModel(options);
 		expect(model.generationAtPoint(72, 22)).toBe(0);
-		expect(model.generationAtPoint(346, 100)).toBe(1.5);
+		expect(model.generationAtPoint(346, 100)).toBe(2);
 		expect(model.generationAtPoint(620, 212)).toBe(3);
 		for (const [x, y] of [
 			[71, 100],
@@ -59,6 +59,16 @@ describe("fitness chart model", () => {
 		]) {
 			expect(model.generationAtPoint(x, y)).toBeUndefined();
 		}
+	});
+
+	test("ignores the pending part of the plot even when it contains an axis tick", () => {
+		const model = createFitnessChartModel({
+			...options,
+			bestFitness: [4, 2],
+			averageFitness: [8, 6],
+		});
+		expect(model.generationAtPoint(model.availableRight, 100)).toBe(1);
+		expect(model.generationAtPoint(model.x(2), 100)).toBeUndefined();
 	});
 
 	test("adapts tick density and coordinates to the viewport while retaining the fitness scale", () => {

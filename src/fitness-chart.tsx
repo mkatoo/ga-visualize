@@ -13,6 +13,7 @@ import {
 	type FitnessChartScale,
 	formatFitnessTick,
 } from "./fitness-chart-model";
+import { formatFitness } from "./format-fitness";
 import { VISUALIZATION_COLORS } from "./visualization-colors";
 
 interface FitnessChartProps {
@@ -30,29 +31,22 @@ export function FitnessChart(props: FitnessChartProps) {
 	const [width, setWidth] = createSignal(640);
 	const [height, setHeight] = createSignal(CHART_HEIGHT);
 	const [selection, setSelection] = createSignal<number>();
+	const [hoverGeneration, setHoverGeneration] = createSignal<number>();
 	const [scale, setScale] = createSignal<FitnessChartScale>("linear");
-	const latestGeneration = () =>
-		Math.max(
-			0,
-			Math.min(props.bestFitness.length, props.averageFitness.length) - 1,
-		);
 	const selectedGeneration = () =>
 		Math.max(
 			0,
 			Math.min(
-				latestGeneration(),
-				props.selectedGeneration ?? selection() ?? latestGeneration(),
+				model().latestGeneration,
+				props.selectedGeneration ?? selection() ?? model().latestGeneration,
 			),
 		);
-	const selectGeneration = (value: number) => {
-		if (!Number.isFinite(value)) return;
-		const generation = Math.max(
-			0,
-			Math.min(latestGeneration(), Math.round(value)),
-		);
-		setSelection(generation);
-		props.onSelectGeneration?.(generation);
-	};
+	const preview = createMemo(() => {
+		const generation = hoverGeneration();
+		return generation !== undefined && generation <= model().latestGeneration
+			? { generation, x: model().x(generation) }
+			: undefined;
+	});
 	let container!: HTMLDivElement;
 	let observer: ResizeObserver | undefined;
 	onMount(() => {
@@ -165,21 +159,51 @@ export function FitnessChart(props: FitnessChartProps) {
 					}}
 					onPointerMove={(event) => {
 						if (tap?.pointerId === event.pointerId && moved(event)) cancelTap();
+						if (event.pointerType === "mouse")
+							setHoverGeneration(plotGeneration(event));
 					}}
 					onPointerUp={(event) => {
 						if (!tap || tap.pointerId !== event.pointerId) return;
 						const generation = moved(event) ? undefined : plotGeneration(event);
 						cancelTap();
-						if (generation !== undefined) selectGeneration(generation);
+						if (generation !== undefined) {
+							setSelection(generation);
+							props.onSelectGeneration?.(generation);
+						}
 					}}
 					onPointerCancel={cancelTap}
-					onPointerLeave={cancelTap}
+					onPointerLeave={() => {
+						cancelTap();
+						setHoverGeneration(undefined);
+					}}
 				>
 					<title id={`${id}-title`}>遺伝的アルゴリズムの評価値推移グラフ</title>
 					<desc id={`${id}-description`}>
 						横軸は世代、縦軸は評価値の{scale() === "linear" ? "線形" : "対数"}
 						目盛です。評価値は小さいほど良い解です。実線は最良評価値、破線は平均評価値を示します。
 					</desc>
+					<Show when={model().latestGeneration < model().maxGeneration}>
+						<defs>
+							<pattern
+								id={`${id}-pending`}
+								width="8"
+								height="8"
+								patternUnits="userSpaceOnUse"
+							>
+								<path
+									class="chart-pending-stripe"
+									d="M -2 2 L 2 -2 M 0 8 L 8 0 M 6 10 L 10 6"
+								/>
+							</pattern>
+						</defs>
+						<rect
+							fill={`url(#${id}-pending)`}
+							x={model().availableRight}
+							y={model().plotTop}
+							width={model().x(model().maxGeneration) - model().availableRight}
+							height={model().plotBottom - model().plotTop}
+						/>
+					</Show>
 					<g class="chart-y-ticks">
 						<For each={model().fitnessTicks}>
 							{(fitness) => (
@@ -298,7 +322,50 @@ export function FitnessChart(props: FitnessChartProps) {
 							世代
 						</text>
 					</g>
+					<Show when={preview()}>
+						{(point) => (
+							<line
+								class="chart-preview-line"
+								x1={point().x}
+								x2={point().x}
+								y1={model().plotTop}
+								y2={model().plotBottom}
+							/>
+						)}
+					</Show>
+					<Show when={model().latestGeneration >= 0}>
+						<rect
+							class="chart-hit-area"
+							x={model().plotLeft}
+							y={model().plotTop}
+							width={model().availableRight - model().plotLeft}
+							height={model().plotBottom - model().plotTop}
+						/>
+					</Show>
 				</svg>
+				<Show when={preview()}>
+					{(point) => (
+						<div
+							class="chart-preview"
+							aria-hidden="true"
+							style={{ "--preview-x": `${point().x}px` }}
+						>
+							<strong>第{point().generation}世代</strong>
+							<dl>
+								<For each={series}>
+									{(item) => (
+										<div>
+											<dt>{item.label}</dt>
+											<dd>
+												{formatFitness(item.values()[point().generation])}
+											</dd>
+										</div>
+									)}
+								</For>
+							</dl>
+						</div>
+					)}
+				</Show>
 			</div>
 			<div class="chart-annotations">
 				<Show when={scale() === "logarithmic"}>
@@ -324,7 +391,10 @@ export function FitnessChart(props: FitnessChartProps) {
 					</For>
 				</ul>
 				<p class="chart-help">
-					グラフをタップするか、表示世代を指定すると、その世代の評価値を表示します。
+					結果がある世代をクリック・タップすると、その世代を表示します。
+					<Show when={model().latestGeneration < model().maxGeneration}>
+						網掛けは未実行です。
+					</Show>
 				</p>
 			</div>
 		</figure>
