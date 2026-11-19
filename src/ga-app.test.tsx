@@ -117,6 +117,7 @@ describe("GA application playback, history and layout", () => {
 		vi.useFakeTimers();
 		const view = render(() => <GAApp />);
 		const summary = view.getByRole("region", { name: "表示中の世代の要約" });
+		const playback = within(view.getByRole("group", { name: "実行操作" }));
 		const bestEver = () => summary.querySelector(".summary-best-ever dd");
 		fireEvent.input(view.getByLabelText("世代数 (1-1000):"), {
 			target: { value: "3" },
@@ -126,6 +127,9 @@ describe("GA application playback, history and layout", () => {
 		fireEvent.click(view.getByRole("button", { name: "開始" }));
 		vi.advanceTimersByTime(1500);
 		const latestBest = bestEver()?.textContent;
+		expect(
+			playback.queryByRole("button", { name: "最新世代に戻る" }),
+		).toBeNull();
 
 		fireEvent.input(
 			view.getByRole("slider", { name: "表示世代のスライダー" }),
@@ -138,8 +142,16 @@ describe("GA application playback, history and layout", () => {
 		expect(within(summary).getByText("ここまでの最良")).toBeVisible();
 		expect(bestEver()).toHaveTextContent(initialBest ?? "");
 		expect(view.getByRole("status")).toHaveTextContent("実行が完了しました");
+		expect(playback.getByText("第0世代を表示中")).toBeVisible();
+		expect(playback.getByText("最新は第3世代")).toBeVisible();
+		expect(playback.getByText("実行済み 3 / 3世代")).toBeVisible();
 
-		fireEvent.click(view.getByRole("button", { name: "最新世代に戻る" }));
+		const showLatest = playback.getByRole("button", { name: "最新世代に戻る" });
+		fireEvent.click(showLatest);
+		expect(showLatest).not.toBeInTheDocument();
+		expect(
+			playback.getByRole("button", { name: "もう一度実行" }),
+		).toHaveFocus();
 		expect(displayedGeneration(view)).toHaveTextContent(/^第3世代$/);
 		expect(summary).not.toHaveTextContent("最新は");
 		expect(within(summary).getByText("ここまでの最良")).toBeVisible();

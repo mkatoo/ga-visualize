@@ -108,151 +108,156 @@ export function GAVisualization(props: GAVisualizationProps) {
 	onCleanup(() => request++);
 	return (
 		<div class="visualization-panel">
+			<GenerationSummary
+				generation={props.generation}
+				latestGeneration={props.latestGeneration}
+				bestIndividual={props.bestIndividual}
+				averageFitness={props.averageFitness}
+				bestEver={props.bestEver ?? props.bestIndividual}
+			/>
+			<Show when={playback()}>
+				<div class="playback-controls">{playback()}</div>
+			</Show>
 			<div
 				class="visualization-content"
 				style={{
 					"--chart-padding-top": `${FITNESS_CHART_INSETS.top}px`,
 				}}
 			>
-				<GenerationSummary
-					generation={props.generation}
-					latestGeneration={props.latestGeneration}
-					bestIndividual={props.bestIndividual}
-					averageFitness={props.averageFitness}
-					bestEver={props.bestEver ?? props.bestIndividual}
-				/>
-				<Show when={playback()}>
-					<div class="playback-controls">{playback()}</div>
-				</Show>
-				<div class="landscape-panel visualizer">
-					<div class="landscape-header">
-						<h2 class="landscape-heading">地形と個体分布</h2>
-						<fieldset class="visualization-toolbar" aria-label="表示ツールバー">
-							<fieldset class="view-toggle" aria-label="表示方式">
-								<button
-									type="button"
-									aria-pressed={mode() === "2d"}
-									onClick={() => {
-										request++;
-										setMode("2d");
-										setTouchInteraction(false);
-										setError("");
-									}}
-								>
-									2D
-								</button>
-								<button
-									type="button"
-									aria-pressed={mode() === "3d"}
-									onClick={select3D}
-								>
-									3D
-								</button>
+				<div class="visualization-plots">
+					<div class="landscape-panel visualizer">
+						<div class="landscape-header">
+							<h2 class="landscape-heading">地形と個体分布</h2>
+							<fieldset
+								class="visualization-toolbar"
+								aria-label="表示ツールバー"
+							>
+								<fieldset class="view-toggle" aria-label="表示方式">
+									<button
+										type="button"
+										aria-pressed={mode() === "2d"}
+										onClick={() => {
+											request++;
+											setMode("2d");
+											setTouchInteraction(false);
+											setError("");
+										}}
+									>
+										2D
+									</button>
+									<button
+										type="button"
+										aria-pressed={mode() === "3d"}
+										onClick={select3D}
+									>
+										3D
+									</button>
+								</fieldset>
 							</fieldset>
-						</fieldset>
-					</div>
-					<div class="landscape-view">
-						<div class="landscape-frame">
-							<Show
-								when={current3D()}
-								fallback={
-									<Visualizer
-										population={props.population}
-										bestIndividual={props.bestIndividual}
-										landscape={landscape()}
-									/>
-								}
-							>
-								{(component) => (
-									<Dynamic
-										component={component()}
-										landscape={landscape()}
-										population={props.population}
-										bestIndividual={props.bestIndividual}
-										heightScale={heightScale()}
-										wireframe={wireframe()}
-										resolution={resolution()}
-										resetView={resetView()}
-										animateReset={animateReset()}
-										touchInteraction={touchInteraction()}
-										camera={camera}
-										onCameraChange={(state: CameraState) => {
-											camera = state;
-										}}
-										onError={fail}
-									/>
-								)}
-							</Show>
-							<Show when={current3D()}>
-								<div class="three-view-controls">
-									<button
-										type="button"
-										class="three-touch-toggle"
-										data-interacting={touchInteraction()}
-										onClick={() => setTouchInteraction((enabled) => !enabled)}
-									>
-										{touchInteraction() ? "操作終了" : "視点を操作"}
-									</button>
-									<button
-										type="button"
-										onClick={(event) => {
-											setAnimateReset(event.detail > 0);
-											setResetView((v) => v + 1);
-										}}
-									>
-										視点リセット
-									</button>
-								</div>
-							</Show>
-							<Show when={mode() === "3d" && !current3D()}>
-								<output class="landscape-notice three-loading">
-									3D表示を読み込んでいます…
-								</output>
-							</Show>
-							<Show when={error()}>
-								<output class="landscape-notice visualization-error">
-									{error()}
-								</output>
-							</Show>
 						</div>
-						<FitnessScale scale={colorScale()} />
-					</div>
-					<div class="landscape-annotations">
-						<section class="population-legend" aria-label="個体の凡例">
-							<span>
-								<i class="population-dot" />
-								個体
-							</span>
-							<span>
-								<i class="population-dot best" />
-								最良個体
-							</span>
-							<span>
-								<i class="optimum-symbol" />
-								既知の最適解 ({optimum().x}, {optimum().y})
-							</span>
-						</section>
-						<p class="three-help">
-							<Show
-								when={current3D()}
-								fallback="地形の色は評価値を示します。小さいほど良い解です。"
-							>
-								<span class="three-help-mouse">
-									ドラッグで回転・ホイールでズーム・右ドラッグで移動。
+						<div class="landscape-view">
+							<div class="landscape-frame">
+								<Show
+									when={current3D()}
+									fallback={
+										<Visualizer
+											population={props.population}
+											bestIndividual={props.bestIndividual}
+											landscape={landscape()}
+										/>
+									}
+								>
+									{(component) => (
+										<Dynamic
+											component={component()}
+											landscape={landscape()}
+											population={props.population}
+											bestIndividual={props.bestIndividual}
+											heightScale={heightScale()}
+											wireframe={wireframe()}
+											resolution={resolution()}
+											resetView={resetView()}
+											animateReset={animateReset()}
+											touchInteraction={touchInteraction()}
+											camera={camera}
+											onCameraChange={(state: CameraState) => {
+												camera = state;
+											}}
+											onError={fail}
+										/>
+									)}
+								</Show>
+								<Show when={current3D()}>
+									<div class="three-view-controls">
+										<button
+											type="button"
+											class="three-touch-toggle"
+											data-interacting={touchInteraction()}
+											onClick={() => setTouchInteraction((enabled) => !enabled)}
+										>
+											{touchInteraction() ? "操作終了" : "視点を操作"}
+										</button>
+										<button
+											type="button"
+											onClick={(event) => {
+												setAnimateReset(event.detail > 0);
+												setResetView((v) => v + 1);
+											}}
+										>
+											視点リセット
+										</button>
+									</div>
+								</Show>
+								<Show when={mode() === "3d" && !current3D()}>
+									<output class="landscape-notice three-loading">
+										3D表示を読み込んでいます…
+									</output>
+								</Show>
+								<Show when={error()}>
+									<output class="landscape-notice visualization-error">
+										{error()}
+									</output>
+								</Show>
+							</div>
+							<FitnessScale scale={colorScale()} />
+						</div>
+						<div class="landscape-annotations">
+							<section class="population-legend" aria-label="個体の凡例">
+								<span>
+									<i class="population-dot" />
+									個体
 								</span>
-								<span class="three-help-touch">
-									{touchInteraction()
-										? "1本指で回転、2本指でズーム・移動。"
-										: "「視点を操作」をタップして回転・ズーム。"}
+								<span>
+									<i class="population-dot best" />
+									最良個体
 								</span>
-							</Show>
-						</p>
+								<span>
+									<i class="optimum-symbol" />
+									既知の最適解 ({optimum().x}, {optimum().y})
+								</span>
+							</section>
+							<p class="three-help">
+								<Show
+									when={current3D()}
+									fallback="地形の色は評価値を示します。小さいほど良い解です。"
+								>
+									<span class="three-help-mouse">
+										ドラッグで回転・ホイールでズーム・右ドラッグで移動。
+									</span>
+									<span class="three-help-touch">
+										{touchInteraction()
+											? "1本指で回転、2本指でズーム・移動。"
+											: "「視点を操作」をタップして回転・ズーム。"}
+									</span>
+								</Show>
+							</p>
+						</div>
+						<Show when={props.history}>
+							<div class="landscape-history">{props.history}</div>
+						</Show>
 					</div>
-					<Show when={props.history}>
-						<div class="landscape-history">{props.history}</div>
-					</Show>
+					{props.chart}
 				</div>
-				{props.chart}
 			</div>
 			<details class="view-settings" hidden={!current3D()}>
 				<summary class="settings-toggle">

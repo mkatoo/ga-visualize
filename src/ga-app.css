@@ -145,7 +145,7 @@ body {
 
 .generation-controls {
 	display: grid;
-	grid-template-columns: auto minmax(80px, 1fr) auto;
+	grid-template-columns: auto minmax(0, 1fr);
 	align-items: center;
 	gap: 12px;
 	color: var(--color-text);
@@ -225,6 +225,7 @@ body {
 }
 
 .visualization-panel {
+	--visualization-gap: 12px;
 	padding: 20px;
 	min-width: 0;
 }
@@ -235,14 +236,16 @@ body {
 }
 
 .visualization-content {
+	container: visualization / inline-size;
+}
+
+.visualization-plots {
 	display: grid;
-	grid-template-areas: "summary" "playback" "landscape" "chart";
 	grid-template-columns: minmax(0, 1fr);
-	gap: 20px;
+	gap: var(--visualization-gap);
 }
 
 .landscape-panel {
-	grid-area: landscape;
 	min-width: 0;
 }
 
@@ -256,8 +259,8 @@ body {
 }
 
 .playback-controls {
-	grid-area: playback;
 	min-width: 0;
+	margin-bottom: var(--visualization-gap);
 }
 
 .landscape-history {
@@ -590,10 +593,10 @@ body {
 }
 
 .generation-summary {
-	grid-area: summary;
 	display: grid;
 	gap: 8px;
 	min-width: 0;
+	margin-bottom: var(--visualization-gap);
 	padding-bottom: 12px;
 	border-bottom: 1px solid var(--color-border-subtle);
 }
@@ -866,6 +869,31 @@ body {
 	gap: 8px;
 }
 
+.run-history {
+	box-sizing: border-box;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 4px 8px;
+	padding-inline-start: 10px;
+	border-radius: var(--control-radius);
+	background: var(--color-surface-hover);
+}
+
+.run-history p {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2px 10px;
+	margin: 0;
+	font-size: 0.8rem;
+	font-variant-numeric: tabular-nums;
+	color: var(--color-text-secondary);
+}
+
+.run-history strong {
+	color: var(--color-heading);
+}
+
 .btn {
 	min-width: 0;
 	min-height: var(--control-height);
@@ -886,12 +914,6 @@ body {
 .btn:disabled {
 	opacity: 0.6;
 	cursor: not-allowed;
-}
-
-.generation-controls .btn {
-	padding: 8px 12px;
-	font-size: inherit;
-	white-space: nowrap;
 }
 
 .btn-primary {
@@ -919,6 +941,12 @@ body {
 	background-color: transparent;
 	color: var(--color-text-muted);
 	font-size: 0.9rem;
+}
+
+.run-history .btn {
+	padding: 6px 10px;
+	color: var(--color-accent);
+	font-size: 0.8rem;
 }
 
 .run-settings-error .btn {
@@ -1145,7 +1173,6 @@ body {
 }
 
 .fitness-chart {
-	grid-area: chart;
 	min-width: 0;
 	margin: 0;
 }
@@ -1297,58 +1324,58 @@ body {
 }
 
 @media (min-width: 1025px) {
-	.visualization-content {
-		gap: 12px 20px;
-	}
 	.ga-app {
 		--visualization-size: clamp(300px, calc(100svh - 500px), 440px);
 	}
+
+	.run-history p {
+		flex-direction: column;
+	}
 }
 
-@media (min-width: 1280px) {
-	.visualization-content:has(> .fitness-chart) {
-		grid-template-columns: minmax(424px, 1.15fr) minmax(300px, 1fr);
+@container visualization (min-width: 780px) {
+	.visualization-plots:has(> .fitness-chart) {
+		--visualization-size: clamp(340px, calc(100svh - 380px), 440px);
+		grid-template-columns: minmax(0, 1.15fr) minmax(350px, 1fr);
 		grid-template-areas:
-			"summary summary"
-			"playback playback"
 			"landscape chart"
 			"landscape chart"
 			"landscape chart"
 			"landscape .";
-		row-gap: 0;
+		gap: 0 20px;
 	}
 
-	.visualization-content:has(> .fitness-chart) .generation-summary {
-		margin-bottom: 12px;
+	.visualization-plots:has(> .fitness-chart) > .landscape-panel {
+		grid-area: landscape;
 	}
 
-	.visualization-content:has(> .fitness-chart) .playback-controls {
-		margin-bottom: 12px;
+	.visualization-plots > .fitness-chart {
+		grid-area: chart;
 	}
 
-	.visualization-content:has(> .fitness-chart)
+	.visualization-plots:has(> .fitness-chart)
 		> :is(.landscape-panel, .fitness-chart) {
 		display: grid;
 		grid-template-rows: subgrid;
 		row-gap: 0;
 	}
 
-	.visualization-content:has(> .fitness-chart)
+	.visualization-plots:has(> .fitness-chart)
 		:is(.landscape-header, .chart-header) {
 		display: flex;
 		align-items: center;
 		min-height: 52px;
 	}
 
-	.visualization-content:has(> .fitness-chart) .landscape-view {
+	.visualization-plots:has(> .fitness-chart) .landscape-view {
 		padding-top: var(--chart-padding-top);
 	}
 
-	.visualization-content:has(> .fitness-chart) .chart-container {
+	.visualization-plots .chart-container {
 		min-height: 260px;
 	}
 
-	.visualization-content:has(> .fitness-chart) .chart-container svg {
+	.visualization-plots .chart-container svg {
 		position: absolute;
 		inset: 0;
 		height: 100%;
@@ -1378,7 +1405,7 @@ body {
 		--visualization-size: clamp(280px, calc(100svh - 340px), 640px);
 	}
 
-	html:has(.run-settings-error) {
+	html:has(.run-history, .run-settings-error) {
 		--run-controls-fallback-height: calc(
 			154px +
 			env(safe-area-inset-bottom, 0px)
@@ -1388,11 +1415,6 @@ body {
 	.main-content {
 		grid-template-columns: 1fr;
 		grid-template-areas: "controls" "visualization";
-		gap: 12px;
-	}
-
-	.visualization-content {
-		grid-template-areas: "summary" "landscape" "chart";
 		gap: 12px;
 	}
 
@@ -1440,6 +1462,7 @@ body {
 		font-size: 0.875rem;
 	}
 
+	.run-history,
 	.button-group .progress {
 		margin-bottom: 8px;
 	}
@@ -1496,8 +1519,8 @@ body {
 }
 
 @media (max-width: 600px) {
-	.visualization-content {
-		gap: 8px;
+	.visualization-panel {
+		--visualization-gap: 8px;
 	}
 
 	.landscape-header {
@@ -1553,13 +1576,8 @@ body {
 	}
 
 	.generation-controls {
-		grid-template-columns: minmax(0, 1fr) auto;
-		gap: 4px 12px;
-	}
-
-	.generation-range {
-		grid-column: 1 / -1;
-		grid-row: 2;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 4px;
 	}
 
 	.generation-comparison {

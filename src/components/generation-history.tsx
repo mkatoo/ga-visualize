@@ -15,7 +15,6 @@ interface GenerationHistoryProps {
 	generation: number;
 	latestGeneration: number;
 	onSelect: (generation: number) => void;
-	onShowLatest: () => void;
 }
 
 export function GenerationHistory(props: GenerationHistoryProps) {
@@ -110,17 +109,6 @@ export function GenerationHistory(props: GenerationHistoryProps) {
 					aria-valuetext={`第${props.generation}世代、最新は第${props.latestGeneration}世代`}
 					onInput={(event) => selectGeneration(event.currentTarget)}
 				/>
-				<button
-					type="button"
-					class="btn btn-secondary"
-					disabled={props.generation === props.latestGeneration}
-					onClick={() => {
-						cancelDraft();
-						props.onShowLatest();
-					}}
-				>
-					最新世代に戻る
-				</button>
 			</div>
 			<Show when={invalidDraft()}>
 				<p class="field-error" id={`${id}-error`}>

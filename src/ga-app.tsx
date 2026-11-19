@@ -129,7 +129,6 @@ export function GAApp() {
 									generation={displayedGeneration()}
 									latestGeneration={statistics().generation}
 									onSelect={selectGeneration}
-									onShowLatest={showLatest}
 								/>
 								<details class="speed-settings">
 									<summary class="settings-toggle">実行速度</summary>
@@ -154,7 +153,8 @@ export function GAApp() {
 							isRunning={isRunning()}
 							isViewingHistory={isViewingHistory()}
 							runStatus={runStatus()}
-							currentGeneration={statistics().generation}
+							latestGeneration={statistics().generation}
+							displayedGeneration={displayedGeneration()}
 							generations={generations()}
 							animationSpeed={animationSpeed()}
 							invalidSettings={drafts.invalidSettings()}
@@ -163,6 +163,7 @@ export function GAApp() {
 							onStop={stop}
 							onStep={step}
 							onRestart={restart}
+							onShowLatest={showLatest}
 						/>
 					</GAVisualization>
 				</div>

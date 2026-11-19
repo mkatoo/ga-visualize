@@ -6,7 +6,8 @@ interface RunControlsProps {
 	isRunning: boolean;
 	isViewingHistory: boolean;
 	runStatus: RunStatus;
-	currentGeneration: number;
+	latestGeneration: number;
+	displayedGeneration: number;
 	generations: number;
 	animationSpeed: number;
 	invalidSettings: boolean;
@@ -14,11 +15,13 @@ interface RunControlsProps {
 	onStop: () => void;
 	onStep: () => void;
 	onRestart: () => void;
+	onShowLatest: () => void;
 	onFocusInvalidSetting: () => void;
 }
 
 export function RunControls(props: RunControlsProps) {
 	let runControls!: HTMLDivElement;
+	let primaryButton!: HTMLButtonElement;
 	let mobileQuery: MediaQueryList | undefined;
 	let controlsObserver: ResizeObserver | undefined;
 	const updateControlsHeight = () => {
@@ -53,14 +56,33 @@ export function RunControls(props: RunControlsProps) {
 	return (
 		<div class="run-controls" ref={runControls}>
 			<fieldset class="button-group" aria-label="実行操作">
+				<Show when={props.isViewingHistory}>
+					<div class="run-history">
+						<p>
+							<strong>第{props.displayedGeneration}世代を表示中</strong>
+							<span>最新は第{props.latestGeneration}世代</span>
+						</p>
+						<button
+							type="button"
+							class="btn btn-text"
+							onClick={() => {
+								primaryButton.focus({ preventScroll: true });
+								props.onShowLatest();
+							}}
+						>
+							最新世代に戻る
+						</button>
+					</div>
+				</Show>
 				<ProgressDisplay
 					status={props.runStatus}
 					animationSpeed={props.animationSpeed}
-					currentGeneration={props.currentGeneration}
+					currentGeneration={props.latestGeneration}
 					totalGenerations={props.generations}
 				/>
 				<div class="run-buttons">
 					<button
+						ref={primaryButton}
 						type="button"
 						class="btn btn-primary"
 						aria-describedby={

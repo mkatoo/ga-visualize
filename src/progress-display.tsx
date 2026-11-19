@@ -25,7 +25,7 @@ export function ProgressDisplay(props: ProgressDisplayProps) {
 					}
 				</output>
 				<div class="progress-label">
-					{props.currentGeneration} / {props.totalGenerations}世代
+					実行済み {props.currentGeneration} / {props.totalGenerations}世代
 				</div>
 			</div>
 			<div
