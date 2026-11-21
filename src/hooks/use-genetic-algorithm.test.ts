@@ -127,6 +127,27 @@ describe("Genetic algorithm settings", () => {
 		expect(result.ga().getBounds()).toEqual({ min: -10, max: 10 });
 	});
 
+	test("publishes the objective function and its bounds together", () => {
+		const settings: unknown[] = [];
+		const { result } = renderHook(() => {
+			const simulation = useGeneticAlgorithm();
+			createComputed(() =>
+				settings.push({
+					functionType: simulation.functionType(),
+					bounds: simulation.ga().getBounds(),
+				}),
+			);
+			return simulation;
+		});
+
+		result.changeFunctionType("ackley");
+
+		expect(settings).toEqual([
+			{ functionType: "sphere", bounds: { min: -10, max: 10 } },
+			{ functionType: "ackley", bounds: { min: -5, max: 5 } },
+		]);
+	});
+
 	test("applies advanced parameters to evolution and retains them when other settings change or a run restarts", () => {
 		const { result } = renderHook(useGeneticAlgorithm);
 		result.handleParameterChange("mutationRate", 0);

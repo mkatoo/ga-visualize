@@ -224,8 +224,10 @@ export function useGeneticAlgorithm() {
 
 	const changeFunctionType = (value: FunctionType) => {
 		if (settingsLocked() || value === functionType()) return;
-		setFunctionType(value);
-		updateGAConfig();
+		batch(() => {
+			setFunctionType(value);
+			updateGAConfig();
+		});
 	};
 
 	initializeGA();
