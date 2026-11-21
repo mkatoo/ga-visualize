@@ -2,6 +2,7 @@ import { cleanup, render } from "@solidjs/testing-library";
 import { batch, createSignal } from "solid-js";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { GAVisualization as Visualizer } from "./components/ga-visualization";
+import * as contours from "./contours";
 import type { Individual } from "./genetic-algorithm";
 import { type FunctionType, OBJECTIVE_FUNCTIONS } from "./objective-functions";
 
@@ -101,7 +102,12 @@ describe("Visualizer", () => {
 			},
 		);
 		vi.stubGlobal("devicePixelRatio", 2);
+		const findContours = vi.spyOn(contours, "findContourIntersections");
 		renderRosenbrock();
+		expect(findContours).toHaveBeenCalledTimes(
+			OBJECTIVE_FUNCTIONS.rosenbrock.contourLevels.length,
+		);
+		findContours.mockClear();
 		const canvas = document.querySelector("canvas[aria-label]");
 		resize(
 			[{ contentRect: { width: 240 } }] as ResizeObserverEntry[],
@@ -114,6 +120,7 @@ describe("Visualizer", () => {
 		expect(context.arc).toHaveBeenLastCalledWith(180, 60, 4, 0, 2 * Math.PI);
 		expect(context.setTransform).toHaveBeenLastCalledWith(2, 0, 0, 2, 0, 0);
 		expect(backgroundContext.putImageData).toHaveBeenCalledTimes(1);
+		expect(findContours).not.toHaveBeenCalled();
 		cleanup();
 		expect(disconnect).toHaveBeenCalledOnce();
 	});

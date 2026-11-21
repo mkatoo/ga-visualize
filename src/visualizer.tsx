@@ -126,14 +126,23 @@ const createHeatmap = (landscape: Landscape) => {
 	return canvas;
 };
 
+const createContours = ({ functionType, bounds }: Landscape): Segment[][] => {
+	const { fn, contourLevels } = getObjectiveFunction(functionType);
+	const grid = createFunctionGrid(fn, bounds, CONTOUR_RESOLUTION);
+	return contourLevels.map((level) =>
+		findContourIntersections(grid, level, bounds, CONTOUR_RESOLUTION),
+	);
+};
+
 const createBackground = (
 	landscape: Landscape,
 	heatmap: HTMLCanvasElement,
+	contours: Segment[][],
 	size: number,
 	pixelRatio: number,
 ) => {
 	const { bounds } = landscape;
-	const objective = getObjectiveFunction(landscape.functionType);
+	const { optimum } = getObjectiveFunction(landscape.functionType);
 	const canvas = document.createElement("canvas");
 	canvas.width = Math.round(size * pixelRatio);
 	canvas.height = Math.round(size * pixelRatio);
@@ -144,22 +153,10 @@ const createBackground = (
 
 	ctx.strokeStyle = "rgba(30, 41, 59, 0.24)";
 	ctx.lineWidth = 0.8;
-	const contourGrid = createFunctionGrid(
-		objective.fn,
-		bounds,
-		CONTOUR_RESOLUTION,
-	);
-	for (const level of objective.contourLevels) {
-		const segments = findContourIntersections(
-			contourGrid,
-			level,
-			bounds,
-			CONTOUR_RESOLUTION,
-		);
+	for (const segments of contours) {
 		drawContourSegments(ctx, segments, bounds, size);
 	}
 	drawAxes(ctx, bounds, size);
-	const { optimum } = objective;
 	if (
 		optimum.x >= bounds.min &&
 		optimum.x <= bounds.max &&
@@ -191,10 +188,12 @@ export function Visualizer(props: VisualizerProps) {
 		pixelRatio: 1,
 	});
 	const heatmap = createMemo(() => createHeatmap(props.landscape));
+	const contours = createMemo(() => createContours(props.landscape));
 	const background = createMemo(() =>
 		createBackground(
 			props.landscape,
 			heatmap(),
+			contours(),
 			viewport().size,
 			viewport().pixelRatio,
 		),
