@@ -33,11 +33,17 @@ export const createFunctionGrid = (
 		throw new Error("探索範囲と格子の分割数が不正です。");
 	}
 	const step = (bounds.max - bounds.min) / resolution;
-	return Array.from({ length: resolution + 1 }, (_, x) =>
-		Array.from({ length: resolution + 1 }, (_, y) =>
-			fn(bounds.min + x * step, bounds.min + y * step),
-		),
-	);
+	const size = resolution + 1;
+	const grid = new Array<number[]>(size);
+	for (let x = 0; x < size; x++) {
+		const column = new Array<number>(size);
+		const xValue = bounds.min + x * step;
+		for (let y = 0; y < size; y++) {
+			column[y] = fn(xValue, bounds.min + y * step);
+		}
+		grid[x] = column;
+	}
+	return grid;
 };
 
 // This fixed 500 × 500 grid defines both views' colors and heights. Surface
@@ -46,22 +52,22 @@ export const createLandscape = (
 	functionType: FunctionType,
 	bounds: Bounds,
 ): Landscape => {
+	const { fn } = getObjectiveFunction(functionType);
+	let maximum = 0;
+	let issue: string | null = null;
 	const grid = createFunctionGrid(
-		getObjectiveFunction(functionType).fn,
+		(x, y) => {
+			const value = fn(x, y);
+			if (Number.isFinite(value)) {
+				maximum = Math.max(maximum, value);
+			} else {
+				issue = "地形の評価値に有限でない値があるため、3D表示できません。";
+			}
+			return value;
+		},
 		bounds,
 		CANVAS_SIZE - 1,
 	);
-	let maximum = 0;
-	let issue: string | null = null;
-	for (const column of grid) {
-		for (const value of column) {
-			if (!Number.isFinite(value)) {
-				issue = "地形の評価値に有限でない値があるため、3D表示できません。";
-			} else {
-				maximum = Math.max(maximum, value);
-			}
-		}
-	}
 	return {
 		functionType,
 		bounds: { ...bounds },

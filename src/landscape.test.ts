@@ -88,9 +88,12 @@ describe("landscape coordinates and fixed scales", () => {
 	test("detects non-finite values in the fixed grid and refuses a surface", () => {
 		const spy = vi
 			.spyOn(OBJECTIVE_FUNCTIONS.sphere, "fn")
-			.mockReturnValue(Number.NaN);
+			.mockImplementation((x, y) => (x === -1 ? Number.NaN : x * x + y * y));
 		try {
 			const landscape = createLandscape("sphere", { min: -1, max: 1 });
+			expect(landscape.grid[0][0]).toBeNaN();
+			expect(landscape.grid[499][0]).toBeCloseTo(2);
+			expect(landscape.colorScale.maximum).toBe(landscape.grid[499][0]);
 			expect(landscape.issue).toContain("有限でない値");
 			expect(() => createSurfaceGrid(landscape)).toThrow("有限でない値");
 		} finally {
